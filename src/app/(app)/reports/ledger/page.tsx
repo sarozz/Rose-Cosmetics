@@ -38,7 +38,7 @@ export default async function LedgerPage({
           id="productId"
           name="productId"
           defaultValue={productId ?? ""}
-          className="block w-72 rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-200"
+          className="block w-72 rounded-md border border-white/10 px-3 py-2 text-sm focus:border-rose-400 focus:outline-none focus:ring-2 focus:ring-rose-400/30"
         >
           <option value="">All products</option>
           {products.map((p) => (
@@ -57,9 +57,9 @@ export default async function LedgerPage({
         ) : null}
       </form>
 
-      <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
-        <table className="min-w-full divide-y divide-gray-200 text-sm">
-          <thead className="bg-gray-50 text-left text-xs uppercase tracking-wider text-ink-muted">
+      <div className="overflow-hidden rounded-lg border border-white/10 bg-card">
+        <table className="min-w-full divide-y divide-white/10 text-sm">
+          <thead className="bg-surface text-left text-xs uppercase tracking-wider text-ink-muted">
             <tr>
               <th className="px-4 py-3">Date</th>
               <th className="px-4 py-3">Product</th>
@@ -69,7 +69,7 @@ export default async function LedgerPage({
               <th className="px-4 py-3">Recorded by</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-white/5">
             {movements.length === 0 ? (
               <tr>
                 <td colSpan={6} className="px-4 py-10 text-center text-ink-muted">
@@ -86,7 +86,7 @@ export default async function LedgerPage({
                   <td className="px-4 py-3 text-ink-soft">{m.movementType}</td>
                   <td
                     className={`px-4 py-3 text-right tabular-nums font-medium ${
-                      m.qtyDelta >= 0 ? "text-emerald-700" : "text-rose-700"
+                      m.qtyDelta >= 0 ? "text-emerald-300" : "text-rose-300"
                     }`}
                   >
                     {m.qtyDelta > 0 ? `+${m.qtyDelta}` : m.qtyDelta}

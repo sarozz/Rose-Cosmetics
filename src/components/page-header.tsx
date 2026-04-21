@@ -13,7 +13,7 @@ export function PageHeader({
     <header className="mb-6 flex items-start justify-between gap-4">
       <div>
         {eyebrow ? (
-          <p className="text-sm font-medium uppercase tracking-wider text-rose-600">
+          <p className="text-sm font-medium uppercase tracking-wider text-rose-400">
             {eyebrow}
           </p>
         ) : null}

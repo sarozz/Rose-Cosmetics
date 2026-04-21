@@ -13,7 +13,7 @@ export default async function AppLayout({
     <div className="flex min-h-screen bg-page">
       <Sidebar role={user.role} />
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="no-print flex h-14 items-center justify-between border-b border-gray-200 bg-card px-6">
+        <header className="no-print flex h-14 items-center justify-between border-b border-white/10 bg-card px-6">
           <p className="text-sm text-ink-muted">Rose Cosmetics POS</p>
           <UserMenu displayName={user.displayName} role={user.role} />
         </header>

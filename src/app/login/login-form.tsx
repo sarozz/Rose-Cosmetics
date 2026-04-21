@@ -20,7 +20,7 @@ export function LoginForm() {
           type="email"
           autoComplete="email"
           required
-          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-200"
+          className="mt-1 block w-full rounded-md border border-white/10 px-3 py-2 text-sm focus:border-rose-400 focus:outline-none focus:ring-2 focus:ring-rose-400/30"
         />
       </div>
       <div>
@@ -33,13 +33,13 @@ export function LoginForm() {
           type="password"
           autoComplete="current-password"
           required
-          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-200"
+          className="mt-1 block w-full rounded-md border border-white/10 px-3 py-2 text-sm focus:border-rose-400 focus:outline-none focus:ring-2 focus:ring-rose-400/30"
         />
       </div>
       {state.error ? (
         <p
           role="alert"
-          className="rounded-md bg-rose-50 px-3 py-2 text-sm text-rose-700"
+          className="rounded-md bg-rose-500/15 px-3 py-2 text-sm text-rose-200"
         >
           {state.error}
         </p>

@@ -77,8 +77,8 @@ export function ReturnForm({
     <form action={formAction} className="space-y-6">
       <input type="hidden" name="originalSaleId" value={sale.id} />
 
-      <div className="rounded-lg border border-gray-200 bg-white">
-        <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
+      <div className="rounded-lg border border-white/10 bg-card">
+        <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
           <h2 className="text-sm font-semibold text-ink">
             Sale <span className="font-mono">{sale.saleRef}</span>
           </h2>
@@ -86,8 +86,8 @@ export function ReturnForm({
             Total <span className="tabular-nums font-medium text-ink">{sale.total}</span>
           </span>
         </div>
-        <table className="min-w-full divide-y divide-gray-200 text-sm">
-          <thead className="bg-gray-50 text-left text-xs uppercase tracking-wider text-ink-muted">
+        <table className="min-w-full divide-y divide-white/10 text-sm">
+          <thead className="bg-surface text-left text-xs uppercase tracking-wider text-ink-muted">
             <tr>
               <th className="w-10 px-4 py-3" />
               <th className="px-4 py-3">Item</th>
@@ -98,7 +98,7 @@ export function ReturnForm({
               <th className="px-4 py-3 text-center">Restock</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-white/5">
             {sale.lines.map((line, index) => {
               const row = rows[line.id];
               const disabled = line.refundableQty === 0;
@@ -113,7 +113,7 @@ export function ReturnForm({
                       onChange={(e) =>
                         updateRow(line.id, { selected: e.target.checked })
                       }
-                      className="h-4 w-4 rounded border-gray-300 text-rose-600 focus:ring-rose-500"
+                      className="h-4 w-4 rounded border-white/10 text-rose-400 focus:ring-rose-400"
                       aria-label={`Select ${line.productName}`}
                     />
                     <input
@@ -175,7 +175,7 @@ export function ReturnForm({
                       onChange={(e) =>
                         updateRow(line.id, { restockFlag: e.target.checked })
                       }
-                      className="h-4 w-4 rounded border-gray-300 text-rose-600 focus:ring-rose-500"
+                      className="h-4 w-4 rounded border-white/10 text-rose-400 focus:ring-rose-400"
                       aria-label="Restock"
                     />
                   </td>
@@ -183,7 +183,7 @@ export function ReturnForm({
               );
             })}
           </tbody>
-          <tfoot className="bg-gray-50 text-sm">
+          <tfoot className="bg-surface text-sm">
             <tr>
               <td colSpan={5} className="px-4 py-3 text-right text-ink-muted">
                 Refund total

@@ -121,18 +121,18 @@ export function ReceivingForm({
         </Field>
       </div>
 
-      <div className="rounded-lg border border-gray-200 bg-white">
-        <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
+      <div className="rounded-lg border border-white/10 bg-card">
+        <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
           <h2 className="text-sm font-semibold text-ink">Line items</h2>
           <button
             type="button"
             onClick={addRow}
-            className="text-sm font-medium text-rose-700 hover:underline"
+            className="text-sm font-medium text-rose-300 hover:underline"
           >
             + Add line
           </button>
         </div>
-        <div className="divide-y divide-gray-100">
+        <div className="divide-y divide-white/5">
           {rows.map((row, index) => (
             <div
               key={row.key}
@@ -223,7 +223,7 @@ export function ReceivingForm({
                 type="button"
                 onClick={() => removeRow(row.key)}
                 disabled={rows.length === 1}
-                className="text-sm text-ink-muted hover:text-rose-700 disabled:opacity-30"
+                className="text-sm text-ink-muted hover:text-rose-300 disabled:opacity-30"
                 aria-label="Remove line"
               >
                 Remove
@@ -231,7 +231,7 @@ export function ReceivingForm({
             </div>
           ))}
         </div>
-        <div className="flex items-center justify-between border-t border-gray-200 px-4 py-3 text-sm">
+        <div className="flex items-center justify-between border-t border-white/10 px-4 py-3 text-sm">
           <span className="text-ink-muted">Estimated total</span>
           <span className="font-semibold tabular-nums text-ink">
             {total.toFixed(2)}

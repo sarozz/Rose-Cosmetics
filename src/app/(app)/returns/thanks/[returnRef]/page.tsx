@@ -28,9 +28,9 @@ export default async function ReturnThanksPage({
         }
       />
 
-      <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
-        <table className="min-w-full divide-y divide-gray-200 text-sm">
-          <thead className="bg-gray-50 text-left text-xs uppercase tracking-wider text-ink-muted">
+      <div className="overflow-hidden rounded-lg border border-white/10 bg-card">
+        <table className="min-w-full divide-y divide-white/10 text-sm">
+          <thead className="bg-surface text-left text-xs uppercase tracking-wider text-ink-muted">
             <tr>
               <th className="px-4 py-3">Item</th>
               <th className="px-4 py-3 text-right">Qty</th>
@@ -38,7 +38,7 @@ export default async function ReturnThanksPage({
               <th className="px-4 py-3 text-center">Restocked</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-white/5">
             {refund.items.map((item) => (
               <tr key={item.id}>
                 <td className="px-4 py-3 text-ink">
@@ -56,7 +56,7 @@ export default async function ReturnThanksPage({
               </tr>
             ))}
           </tbody>
-          <tfoot className="bg-gray-50 text-sm">
+          <tfoot className="bg-surface text-sm">
             <tr>
               <td colSpan={2} className="px-4 py-3 text-right font-semibold text-ink">
                 Refund total
@@ -71,7 +71,7 @@ export default async function ReturnThanksPage({
       </div>
 
       {refund.reasonNote ? (
-        <p className="mt-4 rounded-md bg-gray-50 px-4 py-3 text-sm text-ink-soft">
+        <p className="mt-4 rounded-md bg-surface px-4 py-3 text-sm text-ink-soft">
           <span className="font-medium text-ink">Reason:</span> {refund.reasonNote}
         </p>
       ) : null}

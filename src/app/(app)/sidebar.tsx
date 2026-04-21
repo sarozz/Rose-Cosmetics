@@ -32,9 +32,9 @@ export function Sidebar({ role }: { role: UserRole }) {
   const visible = NAV.filter((n) => !n.roles || n.roles.includes(role));
 
   return (
-    <aside className="hidden w-56 flex-shrink-0 border-r border-gray-200 bg-card md:block">
-      <div className="flex h-14 items-center border-b border-gray-200 px-6">
-        <span className="text-sm font-semibold text-rose-600">Rose</span>
+    <aside className="hidden w-56 flex-shrink-0 border-r border-white/10 bg-card md:block">
+      <div className="flex h-14 items-center border-b border-white/10 px-6">
+        <span className="text-sm font-semibold text-rose-400">Rose</span>
         <span className="ml-1 text-sm font-semibold text-ink">Cosmetics</span>
       </div>
       <nav className="p-3">
@@ -44,14 +44,14 @@ export function Sidebar({ role }: { role: UserRole }) {
               {item.comingPhase ? (
                 <span className="flex items-center justify-between rounded-md px-3 py-2 text-sm text-ink-muted">
                   <span>{item.label}</span>
-                  <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide">
+                  <span className="rounded-full bg-surface px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide">
                     Soon
                   </span>
                 </span>
               ) : (
                 <a
                   href={item.href}
-                  className="block rounded-md px-3 py-2 text-sm text-ink hover:bg-rose-50 hover:text-rose-700"
+                  className="block rounded-md px-3 py-2 text-sm text-ink hover:bg-rose-500/10 hover:text-rose-300"
                 >
                   {item.label}
                 </a>

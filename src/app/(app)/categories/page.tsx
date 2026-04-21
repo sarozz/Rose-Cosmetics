@@ -24,9 +24,9 @@ export default async function CategoriesPage() {
         }
       />
 
-      <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
-        <table className="min-w-full divide-y divide-gray-200 text-sm">
-          <thead className="bg-gray-50 text-left text-xs uppercase tracking-wider text-ink-muted">
+      <div className="overflow-hidden rounded-lg border border-white/10 bg-card">
+        <table className="min-w-full divide-y divide-white/10 text-sm">
+          <thead className="bg-surface text-left text-xs uppercase tracking-wider text-ink-muted">
             <tr>
               <th className="px-4 py-3">Name</th>
               <th className="px-4 py-3">Parent</th>
@@ -34,7 +34,7 @@ export default async function CategoriesPage() {
               <th className="px-4 py-3" aria-label="Actions" />
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-white/5">
             {categories.length === 0 ? (
               <tr>
                 <td
@@ -53,11 +53,11 @@ export default async function CategoriesPage() {
                   </td>
                   <td className="px-4 py-3">
                     {c.isActive ? (
-                      <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700">
+                      <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs font-semibold text-emerald-200">
                         Active
                       </span>
                     ) : (
-                      <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-semibold text-ink-muted">
+                      <span className="rounded-full bg-surface px-2 py-0.5 text-xs font-semibold text-ink-muted">
                         Inactive
                       </span>
                     )}
@@ -66,7 +66,7 @@ export default async function CategoriesPage() {
                     {canWrite ? (
                       <a
                         href={`/categories/${c.id}/edit`}
-                        className="text-rose-700 hover:underline"
+                        className="text-rose-300 hover:underline"
                       >
                         Edit
                       </a>

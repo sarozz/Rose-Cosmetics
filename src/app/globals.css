@@ -4,14 +4,14 @@
 
 @layer base {
   :root {
-    --color-background: 250 245 240;
-    --color-foreground: 31 41 55;
-    --color-surface: 244 237 229;
-    --color-border: 229 220 208;
+    --color-background: 20 18 26;
+    --color-foreground: 236 233 240;
+    --color-surface: 30 27 38;
+    --color-card: 36 31 45;
   }
 
   html {
-    color-scheme: light;
+    color-scheme: dark;
     /* Scale everything up one notch. Tailwind's spacing is in rems, so
        relative sizes stay in proportion. 17px is a noticeable bump without
        blowing up tables or cards. */
@@ -22,19 +22,26 @@
     @apply bg-page text-ink antialiased;
   }
 
+  /* Native form controls render dark too. */
+  input,
+  select,
+  textarea {
+    color-scheme: dark;
+  }
+
   /* Keep scan inputs visually prominent but not noisy. */
   input[data-scan-target="true"] {
-    @apply outline-none ring-2 ring-rose-200 focus:ring-rose-500;
+    @apply outline-none ring-2 ring-rose-400/40 focus:ring-rose-400;
   }
 }
 
 @layer components {
   .btn-primary {
-    @apply inline-flex items-center justify-center rounded-md bg-rose-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-rose-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-600 disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply inline-flex items-center justify-center rounded-md bg-rose-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-rose-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-400 disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
   .btn-secondary {
-    @apply inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-ink transition-colors hover:bg-gray-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-600;
+    @apply inline-flex items-center justify-center rounded-md border border-white/10 bg-card px-4 py-2 text-sm font-medium text-ink transition-colors hover:bg-surface focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-400;
   }
 }
 
@@ -43,10 +50,15 @@
     margin: 12mm;
   }
 
-  /* Collapse the app chrome so only the receipt prints. */
+  /* Printed receipts stay black ink on white paper regardless of the
+     app's dark theme — otherwise it wastes toner and looks awful. */
+  html,
   body {
     background: #fff !important;
+    color: #000 !important;
   }
+
+  /* Collapse the app chrome so only the receipt prints. */
   aside,
   .no-print {
     display: none !important;
@@ -60,6 +72,7 @@
   .print-clean,
   .print-clean * {
     background: transparent !important;
+    color: #000 !important;
     box-shadow: none !important;
   }
   .print-clean {

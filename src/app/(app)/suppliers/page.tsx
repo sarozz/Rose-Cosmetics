@@ -35,16 +35,16 @@ export default async function SuppliersPage({
           name="q"
           defaultValue={params.q ?? ""}
           placeholder="Search by name or email"
-          className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-200"
+          className="flex-1 rounded-md border border-white/10 px-3 py-2 text-sm focus:border-rose-400 focus:outline-none focus:ring-2 focus:ring-rose-400/30"
         />
         <button type="submit" className="btn-secondary">
           Search
         </button>
       </form>
 
-      <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
-        <table className="min-w-full divide-y divide-gray-200 text-sm">
-          <thead className="bg-gray-50 text-left text-xs uppercase tracking-wider text-ink-muted">
+      <div className="overflow-hidden rounded-lg border border-white/10 bg-card">
+        <table className="min-w-full divide-y divide-white/10 text-sm">
+          <thead className="bg-surface text-left text-xs uppercase tracking-wider text-ink-muted">
             <tr>
               <th className="px-4 py-3">Name</th>
               <th className="px-4 py-3">Contact</th>
@@ -53,7 +53,7 @@ export default async function SuppliersPage({
               <th className="px-4 py-3" aria-label="Actions" />
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-white/5">
             {suppliers.length === 0 ? (
               <tr>
                 <td
@@ -80,7 +80,7 @@ export default async function SuppliersPage({
                     {canWrite ? (
                       <a
                         href={`/suppliers/${s.id}/edit`}
-                        className="text-rose-700 hover:underline"
+                        className="text-rose-300 hover:underline"
                       >
                         Edit
                       </a>
@@ -98,11 +98,11 @@ export default async function SuppliersPage({
 
 function StatusBadge({ isActive }: { isActive: boolean }) {
   return isActive ? (
-    <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700">
+    <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs font-semibold text-emerald-200">
       Active
     </span>
   ) : (
-    <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-semibold text-ink-muted">
+    <span className="rounded-full bg-surface px-2 py-0.5 text-xs font-semibold text-ink-muted">
       Inactive
     </span>
   );

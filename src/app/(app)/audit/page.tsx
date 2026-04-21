@@ -84,7 +84,7 @@ export default async function AuditPage({
             id="entityType"
             name="entityType"
             defaultValue={entityTypeFilter ?? ""}
-            className="mt-1 block w-48 rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-200"
+            className="mt-1 block w-48 rounded-md border border-white/10 px-3 py-2 text-sm focus:border-rose-400 focus:outline-none focus:ring-2 focus:ring-rose-400/30"
           >
             <option value="">All</option>
             {AUDIT_ENTITY_TYPES.map((t) => (
@@ -105,7 +105,7 @@ export default async function AuditPage({
             id="actorUserId"
             name="actorUserId"
             defaultValue={actorUserId ?? ""}
-            className="mt-1 block w-64 rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-200"
+            className="mt-1 block w-64 rounded-md border border-white/10 px-3 py-2 text-sm focus:border-rose-400 focus:outline-none focus:ring-2 focus:ring-rose-400/30"
           >
             <option value="">Anyone</option>
             {actors.map((a) => (
@@ -125,9 +125,9 @@ export default async function AuditPage({
         ) : null}
       </form>
 
-      <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
-        <table className="min-w-full divide-y divide-gray-200 text-sm">
-          <thead className="bg-gray-50 text-left text-xs uppercase tracking-wider text-ink-muted">
+      <div className="overflow-hidden rounded-lg border border-white/10 bg-card">
+        <table className="min-w-full divide-y divide-white/10 text-sm">
+          <thead className="bg-surface text-left text-xs uppercase tracking-wider text-ink-muted">
             <tr>
               <th className="px-4 py-3">When</th>
               <th className="px-4 py-3">Actor</th>
@@ -136,7 +136,7 @@ export default async function AuditPage({
               <th className="px-4 py-3">Diff</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-white/5">
             {logs.length === 0 ? (
               <tr>
                 <td colSpan={5} className="px-4 py-10 text-center text-ink-muted">
@@ -174,7 +174,7 @@ export default async function AuditPage({
                       <span className="text-ink-muted">—</span>
                     ) : (
                       <details>
-                        <summary className="cursor-pointer text-xs font-medium text-rose-700 hover:underline">
+                        <summary className="cursor-pointer text-xs font-medium text-rose-300 hover:underline">
                           show
                         </summary>
                         <div className="mt-2 grid gap-3 sm:grid-cols-2">
@@ -216,16 +216,16 @@ export default async function AuditPage({
 function actionBadge(action: string): string {
   switch (action) {
     case "CREATE":
-      return "bg-emerald-100 text-emerald-800";
+      return "bg-emerald-500/15 text-emerald-200";
     case "UPDATE":
       return "bg-blue-100 text-blue-800";
     case "DELETE":
     case "DEACTIVATE":
-      return "bg-rose-100 text-rose-800";
+      return "bg-rose-500/15 text-rose-200";
     case "ACTIVATE":
-      return "bg-emerald-100 text-emerald-800";
+      return "bg-emerald-500/15 text-emerald-200";
     default:
-      return "bg-gray-100 text-ink";
+      return "bg-surface text-ink";
   }
 }
 
@@ -235,7 +235,7 @@ function JsonBlock({ label, value }: { label: string; value: unknown }) {
       <p className="text-[10px] font-medium uppercase tracking-wide text-ink-muted">
         {label}
       </p>
-      <pre className="mt-1 max-h-60 overflow-auto rounded border border-gray-200 bg-gray-50 p-2 font-mono text-[11px] text-ink-soft">
+      <pre className="mt-1 max-h-60 overflow-auto rounded border border-white/10 bg-surface p-2 font-mono text-[11px] text-ink-soft">
         {value == null ? "—" : JSON.stringify(value, null, 2)}
       </pre>
     </div>
