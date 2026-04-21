@@ -4,18 +4,22 @@
 
 @layer base {
   :root {
-    --color-background: 255 255 255;
+    --color-background: 250 245 240;
     --color-foreground: 31 41 55;
-    --color-surface: 249 250 251;
-    --color-border: 229 231 235;
+    --color-surface: 244 237 229;
+    --color-border: 229 220 208;
   }
 
   html {
     color-scheme: light;
+    /* Scale everything up one notch. Tailwind's spacing is in rems, so
+       relative sizes stay in proportion. 17px is a noticeable bump without
+       blowing up tables or cards. */
+    font-size: 17px;
   }
 
   body {
-    @apply bg-white text-ink antialiased;
+    @apply bg-page text-ink antialiased;
   }
 
   /* Keep scan inputs visually prominent but not noisy. */

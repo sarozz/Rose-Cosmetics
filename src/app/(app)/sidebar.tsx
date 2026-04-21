@@ -32,7 +32,7 @@ export function Sidebar({ role }: { role: UserRole }) {
   const visible = NAV.filter((n) => !n.roles || n.roles.includes(role));
 
   return (
-    <aside className="hidden w-56 flex-shrink-0 border-r border-gray-200 bg-white md:block">
+    <aside className="hidden w-56 flex-shrink-0 border-r border-gray-200 bg-card md:block">
       <div className="flex h-14 items-center border-b border-gray-200 px-6">
         <span className="text-sm font-semibold text-rose-600">Rose</span>
         <span className="ml-1 text-sm font-semibold text-ink">Cosmetics</span>
