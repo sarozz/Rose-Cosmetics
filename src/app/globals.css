@@ -33,3 +33,32 @@
     @apply inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-ink transition-colors hover:bg-gray-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-600;
   }
 }
+
+@media print {
+  @page {
+    margin: 12mm;
+  }
+
+  /* Collapse the app chrome so only the receipt prints. */
+  body {
+    background: #fff !important;
+  }
+  aside,
+  .no-print {
+    display: none !important;
+  }
+  /* The (app) layout wraps content in a shell with backgrounds + borders we
+     don't want on paper. Reset those. */
+  main {
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+  .print-clean,
+  .print-clean * {
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+  .print-clean {
+    border: none !important;
+  }
+}
