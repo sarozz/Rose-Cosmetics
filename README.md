@@ -62,16 +62,22 @@ The app runs at `http://localhost:3000`.
 ├── e2e/                    # Playwright end-to-end tests
 ├── prisma/
 │   └── schema.prisma       # Ledger-based data model (core + Telegram)
+├── docs/
+│   └── seed-owner.md       # How to provision the first OWNER account
 ├── src/
 │   ├── app/                # App Router routes
+│   │   ├── (app)/          # Protected shell: layout, sidebar, dashboard
+│   │   ├── login/          # Public sign-in page + server action
+│   │   ├── logout/         # POST-only sign-out route handler
 │   │   ├── globals.css
 │   │   ├── layout.tsx
 │   │   └── page.tsx
 │   ├── lib/
+│   │   ├── auth.ts         # requireUser / requireRole / getCurrentUser
 │   │   ├── env.ts          # Zod-validated env parsing
 │   │   ├── prisma.ts       # Shared Prisma client
 │   │   └── supabase/       # Browser, server, and middleware clients
-│   └── middleware.ts       # Session refresh for Supabase Auth
+│   └── middleware.ts       # Session refresh + protected-route gating
 ├── tests/unit/             # Vitest setup + unit tests
 ├── .github/workflows/ci.yml
 └── ...config files
@@ -105,8 +111,8 @@ Work is split into phases with review gates:
 | Phase | Target                       | Status            |
 | ----- | ---------------------------- | ----------------- |
 | 0     | Discovery                    | Done              |
-| 1     | Foundations                  | **In progress**   |
-| 2     | Catalog + receiving          | Planned           |
+| 1     | Foundations                  | Done              |
+| 2     | Catalog + receiving          | **In progress**   |
 | 3     | POS core                     | Planned           |
 | 4     | Returns + reports            | Planned           |
 | 5     | Hardening                    | Planned           |
