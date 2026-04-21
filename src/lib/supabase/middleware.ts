@@ -2,7 +2,7 @@ import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { getPublicEnv } from "@/lib/env";
 
-const PUBLIC_PATHS = ["/login"];
+const PUBLIC_PATHS = ["/login", "/api/debug-env"];
 
 function isPublicPath(pathname: string): boolean {
   return PUBLIC_PATHS.some(
