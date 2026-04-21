@@ -77,8 +77,8 @@ export function RecipientForm({
         />
         <Toggle
           name="notifySales"
-          label="Daily sales summary"
-          hint="End-of-day recap: totals, top product, low-stock count."
+          label="Sales activity"
+          hint="Instant ping after every sale, plus the end-of-day recap."
           defaultChecked={defaults?.notifySales ?? true}
         />
         <Toggle
