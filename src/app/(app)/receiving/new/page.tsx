@@ -1,4 +1,9 @@
-import { INVENTORY_WRITE_ROLES, requireRole } from "@/lib/auth";
+import {
+  CATALOG_WRITE_ROLES,
+  INVENTORY_WRITE_ROLES,
+  hasRole,
+  requireRole,
+} from "@/lib/auth";
 import { PageHeader } from "@/components/page-header";
 import { prisma } from "@/lib/prisma";
 import { ReceivingForm } from "../receiving-form";
@@ -7,7 +12,8 @@ import { createPurchaseAction } from "../actions";
 export const metadata = { title: "Record receipt — Rose Cosmetics POS" };
 
 export default async function NewReceiptPage() {
-  await requireRole(INVENTORY_WRITE_ROLES);
+  const actor = await requireRole(INVENTORY_WRITE_ROLES);
+  const canCreateProducts = hasRole(actor, CATALOG_WRITE_ROLES);
 
   const [suppliers, products] = await Promise.all([
     prisma.supplier.findMany({
@@ -52,6 +58,7 @@ export default async function NewReceiptPage() {
           action={createPurchaseAction}
           suppliers={suppliers}
           products={productOptions}
+          canCreateProducts={canCreateProducts}
         />
       )}
     </div>
