@@ -12,7 +12,11 @@ const NAV: NavItem[] = [
   { label: "Products", href: "/products" },
   { label: "Categories", href: "/categories" },
   { label: "Suppliers", href: "/suppliers" },
-  { label: "Receiving", href: "/receiving", comingPhase: 2 },
+  {
+    label: "Receiving",
+    href: "/receiving",
+    roles: ["OWNER", "MANAGER", "INVENTORY"],
+  },
   { label: "POS", href: "/pos", comingPhase: 3 },
   { label: "Returns", href: "/returns", comingPhase: 4 },
   { label: "Reports", href: "/reports", comingPhase: 4 },
