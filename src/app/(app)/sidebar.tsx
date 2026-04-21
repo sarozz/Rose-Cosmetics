@@ -1,4 +1,5 @@
 import type { UserRole } from "@prisma/client";
+import { RoseLogo } from "@/components/rose-logo";
 
 type NavItem = {
   label: string;
@@ -33,9 +34,8 @@ export function Sidebar({ role }: { role: UserRole }) {
 
   return (
     <aside className="hidden w-56 flex-shrink-0 border-r border-white/10 bg-card md:block">
-      <div className="flex h-14 items-center border-b border-white/10 px-6">
-        <span className="text-sm font-semibold text-rose-400">Rose</span>
-        <span className="ml-1 text-sm font-semibold text-ink">Cosmetics</span>
+      <div className="flex h-14 items-center border-b border-white/10 px-4">
+        <RoseLogo size="sm" />
       </div>
       <nav className="p-3">
         <ul className="space-y-1">

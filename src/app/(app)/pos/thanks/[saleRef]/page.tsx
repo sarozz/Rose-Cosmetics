@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { requireRole, SALES_ROLES } from "@/lib/auth";
 import { PageHeader } from "@/components/page-header";
+import { RoseLogo } from "@/components/rose-logo";
 import { getSale } from "@/lib/services/sale";
 import { PrintButton } from "./print-button";
 
@@ -41,7 +42,9 @@ export default async function SaleThanksPage({
 
       <article className="print-clean overflow-hidden rounded-lg border border-white/10 bg-card">
         <header className="hidden px-4 py-4 text-center print:block">
-          <p className="text-lg font-semibold">Rose Cosmetics</p>
+          <div className="flex justify-center">
+            <RoseLogo size="md" />
+          </div>
           <p className="mt-1 text-xs text-ink-muted">
             {soldAt} UTC · {sale.saleRef}
           </p>
