@@ -1,5 +1,11 @@
 import { hasRole, REPORT_VIEW_ROLES, requireUser } from "@/lib/auth";
-import { lowStockCount, todaysSalesSummary } from "@/lib/services/report";
+import {
+  lowStockCount,
+  salesByDay,
+  todaysSalesSummary,
+  topProducts,
+} from "@/lib/services/report";
+import { SalesByDayChart, TopProductsChart } from "./charts";
 
 export const metadata = { title: "Dashboard — Rose Cosmetics POS" };
 
@@ -9,9 +15,14 @@ export default async function DashboardPage() {
 
   // Only fetch the aggregate numbers for users who can already see the full
   // reports page — cashiers shouldn't see the shop-wide totals.
-  const [today, low] = canSeeReports
-    ? await Promise.all([todaysSalesSummary(), lowStockCount()])
-    : [null, 0];
+  const [today, low, daily, top] = canSeeReports
+    ? await Promise.all([
+        todaysSalesSummary(),
+        lowStockCount(),
+        salesByDay(14),
+        topProducts(30, 5),
+      ])
+    : [null, 0, [], []];
 
   return (
     <div className="mx-auto max-w-5xl">
@@ -28,31 +39,37 @@ export default async function DashboardPage() {
       </header>
 
       {canSeeReports ? (
-        <section className="grid gap-4 sm:grid-cols-3">
-          <StatCard
-            title="Today&rsquo;s sales"
-            value={today ? today.total.toString() : "0"}
-            subtitle={`${today?.count ?? 0} transactions`}
-            href="/reports"
-          />
-          <StatCard
-            title="Low stock"
-            value={String(low)}
-            subtitle={
-              low === 0
-                ? "Everything above reorder level"
-                : "Items at or below reorder level"
-            }
-            href="/reports"
-            tone={low === 0 ? "ok" : "warn"}
-          />
-          <StatCard
-            title="Ledger"
-            value="Audit"
-            subtitle="Every stock change, who, when"
-            href="/reports/ledger"
-          />
-        </section>
+        <div className="space-y-6">
+          <section className="grid gap-4 sm:grid-cols-3">
+            <StatCard
+              title="Today&rsquo;s sales"
+              value={today ? today.total.toString() : "0"}
+              subtitle={`${today?.count ?? 0} transactions`}
+              href="/reports"
+            />
+            <StatCard
+              title="Low stock"
+              value={String(low)}
+              subtitle={
+                low === 0
+                  ? "Everything above reorder level"
+                  : "Items at or below reorder level"
+              }
+              href="/reports"
+              tone={low === 0 ? "ok" : "warn"}
+            />
+            <StatCard
+              title="Ledger"
+              value="Audit"
+              subtitle="Every stock change, who, when"
+              href="/reports/ledger"
+            />
+          </section>
+          <section className="grid gap-4 lg:grid-cols-2">
+            <SalesByDayChart data={daily} />
+            <TopProductsChart data={top} />
+          </section>
+        </div>
       ) : (
         <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <SimpleCard
