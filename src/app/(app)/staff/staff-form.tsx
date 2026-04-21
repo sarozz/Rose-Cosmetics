@@ -55,6 +55,7 @@ export function StaffForm({
             required
             hint="Used to sign in. Share it with the staff member along with the temporary password."
             error={state.fieldErrors.email}
+            adornment="@"
           >
             <input
               id="email"
