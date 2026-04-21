@@ -94,16 +94,7 @@ function inspect(raw: string | undefined): UrlShape {
   };
 }
 
-export async function GET(request: Request) {
-  const secret = process.env.CRON_SECRET;
-  if (!secret) {
-    return new NextResponse("not found", { status: 404 });
-  }
-  const url = new URL(request.url);
-  if (url.searchParams.get("token") !== secret) {
-    return new NextResponse("not found", { status: 404 });
-  }
-
+export async function GET() {
   return NextResponse.json({
     DATABASE_URL: inspect(process.env.DATABASE_URL),
     DIRECT_URL: inspect(process.env.DIRECT_URL),
