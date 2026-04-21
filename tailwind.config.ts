@@ -23,16 +23,26 @@ const config: Config = {
           soft: "#374151",
           muted: "#6B7280",
         },
+        // Warm off-white palette so the app isn't a harsh slab of pure white.
+        // `page` is the main app background; `card` stays white so content sits
+        // forward of it with clear hierarchy.
+        page: "#FAF5F0",
+        surface: "#F4EDE5",
+        card: "#FFFFFF",
       },
       fontFamily: {
+        // System UI stack — ships zero font bytes, renders instantly, looks
+        // native on every platform. No more "InterVariable" that the browser
+        // was silently falling back from.
         sans: [
-          "InterVariable",
-          "Inter",
           "ui-sans-serif",
           "system-ui",
           "-apple-system",
+          "BlinkMacSystemFont",
           "Segoe UI",
           "Roboto",
+          "Helvetica Neue",
+          "Arial",
           "sans-serif",
         ],
       },
