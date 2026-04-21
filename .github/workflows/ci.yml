@@ -31,7 +31,9 @@ jobs:
           cache: "npm"
 
       - name: Install dependencies
-        run: npm ci
+        # Uses npm install because the lockfile is generated on first install.
+        # Switch to `npm ci` once package-lock.json is committed.
+        run: npm install --no-audit --no-fund
 
       - name: Prisma generate
         run: npx prisma generate
