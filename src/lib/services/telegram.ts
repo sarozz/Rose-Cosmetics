@@ -1,7 +1,9 @@
 /**
  * Telegram Bot API integration.
  *
- * Two call paths:
+ * Three call paths:
+ *   - `notifySaleCompleted`: fan-out an instant ping after every completed
+ *     sale. Goes to recipients with `notifySales` on.
  *   - `notifyLowStock`: fan-out a short alert when one or more products drop
  *     to/below their reorder level as a side-effect of a sale.
  *   - `sendDailySummary`: fan-out a daily recap, invoked by a Vercel cron.
@@ -133,6 +135,65 @@ export function renderLowStockMessage(
     "",
     `After sale <code>${escapeHtml(saleRef)}</code>`,
   ].join("\n");
+}
+
+export type SaleCompletedItem = {
+  name: string;
+  qty: number;
+};
+
+export type SaleCompletedStats = {
+  saleRef: string;
+  /** Total as a decimal string — caller has already formatted to 2dp. */
+  total: string;
+  /** Sum of qty across all lines. */
+  itemCount: number;
+  cashierName: string;
+  /** e.g. ["CASH"] today; ready for CARD/other later. */
+  paymentLabels: string[];
+  items: SaleCompletedItem[];
+};
+
+/**
+ * Fire an instant alert after every completed sale. Fans out to recipients
+ * with `notifySales` on — same flag as the daily summary, so a user who
+ * cares about sales activity gets both.
+ */
+export async function notifySaleCompleted(
+  stats: SaleCompletedStats,
+): Promise<SendResult[]> {
+  return fanout(renderSaleCompletedMessage(stats), "notifySales");
+}
+
+const SALE_ITEM_CAP = 5;
+
+export function renderSaleCompletedMessage(stats: SaleCompletedStats): string {
+  const summary = [
+    `Rs <b>${escapeHtml(stats.total)}</b>`,
+    stats.paymentLabels.length > 0
+      ? stats.paymentLabels.map(escapeHtml).join("/")
+      : null,
+    `${stats.itemCount} item${stats.itemCount === 1 ? "" : "s"}`,
+    escapeHtml(stats.cashierName),
+  ]
+    .filter((v): v is string => Boolean(v))
+    .join(" · ");
+
+  const lines = [
+    `💰 <b>Sale</b> <code>${escapeHtml(stats.saleRef)}</code>`,
+    summary,
+  ];
+
+  const shown = stats.items.slice(0, SALE_ITEM_CAP);
+  for (const item of shown) {
+    lines.push(`• ${escapeHtml(item.name)} × ${item.qty}`);
+  }
+  const remaining = stats.items.length - shown.length;
+  if (remaining > 0) {
+    lines.push(`• …and ${remaining} more`);
+  }
+
+  return lines.join("\n");
 }
 
 export type DailySummaryStats = {

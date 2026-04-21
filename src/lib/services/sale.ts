@@ -5,7 +5,12 @@ import { writeAuditLog } from "./audit";
 import type { CheckoutData } from "@/lib/validation/sale";
 import { generateSaleRef } from "./sale-ref";
 import { REPORT_TAGS } from "./report";
-import { notifyLowStock, type LowStockItem } from "./telegram";
+import {
+  notifyLowStock,
+  notifySaleCompleted,
+  type LowStockItem,
+  type SaleCompletedItem,
+} from "./telegram";
 
 export async function listSales(params?: { limit?: number }) {
   return prisma.sale.findMany({
@@ -167,7 +172,11 @@ export async function completeSale(
           },
         },
       },
-      include: { items: true, payments: true },
+      include: {
+        items: true,
+        payments: true,
+        cashier: { select: { displayName: true } },
+      },
     });
 
     for (const line of lines) {
@@ -216,7 +225,27 @@ export async function completeSale(
       }
     }
 
-    return { id: sale.id, saleRef: sale.saleRef, lowStockCrossed: crossed };
+    // Per-sale notification payload. Built from in-memory data so no
+    // extra queries are needed after the tx. Items are capped on the
+    // renderer side.
+    const notificationItems: SaleCompletedItem[] = lines.map((l) => ({
+      name: byId.get(l.productId)?.name ?? "(unknown)",
+      qty: l.qty,
+    }));
+    const itemCount = lines.reduce((sum, l) => sum + l.qty, 0);
+
+    return {
+      id: sale.id,
+      saleRef: sale.saleRef,
+      lowStockCrossed: crossed,
+      notification: {
+        total: total.toFixed(2),
+        itemCount,
+        cashierName: sale.cashier.displayName,
+        paymentLabels: sale.payments.map((p) => p.method),
+        items: notificationItems,
+      },
+    };
   });
 
   // Sales change today's totals, top products, and stock levels. Invalidate
@@ -225,10 +254,18 @@ export async function completeSale(
   revalidateTag(REPORT_TAGS.sales);
   revalidateTag(REPORT_TAGS.stock);
 
-  // Fire low-stock alerts after the tx commits. Errors are swallowed so a
+  // Fire Telegram alerts after the tx commits. Errors are swallowed so a
   // Telegram outage cannot fail the sale. We await (rather than
   // fire-and-forget) because Vercel serverless tears the function down
   // once the response ships — a detached promise might never run.
+  try {
+    await notifySaleCompleted({
+      saleRef: result.saleRef,
+      ...result.notification,
+    });
+  } catch (err) {
+    console.error("telegram sale-completed notify failed", err);
+  }
   if (result.lowStockCrossed.length > 0) {
     try {
       await notifyLowStock(result.saleRef, result.lowStockCrossed);

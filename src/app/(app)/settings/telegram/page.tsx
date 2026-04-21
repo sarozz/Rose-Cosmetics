@@ -20,7 +20,7 @@ export default async function TelegramSettingsPage() {
       <PageHeader
         eyebrow="Settings"
         title="Telegram alerts"
-        description="Send low-stock pings and daily summaries to phones or groups."
+        description="Send per-sale pings, low-stock alerts, and daily summaries to phones or groups."
         actions={
           <a href="/settings/telegram/new" className="btn-primary">
             Add recipient

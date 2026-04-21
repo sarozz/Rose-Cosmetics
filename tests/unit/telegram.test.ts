@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   renderDailySummary,
   renderLowStockMessage,
+  renderSaleCompletedMessage,
   sendTelegramMessage,
 } from "../../src/lib/services/telegram";
 
@@ -111,6 +112,75 @@ describe("renderDailySummary", () => {
     });
     expect(msg).toContain("Low stock: <b>1</b> item");
     expect(msg).not.toContain("1</b> items");
+  });
+});
+
+describe("renderSaleCompletedMessage", () => {
+  it("formats header, summary, and item list", () => {
+    const msg = renderSaleCompletedMessage({
+      saleRef: "S-2026-0142",
+      total: "1234.56",
+      itemCount: 3,
+      cashierName: "Jane",
+      paymentLabels: ["CASH"],
+      items: [
+        { name: "Ruby Lipstick", qty: 2 },
+        { name: "Foundation", qty: 1 },
+      ],
+    });
+    expect(msg).toContain("💰 <b>Sale</b> <code>S-2026-0142</code>");
+    expect(msg).toContain("Rs <b>1234.56</b>");
+    expect(msg).toContain("CASH");
+    expect(msg).toContain("3 items");
+    expect(msg).toContain("Jane");
+    expect(msg).toContain("• Ruby Lipstick × 2");
+    expect(msg).toContain("• Foundation × 1");
+  });
+
+  it("caps the item list and summarises the remainder", () => {
+    const items = Array.from({ length: 8 }, (_, i) => ({
+      name: `Item ${i + 1}`,
+      qty: 1,
+    }));
+    const msg = renderSaleCompletedMessage({
+      saleRef: "S-1",
+      total: "80.00",
+      itemCount: 8,
+      cashierName: "Jane",
+      paymentLabels: ["CASH"],
+      items,
+    });
+    expect(msg).toContain("• Item 1 × 1");
+    expect(msg).toContain("• Item 5 × 1");
+    expect(msg).not.toContain("Item 6 × 1");
+    expect(msg).toContain("• …and 3 more");
+  });
+
+  it("uses singular 'item' for count of 1", () => {
+    const msg = renderSaleCompletedMessage({
+      saleRef: "S-1",
+      total: "10.00",
+      itemCount: 1,
+      cashierName: "Jane",
+      paymentLabels: ["CASH"],
+      items: [{ name: "Foo", qty: 1 }],
+    });
+    expect(msg).toContain("1 item");
+    expect(msg).not.toContain("1 items");
+  });
+
+  it("HTML-escapes product names and cashier name", () => {
+    const msg = renderSaleCompletedMessage({
+      saleRef: "S-1",
+      total: "10.00",
+      itemCount: 1,
+      cashierName: "Evil <b>",
+      paymentLabels: ["CASH"],
+      items: [{ name: "<img src=x>", qty: 1 }],
+    });
+    expect(msg).toContain("&lt;img src=x&gt;");
+    expect(msg).toContain("Evil &lt;b&gt;");
+    expect(msg).not.toContain("<img");
   });
 });
 
