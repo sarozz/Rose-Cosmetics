@@ -22,7 +22,7 @@ const NAV: NavItem[] = [
     href: "/pos",
     roles: ["OWNER", "MANAGER", "CASHIER"],
   },
-  { label: "Returns", href: "/returns", comingPhase: 4 },
+  { label: "Returns", href: "/returns", roles: ["OWNER", "MANAGER"] },
   { label: "Reports", href: "/reports", comingPhase: 4 },
   {
     label: "Staff",
