@@ -1,7 +1,7 @@
 "use client";
 
 import { useFormState } from "react-dom";
-import { Field, inputClass } from "@/components/form/field";
+import { Field, FieldGroup, inputClass } from "@/components/form/field";
 import { FormError } from "@/components/form/form-error";
 import { SubmitButton } from "@/components/form/submit-button";
 import { emptyProductState, type ProductFormState } from "./state";
@@ -38,119 +38,130 @@ export function ProductForm({
   const isActive = defaults?.isActive ?? true;
 
   return (
-    <form action={formAction} className="max-w-2xl space-y-5">
+    <form action={formAction} className="max-w-2xl space-y-8">
       <FormError message={state.formError} />
-      <Field
-        label="Name"
-        htmlFor="name"
-        required
-        error={state.fieldErrors.name}
-      >
-        <input
-          id="name"
-          name="name"
-          defaultValue={defaults?.name ?? ""}
-          required
-          autoFocus
-          className={inputClass()}
-        />
-      </Field>
 
-      <div className="grid gap-5 sm:grid-cols-2">
-        <Field label="Brand" htmlFor="brand" error={state.fieldErrors.brand}>
+      <FieldGroup title="Identity">
+        <Field
+          label="Name"
+          htmlFor="name"
+          required
+          error={state.fieldErrors.name}
+        >
           <input
-            id="brand"
-            name="brand"
-            defaultValue={defaults?.brand ?? ""}
+            id="name"
+            name="name"
+            defaultValue={defaults?.name ?? ""}
+            required
+            autoFocus
             className={inputClass()}
           />
         </Field>
-        <Field
-          label="Category"
-          htmlFor="categoryId"
-          error={state.fieldErrors.categoryId}
-        >
-          <select
-            id="categoryId"
-            name="categoryId"
-            defaultValue={defaults?.categoryId ?? ""}
-            className={inputClass()}
+
+        <div className="grid gap-5 sm:grid-cols-2">
+          <Field label="Brand" htmlFor="brand" error={state.fieldErrors.brand}>
+            <input
+              id="brand"
+              name="brand"
+              defaultValue={defaults?.brand ?? ""}
+              className={inputClass()}
+            />
+          </Field>
+          <Field
+            label="Category"
+            htmlFor="categoryId"
+            error={state.fieldErrors.categoryId}
           >
-            <option value="">Uncategorised</option>
-            {categories.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-        </Field>
-      </div>
+            <select
+              id="categoryId"
+              name="categoryId"
+              defaultValue={defaults?.categoryId ?? ""}
+              className={inputClass()}
+            >
+              <option value="">Uncategorised</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </Field>
+        </div>
 
-      <div className="grid gap-5 sm:grid-cols-2">
-        <Field
-          label="Barcode"
-          htmlFor="barcode"
-          hint="8 to 14 digits (scanner or manual)"
-          error={state.fieldErrors.barcode}
-        >
-          <input
-            id="barcode"
-            name="barcode"
-            inputMode="numeric"
-            pattern="\d*"
-            defaultValue={defaults?.barcode ?? ""}
-            className={inputClass()}
-          />
-        </Field>
-        <Field label="SKU" htmlFor="sku" error={state.fieldErrors.sku}>
-          <input
-            id="sku"
-            name="sku"
-            defaultValue={defaults?.sku ?? ""}
-            className={inputClass()}
-          />
-        </Field>
-      </div>
+        <div className="grid gap-5 sm:grid-cols-2">
+          <Field
+            label="Barcode"
+            htmlFor="barcode"
+            hint="8 to 14 digits (scanner or manual)"
+            error={state.fieldErrors.barcode}
+            adornment="#"
+          >
+            <input
+              id="barcode"
+              name="barcode"
+              inputMode="numeric"
+              pattern="\d*"
+              defaultValue={defaults?.barcode ?? ""}
+              className={inputClass()}
+            />
+          </Field>
+          <Field label="SKU" htmlFor="sku" error={state.fieldErrors.sku}>
+            <input
+              id="sku"
+              name="sku"
+              defaultValue={defaults?.sku ?? ""}
+              className={inputClass()}
+            />
+          </Field>
+        </div>
+      </FieldGroup>
 
-      <div className="grid gap-5 sm:grid-cols-3">
-        <Field
-          label="Cost price"
-          htmlFor="costPrice"
-          required
-          error={state.fieldErrors.costPrice}
-        >
-          <input
-            id="costPrice"
-            name="costPrice"
-            type="number"
-            step="0.01"
-            min="0"
+      <FieldGroup title="Pricing" description="All amounts in shop currency">
+        <div className="grid gap-5 sm:grid-cols-2">
+          <Field
+            label="Cost price"
+            htmlFor="costPrice"
             required
-            defaultValue={numberDefault(defaults?.costPrice)}
-            className={inputClass()}
-          />
-        </Field>
-        <Field
-          label="Sell price"
-          htmlFor="sellPrice"
-          required
-          error={state.fieldErrors.sellPrice}
-        >
-          <input
-            id="sellPrice"
-            name="sellPrice"
-            type="number"
-            step="0.01"
-            min="0"
+            error={state.fieldErrors.costPrice}
+            adornment="Rs"
+          >
+            <input
+              id="costPrice"
+              name="costPrice"
+              type="number"
+              step="0.01"
+              min="0"
+              required
+              defaultValue={numberDefault(defaults?.costPrice)}
+              className={inputClass()}
+            />
+          </Field>
+          <Field
+            label="Sell price"
+            htmlFor="sellPrice"
             required
-            defaultValue={numberDefault(defaults?.sellPrice)}
-            className={inputClass()}
-          />
-        </Field>
+            error={state.fieldErrors.sellPrice}
+            adornment="Rs"
+          >
+            <input
+              id="sellPrice"
+              name="sellPrice"
+              type="number"
+              step="0.01"
+              min="0"
+              required
+              defaultValue={numberDefault(defaults?.sellPrice)}
+              className={inputClass()}
+            />
+          </Field>
+        </div>
+      </FieldGroup>
+
+      <FieldGroup title="Inventory">
         <Field
           label="Reorder level"
           htmlFor="reorderLevel"
-          hint="Alert threshold"
+          hint="Alert threshold — 0 means not tracked"
           error={state.fieldErrors.reorderLevel}
         >
           <input
@@ -163,17 +174,17 @@ export function ProductForm({
             className={inputClass()}
           />
         </Field>
-      </div>
 
-      <label className="flex items-center gap-2 text-sm text-ink">
-        <input
-          type="checkbox"
-          name="isActive"
-          defaultChecked={isActive}
-          className="h-4 w-4 rounded border-white/10 text-rose-400 focus:ring-rose-400"
-        />
-        Active
-      </label>
+        <label className="flex items-center gap-2 text-sm text-ink">
+          <input
+            type="checkbox"
+            name="isActive"
+            defaultChecked={isActive}
+            className="h-4 w-4 rounded border-white/10 text-rose-400 focus:ring-rose-400"
+          />
+          Active
+        </label>
+      </FieldGroup>
 
       <div className="flex gap-3 pt-2">
         <SubmitButton pendingLabel="Saving…">{submitLabel}</SubmitButton>

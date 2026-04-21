@@ -1,6 +1,7 @@
 "use client";
 
 import { useFormState, useFormStatus } from "react-dom";
+import { Field, inputClass } from "@/components/form/field";
 import { signInAction, type SignInState } from "./actions";
 
 const initialState: SignInState = { error: null };
@@ -10,32 +11,26 @@ export function LoginForm() {
 
   return (
     <form action={formAction} className="space-y-4">
-      <div>
-        <label htmlFor="email" className="block text-sm font-medium text-ink">
-          Email
-        </label>
+      <Field label="Email" htmlFor="email" adornment="@">
         <input
           id="email"
           name="email"
           type="email"
           autoComplete="email"
           required
-          className="mt-1 block w-full rounded-md border border-white/10 px-3 py-2 text-sm focus:border-rose-400 focus:outline-none focus:ring-2 focus:ring-rose-400/30"
+          className={inputClass()}
         />
-      </div>
-      <div>
-        <label htmlFor="password" className="block text-sm font-medium text-ink">
-          Password
-        </label>
+      </Field>
+      <Field label="Password" htmlFor="password">
         <input
           id="password"
           name="password"
           type="password"
           autoComplete="current-password"
           required
-          className="mt-1 block w-full rounded-md border border-white/10 px-3 py-2 text-sm focus:border-rose-400 focus:outline-none focus:ring-2 focus:ring-rose-400/30"
+          className={inputClass()}
         />
-      </div>
+      </Field>
       {state.error ? (
         <p
           role="alert"
@@ -53,7 +48,34 @@ function SubmitButton() {
   const { pending } = useFormStatus();
   return (
     <button type="submit" className="btn-primary w-full" disabled={pending}>
-      {pending ? "Signing in…" : "Sign in"}
+      {pending ? (
+        <span className="inline-flex items-center gap-2">
+          <svg
+            className="h-4 w-4 animate-spin"
+            viewBox="0 0 24 24"
+            fill="none"
+            aria-hidden="true"
+          >
+            <circle
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="3"
+              opacity="0.25"
+            />
+            <path
+              d="M12 2a10 10 0 0 1 10 10"
+              stroke="currentColor"
+              strokeWidth="3"
+              strokeLinecap="round"
+            />
+          </svg>
+          Signing in…
+        </span>
+      ) : (
+        "Sign in"
+      )}
     </button>
   );
 }
