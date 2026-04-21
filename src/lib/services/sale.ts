@@ -5,6 +5,7 @@ import { writeAuditLog } from "./audit";
 import type { CheckoutData } from "@/lib/validation/sale";
 import { generateSaleRef } from "./sale-ref";
 import { REPORT_TAGS } from "./report";
+import { notifyLowStock, type LowStockItem } from "./telegram";
 
 export async function listSales(params?: { limit?: number }) {
   return prisma.sale.findMany({
@@ -84,7 +85,14 @@ export async function completeSale(
     const productIds = data.items.map((i) => i.productId);
     const products = await tx.product.findMany({
       where: { id: { in: productIds } },
-      select: { id: true, name: true, isActive: true, currentStock: true },
+      select: {
+        id: true,
+        name: true,
+        sku: true,
+        isActive: true,
+        currentStock: true,
+        reorderLevel: true,
+      },
     });
     const byId = new Map(products.map((p) => [p.id, p]));
 
@@ -187,7 +195,28 @@ export async function completeSale(
       after: sale,
     });
 
-    return { id: sale.id, saleRef: sale.saleRef };
+    // Detect products that crossed the reorder threshold as a result of
+    // this sale. We alert only on the transition (before > threshold &&
+    // after <= threshold) so repeat sales of an already-low item don't
+    // spam Telegram. reorderLevel = 0 means "not tracked".
+    const crossed: LowStockItem[] = [];
+    for (const line of lines) {
+      const product = byId.get(line.productId);
+      if (!product || product.reorderLevel <= 0) continue;
+      const before = product.currentStock;
+      const after = before - line.qty;
+      if (before > product.reorderLevel && after <= product.reorderLevel) {
+        crossed.push({
+          id: product.id,
+          name: product.name,
+          sku: product.sku,
+          currentStock: after,
+          reorderLevel: product.reorderLevel,
+        });
+      }
+    }
+
+    return { id: sale.id, saleRef: sale.saleRef, lowStockCrossed: crossed };
   });
 
   // Sales change today's totals, top products, and stock levels. Invalidate
@@ -195,5 +224,18 @@ export async function completeSale(
   // next request rather than waiting out the 30s TTL.
   revalidateTag(REPORT_TAGS.sales);
   revalidateTag(REPORT_TAGS.stock);
-  return result;
+
+  // Fire low-stock alerts after the tx commits. Errors are swallowed so a
+  // Telegram outage cannot fail the sale. We await (rather than
+  // fire-and-forget) because Vercel serverless tears the function down
+  // once the response ships — a detached promise might never run.
+  if (result.lowStockCrossed.length > 0) {
+    try {
+      await notifyLowStock(result.saleRef, result.lowStockCrossed);
+    } catch (err) {
+      console.error("telegram low-stock notify failed", err);
+    }
+  }
+
+  return { id: result.id, saleRef: result.saleRef };
 }
