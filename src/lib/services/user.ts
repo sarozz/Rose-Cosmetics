@@ -1,4 +1,6 @@
+import { revalidateTag } from "next/cache";
 import { prisma } from "@/lib/prisma";
+import { AUTH_USER_TAG } from "@/lib/auth";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { writeAuditLog } from "./audit";
 import type {
@@ -63,8 +65,8 @@ export async function createStaff(
   const authId = created.user.id;
 
   try {
-    return await prisma.$transaction(async (tx) => {
-      const user = await tx.user.create({
+    const user = await prisma.$transaction(async (tx) => {
+      const created = await tx.user.create({
         data: {
           email: data.email,
           displayName: data.displayName,
@@ -75,12 +77,16 @@ export async function createStaff(
       await writeAuditLog(tx, {
         actorUserId,
         entityType: "user",
-        entityId: user.id,
+        entityId: created.id,
         action: "CREATE",
-        after: user,
+        after: created,
       });
-      return user;
+      return created;
     });
+    // Drop the cached `userByAuthId` lookup so the new hire's first sign-in
+    // resolves immediately instead of waiting out the 60s TTL.
+    revalidateTag(AUTH_USER_TAG);
+    return user;
   } catch (err) {
     // Roll back the Supabase auth user so a retry with the same email works.
     // Best-effort: if this cleanup fails we surface the original error.
@@ -102,7 +108,7 @@ export async function updateStaff(
   id: string,
   data: UserUpdateData,
 ) {
-  return prisma.$transaction(async (tx) => {
+  const updated = await prisma.$transaction(async (tx) => {
     const before = await tx.user.findUnique({ where: { id } });
     if (!before) throw new StaffValidationError("Staff member not found");
 
@@ -152,4 +158,8 @@ export async function updateStaff(
 
     return after;
   });
+  // Role, isActive, or displayName changes must reach every server instance
+  // on the next request, so flush the cross-request auth cache.
+  revalidateTag(AUTH_USER_TAG);
+  return updated;
 }
