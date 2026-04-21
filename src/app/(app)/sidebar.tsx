@@ -24,12 +24,7 @@ const NAV: NavItem[] = [
   },
   { label: "Returns", href: "/returns", roles: ["OWNER", "MANAGER"] },
   { label: "Reports", href: "/reports", roles: ["OWNER", "MANAGER"] },
-  {
-    label: "Staff",
-    href: "/staff",
-    comingPhase: 5,
-    roles: ["OWNER", "MANAGER"],
-  },
+  { label: "Staff", href: "/staff", roles: ["OWNER"] },
 ];
 
 export function Sidebar({ role }: { role: UserRole }) {
