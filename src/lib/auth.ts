@@ -5,15 +5,12 @@ import { prisma } from "@/lib/prisma";
 
 export type AuthenticatedUser = PrismaUser;
 
-export class AuthError extends Error {
-  constructor(
-    message: string,
-    public readonly code: "UNAUTHENTICATED" | "INACTIVE" | "UNPROVISIONED" | "FORBIDDEN",
-  ) {
-    super(message);
-    this.name = "AuthError";
-  }
-}
+/**
+ * Role groups used across the app. Centralized here so sidebar visibility,
+ * server actions, and server components stay in sync.
+ */
+export const CATALOG_WRITE_ROLES: UserRole[] = ["OWNER", "MANAGER"];
+export const STAFF_WRITE_ROLES: UserRole[] = ["OWNER"];
 
 /**
  * Resolve the current Supabase session to a Prisma `User` row. On first login,
@@ -58,15 +55,14 @@ export function hasRole(user: AuthenticatedUser, allowed: UserRole[]): boolean {
 }
 
 /**
- * Enforce that the current user holds one of the allowed roles. Throws an
- * `AuthError` with code `FORBIDDEN` otherwise — callers render a 403 page.
+ * Enforce that the current user holds one of the allowed roles. Redirects
+ * forbidden users to `/dashboard` rather than throwing — the UI should avoid
+ * presenting links they can't use, so this is a defense-in-depth check.
  */
 export async function requireRole(
   allowed: UserRole[],
 ): Promise<AuthenticatedUser> {
   const user = await requireUser();
-  if (!hasRole(user, allowed)) {
-    throw new AuthError("Role not permitted", "FORBIDDEN");
-  }
+  if (!hasRole(user, allowed)) redirect("/dashboard");
   return user;
 }
