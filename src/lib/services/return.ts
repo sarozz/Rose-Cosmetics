@@ -1,8 +1,10 @@
+import { revalidateTag } from "next/cache";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { writeAuditLog } from "./audit";
 import type { ReturnData } from "@/lib/validation/return";
 import { generateReturnRef } from "./return-ref";
+import { REPORT_TAGS } from "./report";
 
 export async function listReturns(params?: { limit?: number }) {
   return prisma.return.findMany({
@@ -106,7 +108,7 @@ export class ReturnValidationError extends Error {
  *     returns can't both drain the same line.
  */
 export async function createReturn(actorUserId: string, data: ReturnData) {
-  return prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(async (tx) => {
     const sale = await tx.sale.findUnique({
       where: { id: data.originalSaleId },
       select: { id: true, status: true, saleRef: true },
@@ -215,4 +217,12 @@ export async function createReturn(actorUserId: string, data: ReturnData) {
 
     return { id: refund.id, returnRef: refund.returnRef };
   });
+
+  // Refunds move the revenue numbers (dashboard + sales reports) and, for
+  // restocked lines, the stock numbers too. Invalidate both — the small
+  // amount of over-invalidation on non-restock refunds isn't worth a
+  // second code path.
+  revalidateTag(REPORT_TAGS.sales);
+  revalidateTag(REPORT_TAGS.stock);
+  return result;
 }

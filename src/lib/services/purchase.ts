@@ -1,8 +1,10 @@
+import { revalidateTag } from "next/cache";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { writeAuditLog } from "./audit";
 import type { PurchaseData } from "@/lib/validation/purchase";
 import { generatePurchaseRef } from "./purchase-ref";
+import { REPORT_TAGS } from "./report";
 
 export async function listPurchases(params?: { limit?: number }) {
   return prisma.purchase.findMany({
@@ -42,7 +44,7 @@ export async function createPurchase(
   actorUserId: string,
   data: PurchaseData,
 ) {
-  return prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(async (tx) => {
     const purchaseRef = await generatePurchaseRef(tx);
     const totalCost = data.items.reduce(
       (sum, item) =>
@@ -103,4 +105,9 @@ export async function createPurchase(
 
     return purchase;
   });
+
+  // Receipts only move stock numbers — the low-stock list, ledger, and
+  // reorder dashboard. Sales totals are unaffected.
+  revalidateTag(REPORT_TAGS.stock);
+  return result;
 }

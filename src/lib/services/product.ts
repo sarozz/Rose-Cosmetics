@@ -1,6 +1,8 @@
+import { revalidateTag } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { writeAuditLog } from "./audit";
 import type { ProductData } from "@/lib/validation/product";
+import { REPORT_TAGS } from "./report";
 
 export async function listProducts(params?: { query?: string }) {
   const query = params?.query?.trim();
@@ -29,17 +31,21 @@ export async function createProduct(
   actorUserId: string,
   data: ProductData,
 ) {
-  return prisma.$transaction(async (tx) => {
-    const product = await tx.product.create({ data });
+  const product = await prisma.$transaction(async (tx) => {
+    const created = await tx.product.create({ data });
     await writeAuditLog(tx, {
       actorUserId,
       entityType: "product",
-      entityId: product.id,
+      entityId: created.id,
       action: "CREATE",
-      after: product,
+      after: created,
     });
-    return product;
+    return created;
   });
+  // New product may have a reorderLevel and currentStock, so it can appear in
+  // the low-stock list immediately.
+  revalidateTag(REPORT_TAGS.stock);
+  return product;
 }
 
 export async function updateProduct(
@@ -47,18 +53,22 @@ export async function updateProduct(
   id: string,
   data: ProductData,
 ) {
-  return prisma.$transaction(async (tx) => {
+  const after = await prisma.$transaction(async (tx) => {
     const before = await tx.product.findUnique({ where: { id } });
     if (!before) throw new Error("Product not found");
-    const after = await tx.product.update({ where: { id }, data });
+    const updated = await tx.product.update({ where: { id }, data });
     await writeAuditLog(tx, {
       actorUserId,
       entityType: "product",
       entityId: id,
-      action: before.isActive === after.isActive ? "UPDATE" : after.isActive ? "ACTIVATE" : "DEACTIVATE",
+      action: before.isActive === updated.isActive ? "UPDATE" : updated.isActive ? "ACTIVATE" : "DEACTIVATE",
       before,
-      after,
+      after: updated,
     });
-    return after;
+    return updated;
   });
+  // reorderLevel / isActive / currentStock edits all change what the
+  // low-stock report shows.
+  revalidateTag(REPORT_TAGS.stock);
+  return after;
 }
