@@ -13,6 +13,7 @@ export const CATALOG_WRITE_ROLES: UserRole[] = ["OWNER", "MANAGER"];
 export const STAFF_WRITE_ROLES: UserRole[] = ["OWNER"];
 export const INVENTORY_WRITE_ROLES: UserRole[] = ["OWNER", "MANAGER", "INVENTORY"];
 export const SALES_ROLES: UserRole[] = ["OWNER", "MANAGER", "CASHIER"];
+export const RETURN_WRITE_ROLES: UserRole[] = ["OWNER", "MANAGER"];
 
 /**
  * Resolve the current Supabase session to a Prisma `User` row. On first login,
