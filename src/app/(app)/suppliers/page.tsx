@@ -1,4 +1,9 @@
-import { CATALOG_WRITE_ROLES, hasRole, requireUser } from "@/lib/auth";
+import {
+  CATALOG_WRITE_ROLES,
+  INVENTORY_WRITE_ROLES,
+  hasRole,
+  requireRole,
+} from "@/lib/auth";
 import { listSuppliers } from "@/lib/services/supplier";
 import { PageHeader } from "@/components/page-header";
 
@@ -9,7 +14,9 @@ export default async function SuppliersPage({
 }: {
   searchParams: Promise<{ q?: string }>;
 }) {
-  const user = await requireUser();
+  // Cashiers don't need supplier contacts — this screen is for the people
+  // who actually place orders (owner/manager/inventory).
+  const user = await requireRole(INVENTORY_WRITE_ROLES);
   const params = await searchParams;
   const suppliers = await listSuppliers({ query: params.q });
   const canWrite = hasRole(user, CATALOG_WRITE_ROLES);

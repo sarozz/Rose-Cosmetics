@@ -19,7 +19,7 @@ export default async function ProductsPage({
       <PageHeader
         eyebrow="Catalog"
         title="Products"
-        description="Everything the store sells — scanned by barcode at the till."
+        description="Everything the store sells — scanned by barcode at the till. On-hand stock refreshes after every sale and receipt."
         actions={
           canWrite ? (
             <a href="/products/new" className="btn-primary">
@@ -72,6 +72,7 @@ export default async function ProductsPage({
               <th className="px-4 py-3">Category</th>
               <th className="px-4 py-3">Barcode</th>
               <th className="px-4 py-3 text-right">Sell</th>
+              <th className="px-4 py-3 text-right">On hand</th>
               <th className="px-4 py-3 text-right">Reorder</th>
               <th className="px-4 py-3">Status</th>
               <th className="px-4 py-3" aria-label="Actions" />
@@ -81,56 +82,71 @@ export default async function ProductsPage({
             {products.length === 0 ? (
               <tr>
                 <td
-                  colSpan={7}
+                  colSpan={8}
                   className="px-4 py-10 text-center text-ink-muted"
                 >
                   No products yet.
                 </td>
               </tr>
             ) : (
-              products.map((p) => (
-                <tr key={p.id}>
-                  <td className="px-4 py-3 font-medium text-ink">
-                    <div>{p.name}</div>
-                    {p.brand ? (
-                      <div className="text-xs text-ink-muted">{p.brand}</div>
-                    ) : null}
-                  </td>
-                  <td className="px-4 py-3 text-ink-soft">
-                    {p.category?.name ?? "—"}
-                  </td>
-                  <td className="px-4 py-3 font-mono text-xs text-ink-soft">
-                    {p.barcode ?? "—"}
-                  </td>
-                  <td className="px-4 py-3 text-right tabular-nums">
-                    {p.sellPrice.toString()}
-                  </td>
-                  <td className="px-4 py-3 text-right tabular-nums text-ink-soft">
-                    {p.reorderLevel}
-                  </td>
-                  <td className="px-4 py-3">
-                    {p.isActive ? (
-                      <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs font-semibold text-emerald-200">
-                        Active
-                      </span>
-                    ) : (
-                      <span className="rounded-full bg-surface px-2 py-0.5 text-xs font-semibold text-ink-muted">
-                        Inactive
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    {canWrite ? (
-                      <a
-                        href={`/products/${p.id}/edit`}
-                        className="text-rose-300 hover:underline"
-                      >
-                        Edit
-                      </a>
-                    ) : null}
-                  </td>
-                </tr>
-              ))
+              products.map((p) => {
+                const tracked = p.reorderLevel > 0;
+                const low = tracked && p.currentStock <= p.reorderLevel;
+                const out = p.currentStock <= 0;
+                const stockClass = out
+                  ? "text-rose-300"
+                  : low
+                    ? "text-amber-300"
+                    : "text-ink";
+                return (
+                  <tr key={p.id}>
+                    <td className="px-4 py-3 font-medium text-ink">
+                      <div>{p.name}</div>
+                      {p.brand ? (
+                        <div className="text-xs text-ink-muted">{p.brand}</div>
+                      ) : null}
+                    </td>
+                    <td className="px-4 py-3 text-ink-soft">
+                      {p.category?.name ?? "—"}
+                    </td>
+                    <td className="px-4 py-3 font-mono text-xs text-ink-soft">
+                      {p.barcode ?? "—"}
+                    </td>
+                    <td className="px-4 py-3 text-right tabular-nums">
+                      {p.sellPrice.toString()}
+                    </td>
+                    <td
+                      className={`px-4 py-3 text-right tabular-nums font-medium ${stockClass}`}
+                    >
+                      {p.currentStock}
+                    </td>
+                    <td className="px-4 py-3 text-right tabular-nums text-ink-soft">
+                      {tracked ? p.reorderLevel : "—"}
+                    </td>
+                    <td className="px-4 py-3">
+                      {p.isActive ? (
+                        <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs font-semibold text-emerald-200">
+                          Active
+                        </span>
+                      ) : (
+                        <span className="rounded-full bg-surface px-2 py-0.5 text-xs font-semibold text-ink-muted">
+                          Inactive
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      {canWrite ? (
+                        <a
+                          href={`/products/${p.id}/edit`}
+                          className="text-rose-300 hover:underline"
+                        >
+                          Edit
+                        </a>
+                      ) : null}
+                    </td>
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>
