@@ -20,9 +20,14 @@ export default async function ReportsPage() {
         title="Daily overview"
         description="Sales in the last 30 days, your best-sellers, and anything running low. Drill into the ledger to audit every stock change."
         actions={
-          <a href="/reports/ledger" className="btn-secondary">
-            Inventory ledger
-          </a>
+          <div className="flex gap-2">
+            <a href="/reports/profit" className="btn-secondary">
+              Profit & inventory
+            </a>
+            <a href="/reports/ledger" className="btn-secondary">
+              Inventory ledger
+            </a>
+          </div>
         }
       />
 
