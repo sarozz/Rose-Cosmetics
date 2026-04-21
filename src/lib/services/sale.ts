@@ -1,0 +1,190 @@
+import { Prisma } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
+import { writeAuditLog } from "./audit";
+import type { CheckoutData } from "@/lib/validation/sale";
+import { generateSaleRef } from "./sale-ref";
+
+export async function listSales(params?: { limit?: number }) {
+  return prisma.sale.findMany({
+    orderBy: { soldAt: "desc" },
+    include: {
+      cashier: { select: { id: true, displayName: true } },
+      _count: { select: { items: true } },
+    },
+    take: params?.limit ?? 50,
+  });
+}
+
+export async function getSale(saleRef: string) {
+  return prisma.sale.findUnique({
+    where: { saleRef },
+    include: {
+      cashier: { select: { id: true, displayName: true } },
+      items: {
+        include: {
+          product: { select: { id: true, name: true, barcode: true, sku: true } },
+        },
+      },
+      payments: true,
+    },
+  });
+}
+
+/**
+ * Resolve a scanned barcode to a product the cashier can add to the cart.
+ * Returns the fields the POS needs: price snapshot, stock, active flag.
+ */
+export async function lookupProductByBarcode(barcode: string) {
+  const trimmed = barcode.trim();
+  if (!trimmed) return null;
+  return prisma.product.findFirst({
+    where: {
+      isActive: true,
+      OR: [{ barcode: trimmed }, { sku: trimmed }],
+    },
+    select: {
+      id: true,
+      name: true,
+      brand: true,
+      barcode: true,
+      sku: true,
+      sellPrice: true,
+      currentStock: true,
+    },
+  });
+}
+
+export class SaleValidationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "SaleValidationError";
+  }
+}
+
+/**
+ * Complete a cash sale. Blueprint §13 + §15: every cart line writes a
+ * `SaleItem`, decrements `product.currentStock`, and appends a `SALE_OUT`
+ * `InventoryMovement` row inside the same `$transaction`. A `Payment` row
+ * (CASH, COMPLETED) closes the sale. The idempotency key short-circuits
+ * double submits (e.g. network retry) by returning the existing sale.
+ */
+export async function completeSale(
+  actorUserId: string,
+  data: CheckoutData,
+) {
+  const existing = await prisma.sale.findUnique({
+    where: { idempotencyKey: data.idempotencyKey },
+    select: { id: true, saleRef: true },
+  });
+  if (existing) return existing;
+
+  return prisma.$transaction(async (tx) => {
+    const productIds = data.items.map((i) => i.productId);
+    const products = await tx.product.findMany({
+      where: { id: { in: productIds } },
+      select: { id: true, name: true, isActive: true, currentStock: true },
+    });
+    const byId = new Map(products.map((p) => [p.id, p]));
+
+    // Compute line totals server-side so the receipt cannot be rewritten by a
+    // manipulated client payload. Negative stock is rejected (blueprint §11).
+    let subtotal = new Prisma.Decimal(0);
+    const lines = data.items.map((item) => {
+      const product = byId.get(item.productId);
+      if (!product || !product.isActive) {
+        throw new SaleValidationError(`Product is unavailable`);
+      }
+      if (product.currentStock < item.qty) {
+        throw new SaleValidationError(
+          `Not enough stock for ${product.name} (have ${product.currentStock})`,
+        );
+      }
+      const unit = new Prisma.Decimal(item.unitPrice);
+      const discount = new Prisma.Decimal(item.discountAmount);
+      const lineTotal = unit.mul(item.qty).sub(discount);
+      if (lineTotal.isNegative()) {
+        throw new SaleValidationError(
+          `Line discount exceeds total for ${product.name}`,
+        );
+      }
+      subtotal = subtotal.add(lineTotal);
+      return {
+        productId: item.productId,
+        qty: item.qty,
+        unitPrice: unit,
+        discountAmount: discount,
+        lineTotal,
+      };
+    });
+
+    const saleDiscount = new Prisma.Decimal(data.saleDiscount);
+    if (saleDiscount.gt(subtotal)) {
+      throw new SaleValidationError("Sale discount exceeds subtotal");
+    }
+    const total = subtotal.sub(saleDiscount);
+
+    const cash = new Prisma.Decimal(data.cashTendered);
+    if (cash.lt(total)) {
+      throw new SaleValidationError("Cash tendered is less than total");
+    }
+
+    const saleRef = await generateSaleRef(tx);
+
+    const sale = await tx.sale.create({
+      data: {
+        saleRef,
+        cashierId: actorUserId,
+        subtotal,
+        tax: new Prisma.Decimal(0),
+        discount: saleDiscount,
+        total,
+        status: "COMPLETED",
+        idempotencyKey: data.idempotencyKey,
+        items: {
+          create: lines.map((l) => ({
+            productId: l.productId,
+            qty: l.qty,
+            unitPrice: l.unitPrice,
+            discountAmount: l.discountAmount,
+            lineTotal: l.lineTotal,
+          })),
+        },
+        payments: {
+          create: {
+            method: "CASH",
+            amount: total,
+            status: "COMPLETED",
+          },
+        },
+      },
+      include: { items: true, payments: true },
+    });
+
+    for (const line of lines) {
+      await tx.product.update({
+        where: { id: line.productId },
+        data: { currentStock: { decrement: line.qty } },
+      });
+      await tx.inventoryMovement.create({
+        data: {
+          productId: line.productId,
+          movementType: "SALE_OUT",
+          qtyDelta: -line.qty,
+          sourceTable: "sales",
+          sourceId: sale.id,
+          createdById: actorUserId,
+        },
+      });
+    }
+
+    await writeAuditLog(tx, {
+      actorUserId,
+      entityType: "sale",
+      entityId: sale.id,
+      action: "CREATE",
+      after: sale,
+    });
+
+    return { id: sale.id, saleRef: sale.saleRef };
+  });
+}
