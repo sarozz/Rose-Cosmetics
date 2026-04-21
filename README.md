@@ -112,6 +112,63 @@ Work is split into phases with review gates:
 | 5     | Hardening                    | Planned           |
 | 6     | Launch                       | Planned           |
 
+## Deployment (Vercel + Supabase)
+
+First-time production setup. Steps marked 🧑 require the owner's dashboard
+access — they cannot be automated from CI.
+
+### 1. Create the Supabase project 🧑
+1. Sign in at https://supabase.com/dashboard and click **New project**.
+2. Project name: `rose-cosmetics-prod` (or similar). Pick a region near the
+   store.
+3. Set a strong database password and store it in a password manager.
+4. Wait for the project to provision (~2 minutes).
+5. Grab the four values you will need:
+   - **Settings → API → Project URL** → `NEXT_PUBLIC_SUPABASE_URL`
+   - **Settings → API → Project API keys → anon/public** → `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - **Settings → API → Project API keys → service_role** → `SUPABASE_SERVICE_ROLE_KEY` (server-only)
+   - **Settings → Database → Connection string → URI** → used for both
+     `DATABASE_URL` (pooled, port `6543`, append `?pgbouncer=true&connection_limit=1`) and
+     `DIRECT_URL` (non-pooled, port `5432`) — see `.env.example`.
+
+### 2. Apply the schema to Supabase 🧑
+Run this once locally against the production database **before the first
+Vercel deploy**:
+
+```bash
+# Use the DIRECT_URL (port 5432) for migrations
+DATABASE_URL="<DIRECT_URL>" npx prisma migrate deploy
+```
+
+Repeat this after every merged PR that changes `prisma/schema.prisma`.
+(Automating it safely is a later-phase task — for now, one deliberate
+command beats a silent build-time migration.)
+
+### 3. Import the repo into Vercel 🧑
+1. Sign in at https://vercel.com and click **Add New → Project**.
+2. Import `sarozz/Rose-Cosmetics`.
+3. Framework preset: **Next.js** (auto-detected).
+4. Add environment variables under **Environment Variables** — paste every
+   key from `.env.example`, scoped to **Production** (and optionally
+   Preview):
+   - `DATABASE_URL`, `DIRECT_URL`
+   - `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - `SUPABASE_SERVICE_ROLE_KEY` (mark as secret; do **not** expose to build
+     logs)
+   - `TELEGRAM_BOT_TOKEN`, `TELEGRAM_OWNER_CHAT_ID` (can be left blank for
+     the first deploy — §24 wiring lands later)
+   - `CRON_SECRET` (generate with `openssl rand -hex 32`)
+5. Click **Deploy**. The build runs `prisma generate && next build` and the
+   landing page should render at the assigned `*.vercel.app` URL.
+
+### 4. Verify
+- Open the Vercel URL — the landing page lists the delivery phases.
+- Confirm no secrets leaked to the browser: DevTools → Network → view the
+  HTML source and search for `TELEGRAM_BOT_TOKEN` / `SUPABASE_SERVICE_ROLE_KEY`.
+  Neither should appear.
+- CI (`.github/workflows/ci.yml`) keeps lint/typecheck/test/build green on
+  every PR.
+
 ## Blueprint rules to preserve
 
 These rules are permanent, not phase-specific:
