@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { requireRole, SALES_ROLES } from "@/lib/auth";
 import { PageHeader } from "@/components/page-header";
+import { RoseLogo } from "@/components/rose-logo";
 import { getSale } from "@/lib/services/sale";
 import { PrintButton } from "./print-button";
 
@@ -39,9 +40,11 @@ export default async function SaleThanksPage({
         />
       </div>
 
-      <article className="print-clean overflow-hidden rounded-lg border border-gray-200 bg-white">
+      <article className="print-clean overflow-hidden rounded-lg border border-white/10 bg-card">
         <header className="hidden px-4 py-4 text-center print:block">
-          <p className="text-lg font-semibold">Rose Cosmetics</p>
+          <div className="flex justify-center">
+            <RoseLogo size="md" />
+          </div>
           <p className="mt-1 text-xs text-ink-muted">
             {soldAt} UTC · {sale.saleRef}
           </p>
@@ -50,8 +53,8 @@ export default async function SaleThanksPage({
           </p>
         </header>
 
-        <table className="min-w-full divide-y divide-gray-200 text-sm">
-          <thead className="bg-gray-50 text-left text-xs uppercase tracking-wider text-ink-muted">
+        <table className="min-w-full divide-y divide-white/10 text-sm">
+          <thead className="bg-surface text-left text-xs uppercase tracking-wider text-ink-muted">
             <tr>
               <th className="px-4 py-3">Item</th>
               <th className="px-4 py-3 text-right">Qty</th>
@@ -59,7 +62,7 @@ export default async function SaleThanksPage({
               <th className="px-4 py-3 text-right">Line</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-white/5">
             {sale.items.map((item) => (
               <tr key={item.id}>
                 <td className="px-4 py-3 text-ink">{item.product.name}</td>
@@ -75,7 +78,7 @@ export default async function SaleThanksPage({
               </tr>
             ))}
           </tbody>
-          <tfoot className="bg-gray-50 text-sm">
+          <tfoot className="bg-surface text-sm">
             <tr>
               <td colSpan={3} className="px-4 py-2 text-right text-ink-muted">
                 Subtotal

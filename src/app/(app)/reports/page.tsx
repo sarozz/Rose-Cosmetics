@@ -32,16 +32,16 @@ export default async function ReportsPage() {
             Sales · last 30 days
           </h2>
         </div>
-        <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
-          <table className="min-w-full divide-y divide-gray-200 text-sm">
-            <thead className="bg-gray-50 text-left text-xs uppercase tracking-wider text-ink-muted">
+        <div className="overflow-hidden rounded-lg border border-white/10 bg-card">
+          <table className="min-w-full divide-y divide-white/10 text-sm">
+            <thead className="bg-surface text-left text-xs uppercase tracking-wider text-ink-muted">
               <tr>
                 <th className="px-4 py-3">Date</th>
                 <th className="px-4 py-3 text-right">Transactions</th>
                 <th className="px-4 py-3 text-right">Revenue</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-white/5">
               {byDay.map((row) => (
                 <tr
                   key={row.date}
@@ -65,16 +65,16 @@ export default async function ReportsPage() {
         <h2 className="mb-3 text-sm font-semibold text-ink">
           Top products · last 30 days
         </h2>
-        <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
-          <table className="min-w-full divide-y divide-gray-200 text-sm">
-            <thead className="bg-gray-50 text-left text-xs uppercase tracking-wider text-ink-muted">
+        <div className="overflow-hidden rounded-lg border border-white/10 bg-card">
+          <table className="min-w-full divide-y divide-white/10 text-sm">
+            <thead className="bg-surface text-left text-xs uppercase tracking-wider text-ink-muted">
               <tr>
                 <th className="px-4 py-3">Product</th>
                 <th className="px-4 py-3 text-right">Units sold</th>
                 <th className="px-4 py-3 text-right">Revenue</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-white/5">
               {top.length === 0 ? (
                 <tr>
                   <td colSpan={3} className="px-4 py-10 text-center text-ink-muted">
@@ -109,16 +109,16 @@ export default async function ReportsPage() {
 
       <section>
         <h2 className="mb-3 text-sm font-semibold text-ink">Low stock</h2>
-        <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
-          <table className="min-w-full divide-y divide-gray-200 text-sm">
-            <thead className="bg-gray-50 text-left text-xs uppercase tracking-wider text-ink-muted">
+        <div className="overflow-hidden rounded-lg border border-white/10 bg-card">
+          <table className="min-w-full divide-y divide-white/10 text-sm">
+            <thead className="bg-surface text-left text-xs uppercase tracking-wider text-ink-muted">
               <tr>
                 <th className="px-4 py-3">Product</th>
                 <th className="px-4 py-3 text-right">On hand</th>
                 <th className="px-4 py-3 text-right">Reorder at</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-white/5">
               {low.length === 0 ? (
                 <tr>
                   <td colSpan={3} className="px-4 py-10 text-center text-ink-muted">
@@ -137,7 +137,7 @@ export default async function ReportsPage() {
                         ) : null}
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-right tabular-nums text-rose-700">
+                    <td className="px-4 py-3 text-right tabular-nums text-rose-300">
                       {p.currentStock}
                     </td>
                     <td className="px-4 py-3 text-right tabular-nums text-ink-soft">

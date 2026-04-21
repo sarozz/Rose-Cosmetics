@@ -97,7 +97,7 @@ export function SupplierForm({
           type="checkbox"
           name="isActive"
           defaultChecked={isActive}
-          className="h-4 w-4 rounded border-gray-300 text-rose-600 focus:ring-rose-500"
+          className="h-4 w-4 rounded border-white/10 text-rose-400 focus:ring-rose-400"
         />
         Active
       </label>

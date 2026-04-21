@@ -24,9 +24,9 @@ export default async function ReturnsPage() {
         }
       />
 
-      <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
-        <table className="min-w-full divide-y divide-gray-200 text-sm">
-          <thead className="bg-gray-50 text-left text-xs uppercase tracking-wider text-ink-muted">
+      <div className="overflow-hidden rounded-lg border border-white/10 bg-card">
+        <table className="min-w-full divide-y divide-white/10 text-sm">
+          <thead className="bg-surface text-left text-xs uppercase tracking-wider text-ink-muted">
             <tr>
               <th className="px-4 py-3">Reference</th>
               <th className="px-4 py-3">Original sale</th>
@@ -36,7 +36,7 @@ export default async function ReturnsPage() {
               <th className="px-4 py-3">Processed by</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-white/5">
             {returns.length === 0 ? (
               <tr>
                 <td

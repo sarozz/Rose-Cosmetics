@@ -27,7 +27,7 @@ export default async function DashboardPage() {
   return (
     <div className="mx-auto max-w-5xl">
       <header className="mb-8">
-        <p className="text-sm font-medium uppercase tracking-wider text-rose-600">
+        <p className="text-sm font-medium uppercase tracking-wider text-rose-400">
           Dashboard
         </p>
         <h1 className="mt-1 text-2xl font-semibold text-ink">
@@ -109,14 +109,14 @@ function StatCard({
 }) {
   const valueColor =
     tone === "warn"
-      ? "text-rose-700"
+      ? "text-rose-300"
       : tone === "ok"
-        ? "text-emerald-700"
+        ? "text-emerald-300"
         : "text-ink";
   return (
     <a
       href={href}
-      className="block rounded-lg border border-gray-200 bg-white p-5 shadow-sm transition hover:border-rose-200 hover:shadow"
+      className="block rounded-lg border border-white/10 bg-card p-5 shadow-sm transition hover:border-rose-400/30 hover:shadow"
     >
       <p className="text-xs font-medium uppercase tracking-wide text-ink-muted">
         {title}
@@ -131,7 +131,7 @@ function StatCard({
 
 function SimpleCard({ title, body }: { title: string; body: string }) {
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
+    <div className="rounded-lg border border-white/10 bg-card p-5 shadow-sm">
       <p className="text-xs font-medium uppercase tracking-wide text-ink-muted">
         {title}
       </p>

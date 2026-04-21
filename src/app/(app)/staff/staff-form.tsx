@@ -121,7 +121,7 @@ export function StaffForm({
             name="isActive"
             defaultChecked={isActive}
             disabled={selfEdit}
-            className="h-4 w-4 rounded border-gray-300 text-rose-600 focus:ring-rose-500 disabled:opacity-50"
+            className="h-4 w-4 rounded border-white/10 text-rose-400 focus:ring-rose-400 disabled:opacity-50"
           />
           Active{selfEdit ? " (you cannot deactivate yourself)" : ""}
         </label>

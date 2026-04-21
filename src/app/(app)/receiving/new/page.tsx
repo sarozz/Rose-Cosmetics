@@ -40,7 +40,7 @@ export default async function NewReceiptPage() {
     <div className="mx-auto max-w-4xl">
       <PageHeader eyebrow="Inventory · Receiving" title="Record receipt" />
       {suppliers.length === 0 || products.length === 0 ? (
-        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+        <div className="rounded-lg border border-amber-400/30 bg-amber-500/10 p-4 text-sm text-amber-200">
           {suppliers.length === 0 && products.length === 0
             ? "Add at least one supplier and one product before recording receipts."
             : suppliers.length === 0

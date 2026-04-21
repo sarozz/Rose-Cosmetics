@@ -144,14 +144,14 @@ export function PosClient() {
           </button>
         </form>
         {scanError ? (
-          <p role="alert" className="text-sm text-rose-700">
+          <p role="alert" className="text-sm text-rose-300">
             {scanError}
           </p>
         ) : null}
 
-        <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
-          <table className="min-w-full divide-y divide-gray-200 text-sm">
-            <thead className="bg-gray-50 text-left text-xs uppercase tracking-wider text-ink-muted">
+        <div className="overflow-hidden rounded-lg border border-white/10 bg-card">
+          <table className="min-w-full divide-y divide-white/10 text-sm">
+            <thead className="bg-surface text-left text-xs uppercase tracking-wider text-ink-muted">
               <tr>
                 <th className="px-4 py-3">Item</th>
                 <th className="px-4 py-3 text-right">Price</th>
@@ -161,7 +161,7 @@ export function PosClient() {
                 <th className="px-2 py-3" />
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-white/5">
               {lines.length === 0 ? (
                 <tr>
                   <td
@@ -226,7 +226,7 @@ export function PosClient() {
                         <button
                           type="button"
                           onClick={() => removeLine(line.productId)}
-                          className="text-xs text-ink-muted hover:text-rose-700"
+                          className="text-xs text-ink-muted hover:text-rose-300"
                           aria-label="Remove line"
                         >
                           Remove
@@ -264,7 +264,7 @@ export function PosClient() {
         ))}
         <input type="hidden" name="idempotencyKey" value={idempotencyKey} />
 
-        <div className="rounded-lg border border-gray-200 bg-white p-4">
+        <div className="rounded-lg border border-white/10 bg-card p-4">
           <h2 className="text-sm font-semibold text-ink">Checkout</h2>
           <dl className="mt-3 space-y-1 text-sm">
             <div className="flex justify-between">
@@ -284,7 +284,7 @@ export function PosClient() {
                 aria-label="Sale discount"
               />
             </div>
-            <div className="flex justify-between border-t border-gray-200 pt-2 text-base">
+            <div className="flex justify-between border-t border-white/10 pt-2 text-base">
               <dt className="font-semibold text-ink">Total</dt>
               <dd className="tabular-nums font-semibold text-ink">
                 {total.toFixed(2)}

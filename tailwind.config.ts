@@ -18,17 +18,19 @@ const config: Config = {
           800: "#6A1B32",
           900: "#491322",
         },
+        // Dark theme. Text is off-white (not pure) to avoid glare, and the
+        // three bg tones stack `page < surface < card` so content panels
+        // visually sit forward of the chrome.
         ink: {
-          DEFAULT: "#1F2937",
-          soft: "#374151",
-          muted: "#6B7280",
+          DEFAULT: "#ECE9F0",
+          soft: "#C6C2CF",
+          muted: "#8E8A9A",
         },
-        // Warm off-white palette so the app isn't a harsh slab of pure white.
-        // `page` is the main app background; `card` stays white so content sits
-        // forward of it with clear hierarchy.
-        page: "#FAF5F0",
-        surface: "#F4EDE5",
-        card: "#FFFFFF",
+        page: "#14121A",
+        surface: "#1E1B26",
+        card: "#241F2D",
+        // Subtle divider that reads on dark without being harsh.
+        line: "rgba(255, 255, 255, 0.08)",
       },
       fontFamily: {
         // System UI stack — ships zero font bytes, renders instantly, looks

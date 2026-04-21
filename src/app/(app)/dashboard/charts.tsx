@@ -21,7 +21,7 @@ export function SalesByDayChart({ data }: { data: SalesPoint[] }) {
   const barW = Math.max(4, chartW / points.length - barGap);
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
+    <div className="rounded-lg border border-white/10 bg-card p-5 shadow-sm">
       <div className="mb-3 flex items-baseline justify-between">
         <h2 className="text-sm font-medium text-ink">Sales · last 14 days</h2>
         <span className="text-xs text-ink-muted">
@@ -75,7 +75,7 @@ export function TopProductsChart({ data }: { data: TopProduct[] }) {
   const max = Math.max(1, ...data.map((d) => d.qty));
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
+    <div className="rounded-lg border border-white/10 bg-card p-5 shadow-sm">
       <h2 className="mb-3 text-sm font-medium text-ink">
         Top products · last 30 days
       </h2>
@@ -93,7 +93,7 @@ export function TopProductsChart({ data }: { data: TopProduct[] }) {
                   <p className="truncate text-sm text-ink" title={p.name}>
                     {p.name}
                   </p>
-                  <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-gray-100">
+                  <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-surface">
                     <div
                       className="h-full rounded-full bg-rose-500"
                       style={{ width: `${pct}%` }}

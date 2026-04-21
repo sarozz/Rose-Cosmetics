@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
+import { RoseLogo } from "@/components/rose-logo";
 import { LoginForm } from "./login-form";
 
 export const metadata = { title: "Sign in — Rose Cosmetics POS" };
@@ -9,13 +10,11 @@ export default async function LoginPage() {
   if (user) redirect("/dashboard");
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-rose-50 px-6">
-      <div className="w-full max-w-sm rounded-lg border border-gray-200 bg-white p-8 shadow-sm">
-        <header className="mb-6 text-center">
-          <p className="text-sm font-medium uppercase tracking-wider text-rose-600">
-            Rose Cosmetics
-          </p>
-          <h1 className="mt-1 text-2xl font-semibold text-ink">Staff sign-in</h1>
+    <main className="flex min-h-screen items-center justify-center bg-page px-6">
+      <div className="w-full max-w-sm rounded-lg border border-white/10 bg-card p-8 shadow-sm">
+        <header className="mb-6 flex flex-col items-center text-center">
+          <RoseLogo size="lg" />
+          <h1 className="mt-6 text-2xl font-semibold text-ink">Staff sign-in</h1>
           <p className="mt-1 text-sm text-ink-muted">
             Use the email your owner provisioned for you.
           </p>

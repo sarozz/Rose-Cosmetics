@@ -29,7 +29,7 @@ export default async function NewReturnPage({
           name="sale"
           defaultValue={saleRef ?? ""}
           placeholder="Sale reference (e.g. SR-20260421-0001)"
-          className="block w-full rounded-md border border-gray-300 px-3 py-2 font-mono text-sm focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-200"
+          className="block w-full rounded-md border border-white/10 px-3 py-2 font-mono text-sm focus:border-rose-400 focus:outline-none focus:ring-2 focus:ring-rose-400/30"
           autoComplete="off"
         />
         <button type="submit" className="btn-secondary whitespace-nowrap">
@@ -38,12 +38,12 @@ export default async function NewReturnPage({
       </form>
 
       {!saleRef ? null : !sale ? (
-        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+        <div className="rounded-lg border border-amber-400/30 bg-amber-500/10 p-4 text-sm text-amber-200">
           No sale found with reference{" "}
           <span className="font-mono">{saleRef}</span>.
         </div>
       ) : sale.lines.every((l) => l.refundableQty === 0) ? (
-        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+        <div className="rounded-lg border border-amber-400/30 bg-amber-500/10 p-4 text-sm text-amber-200">
           Every line on <span className="font-mono">{sale.saleRef}</span> has
           already been fully refunded.
         </div>
