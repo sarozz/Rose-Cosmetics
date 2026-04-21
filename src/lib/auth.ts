@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { redirect } from "next/navigation";
 import type { User as PrismaUser, UserRole } from "@prisma/client";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -22,28 +23,34 @@ export const AUDIT_VIEW_ROLES: UserRole[] = ["OWNER"];
  * links the Supabase `authId` to a pre-seeded staff row matched by email
  * (case-insensitive). Users must be pre-provisioned by an OWNER — we never
  * auto-create rows from a Supabase sign-in.
+ *
+ * Wrapped in React `cache()` so multiple server components in the same render
+ * (layout + page + nested components calling `requireUser` / `requireRole`)
+ * share one Supabase auth lookup and one Prisma user fetch instead of N.
  */
-export async function getCurrentUser(): Promise<AuthenticatedUser | null> {
-  const supabase = await createSupabaseServerClient();
-  const { data, error } = await supabase.auth.getUser();
-  if (error || !data.user) return null;
+export const getCurrentUser = cache(
+  async (): Promise<AuthenticatedUser | null> => {
+    const supabase = await createSupabaseServerClient();
+    const { data, error } = await supabase.auth.getUser();
+    if (error || !data.user) return null;
 
-  const authId = data.user.id;
-  const email = data.user.email?.toLowerCase();
+    const authId = data.user.id;
+    const email = data.user.email?.toLowerCase();
 
-  const byAuthId = await prisma.user.findUnique({ where: { authId } });
-  if (byAuthId) return byAuthId.isActive ? byAuthId : null;
+    const byAuthId = await prisma.user.findUnique({ where: { authId } });
+    if (byAuthId) return byAuthId.isActive ? byAuthId : null;
 
-  if (!email) return null;
+    if (!email) return null;
 
-  const byEmail = await prisma.user.findUnique({ where: { email } });
-  if (!byEmail || !byEmail.isActive) return null;
+    const byEmail = await prisma.user.findUnique({ where: { email } });
+    if (!byEmail || !byEmail.isActive) return null;
 
-  return prisma.user.update({
-    where: { id: byEmail.id },
-    data: { authId },
-  });
-}
+    return prisma.user.update({
+      where: { id: byEmail.id },
+      data: { authId },
+    });
+  },
+);
 
 /**
  * Enforce an authenticated session inside a Server Component or Server Action.

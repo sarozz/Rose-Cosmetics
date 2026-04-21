@@ -1,8 +1,10 @@
+import { revalidateTag } from "next/cache";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { writeAuditLog } from "./audit";
 import type { CheckoutData } from "@/lib/validation/sale";
 import { generateSaleRef } from "./sale-ref";
+import { REPORT_TAGS } from "./report";
 
 export async function listSales(params?: { limit?: number }) {
   return prisma.sale.findMany({
@@ -78,7 +80,7 @@ export async function completeSale(
   });
   if (existing) return existing;
 
-  return prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(async (tx) => {
     const productIds = data.items.map((i) => i.productId);
     const products = await tx.product.findMany({
       where: { id: { in: productIds } },
@@ -187,4 +189,11 @@ export async function completeSale(
 
     return { id: sale.id, saleRef: sale.saleRef };
   });
+
+  // Sales change today's totals, top products, and stock levels. Invalidate
+  // both report caches so the dashboard/reports reflect the new sale on the
+  // next request rather than waiting out the 30s TTL.
+  revalidateTag(REPORT_TAGS.sales);
+  revalidateTag(REPORT_TAGS.stock);
+  return result;
 }
