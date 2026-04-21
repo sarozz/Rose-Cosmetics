@@ -1,0 +1,402 @@
+// Rose Cosmetics POS & Inventory — Prisma schema
+// Blueprint reference: sections 12 (data model) and 24 (Telegram notifications).
+//
+// Design rules enforced here (blueprint §11, §12.3):
+//   * Ledger is truth: every stock change produces an InventoryMovement row.
+//   * products.currentStock is a convenience snapshot updated only via
+//     services inside the same transaction as the ledger write.
+//   * Negative stock is disabled by default at the service layer.
+//   * sale_items.unit_price is captured at the time of sale to preserve
+//     price history.
+//   * Every mutation records created_by where the blueprint demands it.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ---------- Enums ----------
+
+enum UserRole {
+  OWNER
+  MANAGER
+  CASHIER
+  INVENTORY
+}
+
+enum PurchaseStatus {
+  DRAFT
+  COMPLETED
+  VOIDED
+}
+
+enum SaleStatus {
+  PENDING
+  COMPLETED
+  VOIDED
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
+  OTHER
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+enum ReturnStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  COMPLETED
+}
+
+enum MovementType {
+  PURCHASE_IN
+  SALE_OUT
+  RETURN_IN
+  RETURN_OUT
+  ADJUSTMENT_PLUS
+  ADJUSTMENT_MINUS
+  DAMAGE_OUT
+}
+
+enum AdjustmentReason {
+  DAMAGED
+  EXPIRED
+  MISSING
+  FOUND
+  RECOUNT
+  OTHER
+}
+
+enum NotificationJobStatus {
+  PENDING
+  SENT
+  PENDING_RETRY
+  FAILED
+}
+
+enum NotificationEventType {
+  SALE_COMPLETED
+  STOCK_RECEIVED
+  LOW_STOCK_TRIGGERED
+  REFUND_COMPLETED
+  LARGE_DISCOUNT_APPLIED
+  END_OF_DAY_SUMMARY
+}
+
+// ---------- Users ----------
+
+model User {
+  id          String   @id @default(cuid())
+  // Matches the Supabase Auth user id; null until invited staff completes sign-in.
+  authId      String?  @unique
+  email       String   @unique
+  displayName String
+  role        UserRole @default(CASHIER)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  purchasesCreated     Purchase[]           @relation("PurchaseCreatedBy")
+  salesProcessed       Sale[]               @relation("SaleCashier")
+  returnsCreated       Return[]             @relation("ReturnCreatedBy")
+  movementsCreated     InventoryMovement[]  @relation("MovementCreatedBy")
+  auditLogs            AuditLog[]
+
+  @@index([role, isActive])
+  @@map("users")
+}
+
+// ---------- Catalog ----------
+
+model Supplier {
+  id           String   @id @default(cuid())
+  name         String
+  phone        String?
+  email        String?
+  notes        String?
+  defaultTerms String?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  purchases Purchase[]
+
+  @@index([name])
+  @@map("suppliers")
+}
+
+model Category {
+  id        String   @id @default(cuid())
+  name      String
+  parentId  String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  parent   Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children Category[] @relation("CategoryHierarchy")
+  products Product[]
+
+  @@unique([parentId, name])
+  @@map("categories")
+}
+
+model Product {
+  id            String  @id @default(cuid())
+  barcode       String? @unique
+  sku           String? @unique
+  name          String
+  brand         String?
+  categoryId    String?
+  costPrice     Decimal @db.Decimal(12, 2)
+  sellPrice     Decimal @db.Decimal(12, 2)
+  // Convenience snapshot kept in sync with the ledger inside transactions.
+  currentStock  Int     @default(0)
+  reorderLevel  Int     @default(0)
+  isActive      Boolean @default(true)
+  imagePath     String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  category    Category?           @relation(fields: [categoryId], references: [id])
+  purchaseItems PurchaseItem[]
+  saleItems   SaleItem[]
+  movements   InventoryMovement[]
+
+  @@index([name])
+  @@index([isActive])
+  @@map("products")
+}
+
+// ---------- Purchases ----------
+
+model Purchase {
+  id           String         @id @default(cuid())
+  supplierId   String
+  purchaseRef  String         @unique
+  status       PurchaseStatus @default(DRAFT)
+  purchaseDate DateTime       @default(now())
+  totalCost    Decimal        @default(0) @db.Decimal(12, 2)
+  notes        String?
+  createdById  String
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  supplier  Supplier       @relation(fields: [supplierId], references: [id])
+  createdBy User           @relation("PurchaseCreatedBy", fields: [createdById], references: [id])
+  items     PurchaseItem[]
+
+  @@index([supplierId, purchaseDate])
+  @@index([status])
+  @@map("purchases")
+}
+
+model PurchaseItem {
+  id         String  @id @default(cuid())
+  purchaseId String
+  productId  String
+  qty        Int
+  costPrice  Decimal @db.Decimal(12, 2)
+  sellPrice  Decimal @db.Decimal(12, 2)
+
+  purchase Purchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+  product  Product  @relation(fields: [productId], references: [id])
+
+  @@index([purchaseId])
+  @@index([productId])
+  @@map("purchase_items")
+}
+
+// ---------- Sales ----------
+
+model Sale {
+  id        String     @id @default(cuid())
+  saleRef   String     @unique
+  soldAt    DateTime   @default(now())
+  cashierId String
+  // Business totals are stored explicitly so receipts cannot be rewritten
+  // by later price changes.
+  subtotal  Decimal    @default(0) @db.Decimal(12, 2)
+  tax       Decimal    @default(0) @db.Decimal(12, 2)
+  discount  Decimal    @default(0) @db.Decimal(12, 2)
+  total     Decimal    @default(0) @db.Decimal(12, 2)
+  status    SaleStatus @default(PENDING)
+  // Idempotency guard for double-submitted checkouts (blueprint §15.1).
+  idempotencyKey String? @unique
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  cashier  User       @relation("SaleCashier", fields: [cashierId], references: [id])
+  items    SaleItem[]
+  payments Payment[]
+  returns  Return[]
+
+  @@index([soldAt, cashierId])
+  @@index([status])
+  @@map("sales")
+}
+
+model SaleItem {
+  id             String  @id @default(cuid())
+  saleId         String
+  productId      String
+  qty            Int
+  unitPrice      Decimal @db.Decimal(12, 2)
+  discountAmount Decimal @default(0) @db.Decimal(12, 2)
+  lineTotal      Decimal @db.Decimal(12, 2)
+
+  sale        Sale         @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  product     Product      @relation(fields: [productId], references: [id])
+  returnItems ReturnItem[]
+
+  @@index([saleId])
+  @@index([productId])
+  @@map("sale_items")
+}
+
+model Payment {
+  id          String        @id @default(cuid())
+  saleId      String
+  method      PaymentMethod
+  amount      Decimal       @db.Decimal(12, 2)
+  status      PaymentStatus @default(COMPLETED)
+  externalRef String?
+  createdAt   DateTime      @default(now())
+
+  sale Sale @relation(fields: [saleId], references: [id], onDelete: Cascade)
+
+  @@index([saleId])
+  @@map("payments")
+}
+
+// ---------- Returns ----------
+
+model Return {
+  id             String       @id @default(cuid())
+  originalSaleId String
+  returnRef      String       @unique
+  refundTotal    Decimal      @default(0) @db.Decimal(12, 2)
+  status         ReturnStatus @default(PENDING)
+  reasonNote     String?
+  createdById    String
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  originalSale Sale         @relation(fields: [originalSaleId], references: [id])
+  createdBy    User         @relation("ReturnCreatedBy", fields: [createdById], references: [id])
+  items        ReturnItem[]
+
+  @@index([originalSaleId])
+  @@index([status])
+  @@map("returns")
+}
+
+model ReturnItem {
+  id           String  @id @default(cuid())
+  returnId     String
+  saleItemId   String
+  qty          Int
+  refundAmount Decimal @db.Decimal(12, 2)
+  restockFlag  Boolean @default(true)
+
+  return   Return   @relation(fields: [returnId], references: [id], onDelete: Cascade)
+  saleItem SaleItem @relation(fields: [saleItemId], references: [id])
+
+  @@index([returnId])
+  @@index([saleItemId])
+  @@map("return_items")
+}
+
+// ---------- Inventory ledger ----------
+
+model InventoryMovement {
+  id           String            @id @default(cuid())
+  productId    String
+  movementType MovementType
+  qtyDelta     Int
+  // Polymorphic source: ("sales", saleId), ("purchases", purchaseId), etc.
+  sourceTable  String?
+  sourceId     String?
+  reasonCode   AdjustmentReason?
+  note         String?
+  createdById  String
+  createdAt    DateTime          @default(now())
+
+  product   Product @relation(fields: [productId], references: [id])
+  createdBy User    @relation("MovementCreatedBy", fields: [createdById], references: [id])
+
+  @@index([productId, createdAt])
+  @@index([movementType, createdAt])
+  @@index([sourceTable, sourceId])
+  @@map("inventory_movements")
+}
+
+// ---------- Audit trail ----------
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  actorUserId String?
+  entityType  String
+  entityId    String
+  action      String
+  beforeJson  Json?
+  afterJson   Json?
+  createdAt   DateTime @default(now())
+
+  actor User? @relation(fields: [actorUserId], references: [id])
+
+  @@index([actorUserId, createdAt])
+  @@index([entityType, entityId])
+  @@map("audit_logs")
+}
+
+// ---------- Telegram notifications (blueprint §24) ----------
+
+model TelegramRecipient {
+  id                   String   @id @default(cuid())
+  name                 String
+  chatId               String   @unique
+  enabled              Boolean  @default(true)
+  notifySales          Boolean  @default(true)
+  notifyStockReceipts  Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  jobs NotificationJob[]
+
+  @@map("telegram_recipients")
+}
+
+model NotificationJob {
+  id            String                 @id @default(cuid())
+  eventType     NotificationEventType
+  aggregateType String
+  aggregateId   String
+  payloadJson   Json
+  recipientId   String
+  status        NotificationJobStatus  @default(PENDING)
+  attempts      Int                    @default(0)
+  lastError     String?
+  sentAt        DateTime?
+  createdAt     DateTime               @default(now())
+  updatedAt     DateTime               @updatedAt
+
+  recipient TelegramRecipient @relation(fields: [recipientId], references: [id])
+
+  @@index([status, createdAt])
+  @@index([aggregateType, aggregateId])
+  @@map("notification_jobs")
+}
