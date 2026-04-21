@@ -315,6 +315,236 @@ export const paymentMethodSplit = unstable_cache(
 );
 
 /**
+ * Gross profit per UTC day for the last `days` days.
+ *
+ * COGS is computed against the current `product.costPrice` rather than a
+ * per-sale cost snapshot — we don't store a cost on `SaleItem`, and for a
+ * single-location shop the drift between receipt and sale is small. If
+ * this starts mattering, snapshot `costPrice` onto `SaleItem` at sale
+ * time and switch this aggregate to read it.
+ */
+export const profitByDay = unstable_cache(
+  async (days = 30) => {
+    const start = startOfUtcDay(new Date());
+    start.setUTCDate(start.getUTCDate() - (days - 1));
+
+    const items = await prisma.saleItem.findMany({
+      where: { sale: { status: "COMPLETED", soldAt: { gte: start } } },
+      select: {
+        qty: true,
+        lineTotal: true,
+        sale: { select: { soldAt: true } },
+        product: { select: { costPrice: true } },
+      },
+    });
+
+    const buckets = new Map<
+      string,
+      { revenue: Prisma.Decimal; cost: Prisma.Decimal }
+    >();
+    for (const it of items) {
+      const key = formatYmd(startOfUtcDay(it.sale.soldAt));
+      const cur =
+        buckets.get(key) ?? {
+          revenue: new Prisma.Decimal(0),
+          cost: new Prisma.Decimal(0),
+        };
+      cur.revenue = cur.revenue.add(it.lineTotal);
+      cur.cost = cur.cost.add(it.product.costPrice.mul(it.qty));
+      buckets.set(key, cur);
+    }
+
+    const out: Array<{
+      date: string;
+      revenue: string;
+      cost: string;
+      profit: string;
+    }> = [];
+    for (let i = 0; i < days; i++) {
+      const day = new Date(start);
+      day.setUTCDate(day.getUTCDate() + i);
+      const key = formatYmd(day);
+      const b = buckets.get(key) ?? {
+        revenue: new Prisma.Decimal(0),
+        cost: new Prisma.Decimal(0),
+      };
+      out.push({
+        date: key,
+        revenue: b.revenue.toString(),
+        cost: b.cost.toString(),
+        profit: b.revenue.sub(b.cost).toString(),
+      });
+    }
+    return out.reverse();
+  },
+  ["reports:profitByDay"],
+  {
+    revalidate: AGGREGATE_TTL_SECONDS,
+    tags: [REPORT_TAGS.sales, REPORT_TAGS.stock],
+  },
+);
+
+/**
+ * Top products by gross profit within the window. COGS uses the product's
+ * current `costPrice` — see the caveat on `profitByDay`.
+ */
+export const topProfitProducts = unstable_cache(
+  async (days = 30, limit = 10) => {
+    const start = startOfUtcDay(new Date());
+    start.setUTCDate(start.getUTCDate() - (days - 1));
+
+    const items = await prisma.saleItem.findMany({
+      where: { sale: { status: "COMPLETED", soldAt: { gte: start } } },
+      select: {
+        productId: true,
+        qty: true,
+        lineTotal: true,
+        product: {
+          select: {
+            name: true,
+            brand: true,
+            barcode: true,
+            costPrice: true,
+          },
+        },
+      },
+    });
+
+    type Agg = {
+      name: string;
+      brand: string | null;
+      barcode: string | null;
+      qty: number;
+      revenue: Prisma.Decimal;
+      cost: Prisma.Decimal;
+    };
+    const byProduct = new Map<string, Agg>();
+    for (const it of items) {
+      const cur =
+        byProduct.get(it.productId) ??
+        ({
+          name: it.product.name,
+          brand: it.product.brand,
+          barcode: it.product.barcode,
+          qty: 0,
+          revenue: new Prisma.Decimal(0),
+          cost: new Prisma.Decimal(0),
+        } as Agg);
+      cur.qty += it.qty;
+      cur.revenue = cur.revenue.add(it.lineTotal);
+      cur.cost = cur.cost.add(it.product.costPrice.mul(it.qty));
+      byProduct.set(it.productId, cur);
+    }
+
+    return [...byProduct.entries()]
+      .map(([productId, v]) => {
+        const profit = v.revenue.sub(v.cost);
+        const marginPct = v.revenue.isZero()
+          ? null
+          : Number(profit.div(v.revenue).mul(100).toFixed(1));
+        return {
+          productId,
+          name: v.name,
+          brand: v.brand,
+          barcode: v.barcode,
+          qty: v.qty,
+          revenue: v.revenue.toString(),
+          cost: v.cost.toString(),
+          profit: profit.toString(),
+          marginPct,
+        };
+      })
+      .sort((a, b) => Number(b.profit) - Number(a.profit))
+      .slice(0, limit);
+  },
+  ["reports:topProfitProducts"],
+  {
+    revalidate: AGGREGATE_TTL_SECONDS,
+    tags: [REPORT_TAGS.sales, REPORT_TAGS.stock],
+  },
+);
+
+/**
+ * On-hand inventory value at cost and at retail, with a per-category
+ * breakdown. `potentialProfit` is the margin the shop would realise if
+ * every unit on hand sold at the current `sellPrice` — useful for
+ * comparing stock tied up against expected return.
+ */
+export const inventoryValue = unstable_cache(
+  async () => {
+    const products = await prisma.product.findMany({
+      where: { isActive: true, currentStock: { gt: 0 } },
+      select: {
+        id: true,
+        currentStock: true,
+        costPrice: true,
+        sellPrice: true,
+        category: { select: { id: true, name: true } },
+      },
+    });
+
+    let totalCost = new Prisma.Decimal(0);
+    let totalRetail = new Prisma.Decimal(0);
+    let totalUnits = 0;
+    type CatAgg = {
+      id: string;
+      name: string;
+      cost: Prisma.Decimal;
+      retail: Prisma.Decimal;
+      units: number;
+      skuCount: number;
+    };
+    const byCategory = new Map<string, CatAgg>();
+
+    for (const p of products) {
+      const costValue = p.costPrice.mul(p.currentStock);
+      const retailValue = p.sellPrice.mul(p.currentStock);
+      totalCost = totalCost.add(costValue);
+      totalRetail = totalRetail.add(retailValue);
+      totalUnits += p.currentStock;
+
+      const key = p.category?.id ?? "__uncategorised__";
+      const name = p.category?.name ?? "Uncategorised";
+      const cur =
+        byCategory.get(key) ??
+        ({
+          id: key,
+          name,
+          cost: new Prisma.Decimal(0),
+          retail: new Prisma.Decimal(0),
+          units: 0,
+          skuCount: 0,
+        } as CatAgg);
+      cur.cost = cur.cost.add(costValue);
+      cur.retail = cur.retail.add(retailValue);
+      cur.units += p.currentStock;
+      cur.skuCount += 1;
+      byCategory.set(key, cur);
+    }
+
+    return {
+      totalCost: totalCost.toString(),
+      totalRetail: totalRetail.toString(),
+      potentialProfit: totalRetail.sub(totalCost).toString(),
+      totalUnits,
+      totalSkus: products.length,
+      byCategory: [...byCategory.values()]
+        .map((c) => ({
+          id: c.id,
+          name: c.name,
+          cost: c.cost.toString(),
+          retail: c.retail.toString(),
+          units: c.units,
+          skuCount: c.skuCount,
+        }))
+        .sort((a, b) => Number(b.cost) - Number(a.cost)),
+    };
+  },
+  ["reports:inventoryValue"],
+  { revalidate: AGGREGATE_TTL_SECONDS, tags: [REPORT_TAGS.stock] },
+);
+
+/**
  * Recent ledger movements, optionally filtered by product. Used on the
  * ledger audit page.
  */
