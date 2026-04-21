@@ -24,7 +24,7 @@ export const productSchema = z
       z
         .string()
         .refine(isValidBarcodeFormat, {
-          message: "Enter a valid 12 or 13 digit UPC / EAN barcode",
+          message: "Enter 8 to 14 digits (no letters or spaces)",
         })
         .nullable(),
     ),

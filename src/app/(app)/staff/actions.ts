@@ -23,16 +23,21 @@ export async function createStaffAction(
     email: formData.get("email") ?? "",
     displayName: formData.get("displayName") ?? "",
     role: formData.get("role") ?? "",
+    password: formData.get("password") ?? "",
   });
   if (!parsed.success) {
+    const flat = parsed.error.flatten();
     return {
-      fieldErrors: toFieldErrors(parsed.error.flatten().fieldErrors),
-      formError: parsed.error.flatten().formErrors[0] ?? null,
+      fieldErrors: toFieldErrors(flat.fieldErrors),
+      formError: flat.formErrors[0] ?? "Please fix the highlighted fields.",
     };
   }
   try {
     await createStaff(actor.id, parsed.data);
   } catch (err) {
+    if (err instanceof StaffValidationError) {
+      return { fieldErrors: {}, formError: err.message };
+    }
     return { fieldErrors: {}, formError: friendlyError(err) };
   }
   revalidatePath("/staff");
@@ -51,9 +56,10 @@ export async function updateStaffAction(
     isActive: formData.get("isActive") ?? "",
   });
   if (!parsed.success) {
+    const flat = parsed.error.flatten();
     return {
-      fieldErrors: toFieldErrors(parsed.error.flatten().fieldErrors),
-      formError: parsed.error.flatten().formErrors[0] ?? null,
+      fieldErrors: toFieldErrors(flat.fieldErrors),
+      formError: flat.formErrors[0] ?? "Please fix the highlighted fields.",
     };
   }
   try {

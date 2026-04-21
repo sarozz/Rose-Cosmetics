@@ -39,6 +39,7 @@ export function ProductForm({
 
   return (
     <form action={formAction} className="max-w-2xl space-y-5">
+      <FormError message={state.formError} />
       <Field
         label="Name"
         htmlFor="name"
@@ -89,7 +90,7 @@ export function ProductForm({
         <Field
           label="Barcode"
           htmlFor="barcode"
-          hint="12 or 13 digit UPC / EAN"
+          hint="8 to 14 digits (scanner or manual)"
           error={state.fieldErrors.barcode}
         >
           <input
@@ -173,8 +174,6 @@ export function ProductForm({
         />
         Active
       </label>
-
-      <FormError message={state.formError} />
 
       <div className="flex gap-3 pt-2">
         <SubmitButton pendingLabel="Saving…">{submitLabel}</SubmitButton>

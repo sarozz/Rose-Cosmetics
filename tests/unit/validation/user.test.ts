@@ -10,10 +10,12 @@ describe("userCreateSchema", () => {
       email: "New.Cashier@Example.COM",
       displayName: "Anju",
       role: "CASHIER",
+      password: "changeme123",
     });
     expect(parsed.email).toBe("new.cashier@example.com");
     expect(parsed.displayName).toBe("Anju");
     expect(parsed.role).toBe("CASHIER");
+    expect(parsed.password).toBe("changeme123");
   });
 
   it("rejects a missing email", () => {
@@ -21,6 +23,7 @@ describe("userCreateSchema", () => {
       email: "",
       displayName: "Anju",
       role: "CASHIER",
+      password: "changeme123",
     });
     expect(result.success).toBe(false);
   });
@@ -30,6 +33,7 @@ describe("userCreateSchema", () => {
       email: "not-an-email",
       displayName: "Anju",
       role: "CASHIER",
+      password: "changeme123",
     });
     expect(result.success).toBe(false);
   });
@@ -39,6 +43,7 @@ describe("userCreateSchema", () => {
       email: "cashier@example.com",
       displayName: "   ",
       role: "CASHIER",
+      password: "changeme123",
     });
     expect(result.success).toBe(false);
   });
@@ -48,6 +53,17 @@ describe("userCreateSchema", () => {
       email: "cashier@example.com",
       displayName: "Anju",
       role: "SUPERADMIN",
+      password: "changeme123",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects a too-short password", () => {
+    const result = userCreateSchema.safeParse({
+      email: "cashier@example.com",
+      displayName: "Anju",
+      role: "CASHIER",
+      password: "short",
     });
     expect(result.success).toBe(false);
   });

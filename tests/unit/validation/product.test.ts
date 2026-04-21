@@ -32,10 +32,18 @@ describe("productSchema", () => {
     expect(result.success).toBe(false);
   });
 
-  it("rejects an invalid barcode", () => {
+  it("rejects an invalid barcode (non-digit)", () => {
     const result = productSchema.safeParse({
       ...base,
-      barcode: "1234567890",
+      barcode: "12345ABC9012",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects a too-short barcode", () => {
+    const result = productSchema.safeParse({
+      ...base,
+      barcode: "1234567",
     });
     expect(result.success).toBe(false);
   });

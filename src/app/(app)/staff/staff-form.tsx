@@ -46,24 +46,44 @@ export function StaffForm({
 
   return (
     <form action={formAction} className="max-w-xl space-y-5">
+      <FormError message={state.formError} />
       {mode === "create" ? (
-        <Field
-          label="Email"
-          htmlFor="email"
-          required
-          hint="Used on first sign-in to link to the Supabase auth account."
-          error={state.fieldErrors.email}
-        >
-          <input
-            id="email"
-            name="email"
-            type="email"
-            defaultValue={defaults?.email ?? ""}
+        <>
+          <Field
+            label="Email"
+            htmlFor="email"
             required
-            autoFocus
-            className={inputClass()}
-          />
-        </Field>
+            hint="Used to sign in. Share it with the staff member along with the temporary password."
+            error={state.fieldErrors.email}
+          >
+            <input
+              id="email"
+              name="email"
+              type="email"
+              defaultValue={defaults?.email ?? ""}
+              required
+              autoFocus
+              className={inputClass()}
+            />
+          </Field>
+          <Field
+            label="Temporary password"
+            htmlFor="password"
+            required
+            hint="Minimum 8 characters. Share it with the staff member privately — they should change it later."
+            error={state.fieldErrors.password}
+          >
+            <input
+              id="password"
+              name="password"
+              type="text"
+              minLength={8}
+              required
+              autoComplete="new-password"
+              className={inputClass()}
+            />
+          </Field>
+        </>
       ) : (
         <div>
           <p className="text-sm font-medium text-ink">Email</p>
@@ -126,8 +146,6 @@ export function StaffForm({
           Active{selfEdit ? " (you cannot deactivate yourself)" : ""}
         </label>
       ) : null}
-
-      <FormError message={state.formError} />
 
       <div className="flex gap-3 pt-2">
         <SubmitButton pendingLabel="Saving…">{submitLabel}</SubmitButton>
