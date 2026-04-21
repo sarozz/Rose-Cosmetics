@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { writeAuditLog } from "./audit";
 import type {
   UserCreateData,
@@ -35,23 +36,57 @@ export async function createStaff(
   actorUserId: string,
   data: UserCreateData,
 ) {
-  return prisma.$transaction(async (tx) => {
-    const user = await tx.user.create({
-      data: {
-        email: data.email,
-        displayName: data.displayName,
-        role: data.role,
-      },
-    });
-    await writeAuditLog(tx, {
-      actorUserId,
-      entityType: "user",
-      entityId: user.id,
-      action: "CREATE",
-      after: user,
-    });
-    return user;
+  // Pre-check: a duplicate email in our own table should fail fast before we
+  // ever touch Supabase Auth, so we don't leave a zombie auth user behind on
+  // a unique-constraint rollback.
+  const existing = await prisma.user.findUnique({
+    where: { email: data.email },
   });
+  if (existing) {
+    throw new StaffValidationError(
+      "A staff member with that email already exists.",
+    );
+  }
+
+  const admin = createSupabaseAdminClient();
+  const { data: created, error } = await admin.auth.admin.createUser({
+    email: data.email,
+    password: data.password,
+    email_confirm: true,
+    user_metadata: { displayName: data.displayName },
+  });
+  if (error || !created.user) {
+    throw new StaffValidationError(
+      error?.message ?? "Could not create sign-in account.",
+    );
+  }
+  const authId = created.user.id;
+
+  try {
+    return await prisma.$transaction(async (tx) => {
+      const user = await tx.user.create({
+        data: {
+          email: data.email,
+          displayName: data.displayName,
+          role: data.role,
+          authId,
+        },
+      });
+      await writeAuditLog(tx, {
+        actorUserId,
+        entityType: "user",
+        entityId: user.id,
+        action: "CREATE",
+        after: user,
+      });
+      return user;
+    });
+  } catch (err) {
+    // Roll back the Supabase auth user so a retry with the same email works.
+    // Best-effort: if this cleanup fails we surface the original error.
+    await admin.auth.admin.deleteUser(authId).catch(() => undefined);
+    throw err;
+  }
 }
 
 /**

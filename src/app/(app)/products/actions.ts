@@ -28,9 +28,10 @@ export async function createProductAction(
   const actor = await requireRole(CATALOG_WRITE_ROLES);
   const parsed = parse(formData);
   if (!parsed.success) {
+    const fieldErrors = toFieldErrors(parsed.error.flatten().fieldErrors);
     return {
-      fieldErrors: toFieldErrors(parsed.error.flatten().fieldErrors),
-      formError: null,
+      fieldErrors,
+      formError: "Please fix the highlighted fields.",
     };
   }
   try {
@@ -50,9 +51,10 @@ export async function updateProductAction(
   const actor = await requireRole(CATALOG_WRITE_ROLES);
   const parsed = parse(formData);
   if (!parsed.success) {
+    const fieldErrors = toFieldErrors(parsed.error.flatten().fieldErrors);
     return {
-      fieldErrors: toFieldErrors(parsed.error.flatten().fieldErrors),
-      formError: null,
+      fieldErrors,
+      formError: "Please fix the highlighted fields.",
     };
   }
   try {

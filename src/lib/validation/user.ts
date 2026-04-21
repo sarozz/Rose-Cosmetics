@@ -21,6 +21,10 @@ export const userCreateSchema = z.object({
   email,
   displayName: z.string().trim().min(1, "Name is required").max(120),
   role: roleEnum,
+  password: z
+    .string()
+    .min(8, "Password must be at least 8 characters")
+    .max(72, "Password is too long"),
 });
 
 export const userUpdateSchema = z.object({
