@@ -2,9 +2,18 @@ import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { getPublicEnv } from "@/lib/env";
 
+const PUBLIC_PATHS = ["/login"];
+
+function isPublicPath(pathname: string): boolean {
+  return PUBLIC_PATHS.some(
+    (p) => pathname === p || pathname.startsWith(`${p}/`),
+  );
+}
+
 /**
- * Refreshes the Supabase session for every request routed through the Next.js
- * middleware. Without this, server components would see stale sessions.
+ * Refreshes the Supabase session cookie on every request and gates private
+ * routes: unauthenticated visitors to non-public paths are redirected to
+ * `/login`. Authenticated visitors on `/login` are bounced to `/dashboard`.
  */
 export async function updateSupabaseSession(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -33,8 +42,26 @@ export async function updateSupabaseSession(request: NextRequest) {
     },
   );
 
-  // Touch auth.getUser() so Supabase can rotate the session cookie when needed.
-  await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const { pathname } = request.nextUrl;
+  const isPublic = isPublicPath(pathname);
+
+  if (!user && !isPublic) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/login";
+    url.search = "";
+    return NextResponse.redirect(url);
+  }
+
+  if (user && pathname === "/login") {
+    const url = request.nextUrl.clone();
+    url.pathname = "/dashboard";
+    url.search = "";
+    return NextResponse.redirect(url);
+  }
 
   return response;
 }

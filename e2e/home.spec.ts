@@ -1,9 +1,11 @@
 import { expect, test } from "@playwright/test";
 
-test("landing page lists delivery phases", async ({ page }) => {
+test("unauthenticated visitors are redirected to the login page", async ({
+  page,
+}) => {
   await page.goto("/");
+  await expect(page).toHaveURL(/\/login$/);
   await expect(
-    page.getByRole("heading", { name: "POS & Inventory System" }),
+    page.getByRole("heading", { name: "Staff sign-in" }),
   ).toBeVisible();
-  await expect(page.getByText("Phase 1 — Foundations")).toBeVisible();
 });
