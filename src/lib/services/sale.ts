@@ -70,6 +70,24 @@ export class SaleValidationError extends Error {
 }
 
 /**
+ * User-facing label for a `PaymentMethod` enum. `OTHER` is reserved for
+ * digital wallet / QR / app payments in this codebase — surfaced as
+ * "Digital" on receipts, reports, and notifications.
+ */
+export function paymentMethodLabel(
+  method: "CASH" | "CARD" | "OTHER",
+): string {
+  switch (method) {
+    case "CASH":
+      return "Cash";
+    case "CARD":
+      return "Card";
+    case "OTHER":
+      return "Digital";
+  }
+}
+
+/**
  * Complete a cash sale. Blueprint §13 + §15: every cart line writes a
  * `SaleItem`, decrements `product.currentStock`, and appends a `SALE_OUT`
  * `InventoryMovement` row inside the same `$transaction`. A `Payment` row
@@ -138,10 +156,18 @@ export async function completeSale(
     }
     const total = subtotal.sub(saleDiscount);
 
-    const cash = new Prisma.Decimal(data.cashTendered);
-    if (cash.lt(total)) {
-      throw new SaleValidationError("Cash tendered is less than total");
+    // Cash-tendered is only meaningful when the cashier actually counted
+    // bills. Digital payments (wallets/QR) land as a record-keeping row.
+    if (data.paymentMethod === "CASH") {
+      const cash = new Prisma.Decimal(data.cashTendered);
+      if (cash.lt(total)) {
+        throw new SaleValidationError("Cash tendered is less than total");
+      }
     }
+
+    // DIGITAL maps onto the existing `OTHER` DB enum so we don't need a
+    // schema migration. The UI surfaces it as "Digital" everywhere.
+    const paymentMethod = data.paymentMethod === "DIGITAL" ? "OTHER" : "CASH";
 
     const saleRef = await generateSaleRef(tx);
 
@@ -166,7 +192,7 @@ export async function completeSale(
         },
         payments: {
           create: {
-            method: "CASH",
+            method: paymentMethod,
             amount: total,
             status: "COMPLETED",
           },
@@ -242,7 +268,7 @@ export async function completeSale(
         total: total.toFixed(2),
         itemCount,
         cashierName: sale.cashier.displayName,
-        paymentLabels: sale.payments.map((p) => p.method),
+        paymentLabels: sale.payments.map((p) => paymentMethodLabel(p.method)),
         items: notificationItems,
       },
     };

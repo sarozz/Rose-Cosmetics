@@ -78,9 +78,24 @@ describe("renderDailySummary", () => {
     expect(msg).toContain("Rs 12450.00");
     expect(msg).toContain("Cash Rs 8200.00");
     expect(msg).toContain("Card Rs 4250.00");
-    expect(msg).not.toContain("Other Rs");
+    expect(msg).not.toContain("Digital Rs");
     expect(msg).toContain("Ruby Lipstick");
     expect(msg).toContain("Low stock: <b>3</b> items");
+  });
+
+  it("labels the OTHER bucket as Digital when non-zero", () => {
+    const msg = renderDailySummary({
+      dateLabel: "2026-04-22",
+      salesCount: 3,
+      salesTotal: "900.00",
+      cashTotal: "0.00",
+      cardTotal: "0.00",
+      otherTotal: "900.00",
+      topProduct: null,
+      lowStockCount: 0,
+    });
+    expect(msg).toContain("Digital Rs 900.00");
+    expect(msg).not.toContain("Other Rs");
   });
 
   it("omits sections that are zero", () => {
