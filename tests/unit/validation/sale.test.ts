@@ -70,4 +70,19 @@ describe("checkoutSchema", () => {
     const result = checkoutSchema.safeParse({ ...base, idempotencyKey: "abc" });
     expect(result.success).toBe(false);
   });
+
+  it("defaults paymentMethod to CASH", () => {
+    const parsed = checkoutSchema.parse(base);
+    expect(parsed.paymentMethod).toBe("CASH");
+  });
+
+  it("accepts DIGITAL as a payment method", () => {
+    const parsed = checkoutSchema.parse({ ...base, paymentMethod: "DIGITAL" });
+    expect(parsed.paymentMethod).toBe("DIGITAL");
+  });
+
+  it("rejects unknown payment methods", () => {
+    const result = checkoutSchema.safeParse({ ...base, paymentMethod: "CRYPTO" });
+    expect(result.success).toBe(false);
+  });
 });

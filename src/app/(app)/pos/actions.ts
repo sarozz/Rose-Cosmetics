@@ -42,6 +42,7 @@ export async function checkoutAction(
     items: parseItems(formData),
     saleDiscount: formData.get("saleDiscount") ?? "0",
     cashTendered: formData.get("cashTendered") ?? "0",
+    paymentMethod: formData.get("paymentMethod") ?? "CASH",
     notes: formData.get("notes") ?? "",
     idempotencyKey: formData.get("idempotencyKey") ?? "",
   });

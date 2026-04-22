@@ -29,6 +29,7 @@ export function PosClient() {
   const [scanPending, startScan] = useTransition();
   const [saleDiscount, setSaleDiscount] = useState("0");
   const [cashTendered, setCashTendered] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState<"CASH" | "DIGITAL">("CASH");
   const [idempotencyKey] = useState(() => cryptoRandomKey());
   const scanRef = useRef<HTMLInputElement>(null);
 
@@ -55,8 +56,9 @@ export function PosClient() {
   const total = Math.max(0, subtotal - (Number.isFinite(discountNum) ? discountNum : 0));
   const cashNum = Number(cashTendered || 0);
   const change = Number.isFinite(cashNum) ? Math.max(0, cashNum - total) : 0;
+  const cashOk = paymentMethod === "DIGITAL" || cashNum >= total;
   const canCheckout =
-    lines.length > 0 && total > 0 && cashNum >= total && !state.saleRef;
+    lines.length > 0 && total > 0 && cashOk && !state.saleRef;
 
   function handleScan(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -118,6 +120,7 @@ export function PosClient() {
     setLines([]);
     setSaleDiscount("0");
     setCashTendered("");
+    setPaymentMethod("CASH");
     setScanError(null);
     scanRef.current?.focus();
   }
@@ -293,29 +296,45 @@ export function PosClient() {
           </dl>
 
           <div className="mt-4 space-y-3">
-            <Field
-              label="Cash tendered"
-              htmlFor="cashTendered"
-              required
-              error={state.fieldErrors.cashTendered}
-            >
-              <input
-                id="cashTendered"
-                name="cashTendered"
-                type="number"
-                min="0"
-                step="0.01"
-                value={cashTendered}
-                onChange={(e) => setCashTendered(e.target.value)}
-                className={inputClass("text-right")}
-              />
-            </Field>
-            <div className="flex justify-between text-sm">
-              <span className="text-ink-muted">Change</span>
-              <span className="tabular-nums font-medium text-ink">
-                {change.toFixed(2)}
-              </span>
-            </div>
+            <PaymentMethodToggle
+              value={paymentMethod}
+              onChange={setPaymentMethod}
+            />
+            <input
+              type="hidden"
+              name="paymentMethod"
+              value={paymentMethod}
+            />
+
+            {paymentMethod === "CASH" ? (
+              <>
+                <Field
+                  label="Cash tendered"
+                  htmlFor="cashTendered"
+                  required
+                  error={state.fieldErrors.cashTendered}
+                >
+                  <input
+                    id="cashTendered"
+                    name="cashTendered"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={cashTendered}
+                    onChange={(e) => setCashTendered(e.target.value)}
+                    className={inputClass("text-right")}
+                  />
+                </Field>
+                <div className="flex justify-between text-sm">
+                  <span className="text-ink-muted">Change</span>
+                  <span className="tabular-nums font-medium text-ink">
+                    {change.toFixed(2)}
+                  </span>
+                </div>
+              </>
+            ) : (
+              <input type="hidden" name="cashTendered" value="0" />
+            )}
 
             <Field label="Notes" htmlFor="notes" error={state.fieldErrors.notes}>
               <textarea id="notes" name="notes" rows={2} className={inputClass()} />
@@ -338,12 +357,53 @@ export function PosClient() {
             Clear
           </button>
         </div>
-        {!canCheckout && lines.length > 0 ? (
+        {!canCheckout && lines.length > 0 && paymentMethod === "CASH" ? (
           <p className="text-xs text-ink-muted">
             Enter cash tendered of at least {total.toFixed(2)} to charge.
           </p>
         ) : null}
       </form>
+    </div>
+  );
+}
+
+function PaymentMethodToggle({
+  value,
+  onChange,
+}: {
+  value: "CASH" | "DIGITAL";
+  onChange: (next: "CASH" | "DIGITAL") => void;
+}) {
+  return (
+    <div>
+      <span className="mb-1 block text-xs font-medium text-ink-muted">
+        Payment method
+      </span>
+      <div
+        role="radiogroup"
+        aria-label="Payment method"
+        className="grid grid-cols-2 gap-2"
+      >
+        {(["CASH", "DIGITAL"] as const).map((option) => {
+          const selected = value === option;
+          return (
+            <button
+              key={option}
+              type="button"
+              role="radio"
+              aria-checked={selected}
+              onClick={() => onChange(option)}
+              className={`rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
+                selected
+                  ? "border-rose-400 bg-rose-500/15 text-rose-200"
+                  : "border-white/10 bg-surface/60 text-ink-soft hover:border-white/20 hover:text-ink"
+              }`}
+            >
+              {option === "CASH" ? "Cash" : "Digital"}
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }

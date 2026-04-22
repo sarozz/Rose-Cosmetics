@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { requireRole, SALES_ROLES } from "@/lib/auth";
 import { PageHeader } from "@/components/page-header";
 import { RoseLogo } from "@/components/rose-logo";
-import { getSale } from "@/lib/services/sale";
+import { getSale, paymentMethodLabel } from "@/lib/services/sale";
 import { PrintButton } from "./print-button";
 
 export const metadata = { title: "Sale complete — Rose Cosmetics" };
@@ -119,7 +119,7 @@ export default async function SaleThanksPage({
               {sale.payments.map((p) => (
                 <tr key={p.id}>
                   <td colSpan={3} className="px-4 py-2 text-right text-ink-muted">
-                    Paid — {p.method}
+                    Paid — {paymentMethodLabel(p.method)}
                   </td>
                   <td className="px-4 py-2 text-right tabular-nums text-ink-soft">
                     {p.amount.toString()}
@@ -178,7 +178,7 @@ export default async function SaleThanksPage({
           </div>
           {sale.payments.map((p) => (
             <div key={p.id} className="flex justify-between">
-              <span>Paid ({p.method})</span>
+              <span>Paid ({paymentMethodLabel(p.method)})</span>
               <span>{p.amount.toString()}</span>
             </div>
           ))}

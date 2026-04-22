@@ -23,10 +23,14 @@ const saleItemSchema = z.object({
 });
 
 /**
- * Cash checkout payload. Discount, tax, and totals are recomputed server-side
+ * Checkout payload. Discount, tax, and totals are recomputed server-side
  * from the submitted lines (blueprint §15.1) — the client values are advisory.
  * Idempotency key is client-generated (UUID) so a double submit returns the
  * same sale instead of writing twice.
+ *
+ * `paymentMethod` is record-keeping only — DIGITAL means the cashier took
+ * payment through a wallet/QR/app and no physical cash was counted. The
+ * service layer skips the cash-tendered check in that case.
  */
 export const checkoutSchema = z.object({
   items: z
@@ -37,7 +41,8 @@ export const checkoutSchema = z.object({
       { message: "Each product can only appear once — combine duplicate lines" },
     ),
   saleDiscount: money.default(0),
-  cashTendered: money,
+  cashTendered: money.default(0),
+  paymentMethod: z.enum(["CASH", "DIGITAL"]).default("CASH"),
   notes: empty.pipe(z.string().max(500).nullable()),
   idempotencyKey: z.string().min(8).max(64),
 });

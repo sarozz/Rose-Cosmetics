@@ -222,7 +222,7 @@ export function renderDailySummary(stats: DailySummaryStats): string {
   const payments: string[] = [];
   if (Number(stats.cashTotal) > 0) payments.push(`Cash Rs ${escapeHtml(stats.cashTotal)}`);
   if (Number(stats.cardTotal) > 0) payments.push(`Card Rs ${escapeHtml(stats.cardTotal)}`);
-  if (Number(stats.otherTotal) > 0) payments.push(`Other Rs ${escapeHtml(stats.otherTotal)}`);
+  if (Number(stats.otherTotal) > 0) payments.push(`Digital Rs ${escapeHtml(stats.otherTotal)}`);
   if (payments.length > 0) lines.push(`• ${payments.join(" · ")}`);
   if (stats.topProduct) {
     lines.push(
