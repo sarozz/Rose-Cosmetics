@@ -156,17 +156,15 @@ export async function completeSale(
     }
     const total = subtotal.sub(saleDiscount);
 
-    // Cash-tendered is only meaningful when the cashier actually counted
-    // bills. Digital payments (wallets/QR) land as a record-keeping row.
-    if (data.paymentMethod === "CASH") {
-      const cash = new Prisma.Decimal(data.cashTendered);
-      if (cash.lt(total)) {
-        throw new SaleValidationError("Cash tendered is less than total");
-      }
+    const cash = new Prisma.Decimal(data.cashTendered);
+    if (cash.lt(total)) {
+      throw new SaleValidationError("Cash tendered is less than total");
     }
 
     // DIGITAL maps onto the existing `OTHER` DB enum so we don't need a
-    // schema migration. The UI surfaces it as "Digital" everywhere.
+    // schema migration. The UI surfaces it as "Digital" everywhere. The
+    // payment method is record-keeping only — cash-tendered is still
+    // required so totals reconcile at day close regardless of rail.
     const paymentMethod = data.paymentMethod === "DIGITAL" ? "OTHER" : "CASH";
 
     const saleRef = await generateSaleRef(tx);

@@ -56,9 +56,8 @@ export function PosClient() {
   const total = Math.max(0, subtotal - (Number.isFinite(discountNum) ? discountNum : 0));
   const cashNum = Number(cashTendered || 0);
   const change = Number.isFinite(cashNum) ? Math.max(0, cashNum - total) : 0;
-  const cashOk = paymentMethod === "DIGITAL" || cashNum >= total;
   const canCheckout =
-    lines.length > 0 && total > 0 && cashOk && !state.saleRef;
+    lines.length > 0 && total > 0 && cashNum >= total && !state.saleRef;
 
   function handleScan(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -306,35 +305,29 @@ export function PosClient() {
               value={paymentMethod}
             />
 
-            {paymentMethod === "CASH" ? (
-              <>
-                <Field
-                  label="Cash tendered"
-                  htmlFor="cashTendered"
-                  required
-                  error={state.fieldErrors.cashTendered}
-                >
-                  <input
-                    id="cashTendered"
-                    name="cashTendered"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={cashTendered}
-                    onChange={(e) => setCashTendered(e.target.value)}
-                    className={inputClass("text-right")}
-                  />
-                </Field>
-                <div className="flex justify-between text-sm">
-                  <span className="text-ink-muted">Change</span>
-                  <span className="tabular-nums font-medium text-ink">
-                    {change.toFixed(2)}
-                  </span>
-                </div>
-              </>
-            ) : (
-              <input type="hidden" name="cashTendered" value="0" />
-            )}
+            <Field
+              label="Cash tendered"
+              htmlFor="cashTendered"
+              required
+              error={state.fieldErrors.cashTendered}
+            >
+              <input
+                id="cashTendered"
+                name="cashTendered"
+                type="number"
+                min="0"
+                step="0.01"
+                value={cashTendered}
+                onChange={(e) => setCashTendered(e.target.value)}
+                className={inputClass("text-right")}
+              />
+            </Field>
+            <div className="flex justify-between text-sm">
+              <span className="text-ink-muted">Change</span>
+              <span className="tabular-nums font-medium text-ink">
+                {change.toFixed(2)}
+              </span>
+            </div>
 
             <Field label="Notes" htmlFor="notes" error={state.fieldErrors.notes}>
               <textarea id="notes" name="notes" rows={2} className={inputClass()} />
@@ -357,7 +350,7 @@ export function PosClient() {
             Clear
           </button>
         </div>
-        {!canCheckout && lines.length > 0 && paymentMethod === "CASH" ? (
+        {!canCheckout && lines.length > 0 ? (
           <p className="text-xs text-ink-muted">
             Enter cash tendered of at least {total.toFixed(2)} to charge.
           </p>
