@@ -42,6 +42,7 @@ export const AUDIT_ENTITY_TYPES = [
   "purchase",
   "return",
   "sale",
+  "shift_close",
   "supplier",
   "user",
 ] as const;
