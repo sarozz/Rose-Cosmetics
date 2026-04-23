@@ -140,9 +140,11 @@ export async function previewClose(): Promise<{
 }
 
 /**
- * Record a cash close. Re-runs the totals inside the transaction so the
- * preview the cashier saw can't drift if a sale squeaked in between page
- * load and submit. Writes an audit row in the same tx.
+ * Record a cash close. The aggregates ran in `previewClose` on page render
+ * — we recompute them here (outside the transaction) so a sale that
+ * squeaked in between preview and submit is still counted. Only the write
+ * + audit go through the transaction so the default 5s interactive-tx
+ * timeout covers only the write, not the scanning work.
  */
 export async function createClose(
   actorUserId: string,
@@ -151,16 +153,21 @@ export async function createClose(
   const periodEnd = new Date();
   const periodStart = await previousCloseCutoff();
 
+  // Compute totals before opening the transaction. Prisma's interactive
+  // transactions hold a connection for the entire callback, and the
+  // default 5s timeout is blown by three relational aggregates. Since
+  // these are snapshot values (already committed sales/returns), running
+  // them outside the tx is correct.
+  const totals = await computePeriodTotals(periodStart, periodEnd);
+
+  const openingFloat = new Prisma.Decimal(data.openingFloat);
+  const countedCash = new Prisma.Decimal(data.countedCash);
+  const expectedCash = openingFloat
+    .add(totals.cashSalesTotal)
+    .sub(totals.cashRefundsTotal);
+  const variance = countedCash.sub(expectedCash);
+
   const result = await prisma.$transaction(async (tx) => {
-    const totals = await computePeriodTotals(periodStart, periodEnd);
-
-    const openingFloat = new Prisma.Decimal(data.openingFloat);
-    const countedCash = new Prisma.Decimal(data.countedCash);
-    const expectedCash = openingFloat
-      .add(totals.cashSalesTotal)
-      .sub(totals.cashRefundsTotal);
-    const variance = countedCash.sub(expectedCash);
-
     const close = await tx.shiftClose.create({
       data: {
         closedById: actorUserId,
@@ -188,7 +195,7 @@ export async function createClose(
       after: close,
     });
 
-    return { close, totals, openingFloat, expectedCash, countedCash, variance };
+    return { close };
   });
 
   // Fire Telegram alert after the tx commits. Errors are swallowed so a
@@ -197,19 +204,19 @@ export async function createClose(
     await notifyShiftClose({
       closedBy: result.close.closedBy.displayName,
       closedAtLabel: formatCloseTimestamp(result.close.closedAt),
-      salesCount: result.totals.salesCount,
-      cashSalesTotal: result.totals.cashSalesTotal.toFixed(2),
-      digitalSalesTotal: result.totals.digitalSalesTotal.toFixed(2),
-      openingFloat: result.openingFloat.toFixed(2),
-      expectedCash: result.expectedCash.toFixed(2),
-      countedCash: result.countedCash.toFixed(2),
-      variance: result.variance.toFixed(2),
+      salesCount: totals.salesCount,
+      cashSalesTotal: totals.cashSalesTotal.toFixed(2),
+      digitalSalesTotal: totals.digitalSalesTotal.toFixed(2),
+      openingFloat: openingFloat.toFixed(2),
+      expectedCash: expectedCash.toFixed(2),
+      countedCash: countedCash.toFixed(2),
+      variance: variance.toFixed(2),
     });
   } catch (err) {
     console.error("telegram shift-close notify failed", err);
   }
 
-  return { id: result.close.id, variance: result.variance.toFixed(2) };
+  return { id: result.close.id, variance: variance.toFixed(2) };
 }
 
 function formatCloseTimestamp(d: Date): string {
