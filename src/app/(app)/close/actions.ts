@@ -29,6 +29,7 @@ export async function createCloseAction(
   try {
     result = await createClose(actor.id, parsed.data);
   } catch (err) {
+    console.error("createCloseAction failed", err);
     return {
       fieldErrors: {},
       formError: err instanceof Error ? err.message : "Could not record close",
