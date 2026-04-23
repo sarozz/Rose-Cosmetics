@@ -113,6 +113,7 @@ model User {
   salesProcessed       Sale[]               @relation("SaleCashier")
   returnsCreated       Return[]             @relation("ReturnCreatedBy")
   movementsCreated     InventoryMovement[]  @relation("MovementCreatedBy")
+  shiftClosesPerformed ShiftClose[]         @relation("ShiftCloseClosedBy")
   auditLogs            AuditLog[]
 
   @@index([role, isActive])
@@ -318,6 +319,36 @@ model ReturnItem {
   @@index([returnId])
   @@index([saleItemId])
   @@map("return_items")
+}
+
+// ---------- Day close / cash reconciliation ----------
+
+// End-of-shift count. One row per close event. `periodStart` is the previous
+// close's `closedAt` (or epoch when it's the first close ever), and `periodEnd`
+// snapshots the moment the count was saved so the two windows never overlap.
+// `expectedCash = openingFloat + cashSalesTotal - cashRefundsTotal`. Variance
+// is stored so reports can flag over/short days without recomputing.
+model ShiftClose {
+  id                  String   @id @default(cuid())
+  closedAt            DateTime @default(now())
+  closedById          String
+  periodStart         DateTime
+  periodEnd           DateTime
+  openingFloat        Decimal  @default(0) @db.Decimal(12, 2)
+  expectedCash        Decimal  @db.Decimal(12, 2)
+  countedCash         Decimal  @db.Decimal(12, 2)
+  variance            Decimal  @db.Decimal(12, 2)
+  cashSalesTotal      Decimal  @default(0) @db.Decimal(12, 2)
+  digitalSalesTotal   Decimal  @default(0) @db.Decimal(12, 2)
+  cardSalesTotal      Decimal  @default(0) @db.Decimal(12, 2)
+  cashRefundsTotal    Decimal  @default(0) @db.Decimal(12, 2)
+  salesCount          Int      @default(0)
+  notes               String?
+
+  closedBy User @relation("ShiftCloseClosedBy", fields: [closedById], references: [id])
+
+  @@index([closedAt])
+  @@map("shift_closes")
 }
 
 // ---------- Inventory ledger ----------

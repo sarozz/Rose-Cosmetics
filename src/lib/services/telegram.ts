@@ -196,6 +196,55 @@ export function renderSaleCompletedMessage(stats: SaleCompletedStats): string {
   return lines.join("\n");
 }
 
+export type ShiftCloseStats = {
+  /** Person who ran the count. */
+  closedBy: string;
+  /** e.g. "2026-04-23 19:05"; caller pre-formats. */
+  closedAtLabel: string;
+  salesCount: number;
+  cashSalesTotal: string;
+  digitalSalesTotal: string;
+  openingFloat: string;
+  expectedCash: string;
+  countedCash: string;
+  /** Signed decimal string, e.g. "-120.00" or "15.00". */
+  variance: string;
+};
+
+/**
+ * Fire a Telegram alert after a cash close is recorded. Reuses the
+ * `notifySales` fanout flag so anyone who already gets sales pings
+ * also gets the end-of-shift summary — no schema change.
+ */
+export async function notifyShiftClose(
+  stats: ShiftCloseStats,
+): Promise<SendResult[]> {
+  return fanout(renderShiftCloseMessage(stats), "notifySales");
+}
+
+export function renderShiftCloseMessage(stats: ShiftCloseStats): string {
+  const varianceNum = Number(stats.variance);
+  const varianceLabel =
+    !Number.isFinite(varianceNum) || varianceNum === 0
+      ? "✅ Matched"
+      : varianceNum > 0
+        ? `🟢 Over by Rs ${escapeHtml(stats.variance.replace(/^[-+]/, ""))}`
+        : `🔴 Short by Rs ${escapeHtml(stats.variance.replace(/^[-+]/, ""))}`;
+
+  const lines = [
+    `🧾 <b>Day close</b> — ${escapeHtml(stats.closedAtLabel)}`,
+    `${escapeHtml(stats.closedBy)} · ${stats.salesCount} sale${stats.salesCount === 1 ? "" : "s"}`,
+    "",
+    `• Cash sales: Rs <b>${escapeHtml(stats.cashSalesTotal)}</b>`,
+    `• Digital sales: Rs ${escapeHtml(stats.digitalSalesTotal)}`,
+    `• Opening float: Rs ${escapeHtml(stats.openingFloat)}`,
+    `• Expected: Rs <b>${escapeHtml(stats.expectedCash)}</b>`,
+    `• Counted: Rs <b>${escapeHtml(stats.countedCash)}</b>`,
+    varianceLabel,
+  ];
+  return lines.join("\n");
+}
+
 export type DailySummaryStats = {
   dateLabel: string;
   salesCount: number;

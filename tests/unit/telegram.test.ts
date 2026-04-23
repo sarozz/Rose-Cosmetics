@@ -3,6 +3,7 @@ import {
   renderDailySummary,
   renderLowStockMessage,
   renderSaleCompletedMessage,
+  renderShiftCloseMessage,
   sendTelegramMessage,
 } from "../../src/lib/services/telegram";
 
@@ -253,5 +254,57 @@ describe("sendTelegramMessage", () => {
     });
     const res = await sendTelegramMessage("999", "hi");
     expect(res.ok).toBe(false);
+  });
+});
+
+describe("renderShiftCloseMessage", () => {
+  const base = {
+    closedBy: "Saroj",
+    closedAtLabel: "2026-04-23 19:05",
+    salesCount: 12,
+    cashSalesTotal: "4200.00",
+    digitalSalesTotal: "1800.00",
+    openingFloat: "500.00",
+    expectedCash: "4700.00",
+    countedCash: "4700.00",
+    variance: "0.00",
+  };
+
+  it("shows 'matched' when the variance is zero", () => {
+    const msg = renderShiftCloseMessage(base);
+    expect(msg).toContain("🧾 <b>Day close</b>");
+    expect(msg).toContain("Saroj");
+    expect(msg).toContain("12 sales");
+    expect(msg).toContain("Cash sales: Rs <b>4200.00</b>");
+    expect(msg).toContain("Digital sales: Rs 1800.00");
+    expect(msg).toContain("Expected: Rs <b>4700.00</b>");
+    expect(msg).toContain("Counted: Rs <b>4700.00</b>");
+    expect(msg).toContain("✅ Matched");
+  });
+
+  it("flags over when counted > expected", () => {
+    const msg = renderShiftCloseMessage({
+      ...base,
+      countedCash: "4715.00",
+      variance: "15.00",
+    });
+    expect(msg).toContain("🟢 Over by Rs 15.00");
+    expect(msg).not.toContain("Matched");
+  });
+
+  it("flags short when counted < expected", () => {
+    const msg = renderShiftCloseMessage({
+      ...base,
+      countedCash: "4680.00",
+      variance: "-20.00",
+    });
+    expect(msg).toContain("🔴 Short by Rs 20.00");
+    expect(msg).not.toContain("Matched");
+  });
+
+  it("uses singular 'sale' when count is 1", () => {
+    const msg = renderShiftCloseMessage({ ...base, salesCount: 1 });
+    expect(msg).toContain("1 sale");
+    expect(msg).not.toContain("1 sales");
   });
 });
