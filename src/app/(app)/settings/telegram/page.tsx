@@ -1,8 +1,11 @@
+import Link from "next/link";
+import type { Route } from "next";
 import { requireRole, STAFF_WRITE_ROLES } from "@/lib/auth";
 import { PageHeader } from "@/components/page-header";
 import { prisma } from "@/lib/prisma";
 import { isTelegramConfigured } from "@/lib/services/telegram";
-import { deleteRecipientAction, testRecipientAction } from "./actions";
+import { testRecipientAction } from "./actions";
+import { DeleteRecipientButton } from "./delete-recipient-button";
 
 export const metadata = { title: "Telegram alerts — Rose Cosmetics POS" };
 
@@ -22,9 +25,9 @@ export default async function TelegramSettingsPage() {
         title="Telegram alerts"
         description="Send per-sale pings, low-stock alerts, and daily summaries to phones or groups."
         actions={
-          <a href="/settings/telegram/new" className="btn-primary">
+          <Link href="/settings/telegram/new" className="btn-primary">
             Add recipient
-          </a>
+          </Link>
         }
       />
 
@@ -94,32 +97,15 @@ export default async function TelegramSettingsPage() {
                             Test
                           </button>
                         </form>
-                        <a
-                          href={`/settings/telegram/${r.id}/edit`}
+                        <Link
+                          href={
+                            `/settings/telegram/${r.id}/edit` as Route
+                          }
                           className="text-rose-300 hover:underline"
                         >
                           Edit
-                        </a>
-                        <form
-                          action={deleteRecipientAction}
-                          onSubmit={(e) => {
-                            if (
-                              !confirm(
-                                "Remove this recipient? They'll stop receiving alerts.",
-                              )
-                            ) {
-                              e.preventDefault();
-                            }
-                          }}
-                        >
-                          <input type="hidden" name="id" value={r.id} />
-                          <button
-                            type="submit"
-                            className="text-ink-muted hover:text-rose-300"
-                          >
-                            Remove
-                          </button>
-                        </form>
+                        </Link>
+                        <DeleteRecipientButton id={r.id} />
                       </div>
                     </td>
                   </tr>
