@@ -1,11 +1,14 @@
+import Link from "next/link";
+import type { Route } from "next";
 import { requireRole, STAFF_WRITE_ROLES } from "@/lib/auth";
 import { listStaff } from "@/lib/services/user";
 import { PageHeader } from "@/components/page-header";
+import { DeleteStaffButton } from "./delete-staff-button";
 
 export const metadata = { title: "Staff — Rose Cosmetics" };
 
 export default async function StaffPage() {
-  await requireRole(STAFF_WRITE_ROLES);
+  const actor = await requireRole(STAFF_WRITE_ROLES);
   const staff = await listStaff();
 
   return (
@@ -15,9 +18,9 @@ export default async function StaffPage() {
         title="Staff"
         description="OWNERs provision and manage everyone else. A new row is inactive until its email signs in via Supabase Auth the first time."
         actions={
-          <a href="/staff/new" className="btn-primary">
+          <Link href="/staff/new" className="btn-primary">
             Add staff member
-          </a>
+          </Link>
         }
       />
 
@@ -63,12 +66,19 @@ export default async function StaffPage() {
                     {u.authId ? "Yes" : "Pending first sign-in"}
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <a
-                      href={`/staff/${u.id}/edit`}
-                      className="text-sm font-medium text-rose-300 hover:underline"
-                    >
-                      Edit
-                    </a>
+                    <div className="inline-flex items-start gap-4">
+                      <Link
+                        href={`/staff/${u.id}/edit` as Route}
+                        className="text-sm font-medium text-rose-300 hover:underline"
+                      >
+                        Edit
+                      </Link>
+                      <DeleteStaffButton
+                        id={u.id}
+                        name={u.displayName}
+                        disabled={u.id === actor.id}
+                      />
+                    </div>
                   </td>
                 </tr>
               ))
