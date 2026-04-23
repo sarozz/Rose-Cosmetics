@@ -23,6 +23,43 @@ function formatYmd(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
 
+function startOfUtcWeek(d: Date): Date {
+  // Monday as start-of-week (ISO). JS Sunday = 0 → shift to Monday.
+  const x = startOfUtcDay(d);
+  const dow = x.getUTCDay();
+  const delta = (dow + 6) % 7; // Mon=0, Sun=6
+  x.setUTCDate(x.getUTCDate() - delta);
+  return x;
+}
+
+function startOfUtcMonth(d: Date): Date {
+  const x = new Date(
+    Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1, 0, 0, 0, 0),
+  );
+  return x;
+}
+
+function addDaysUtc(d: Date, n: number): Date {
+  const x = new Date(d);
+  x.setUTCDate(x.getUTCDate() + n);
+  return x;
+}
+
+function addMonthsUtc(d: Date, n: number): Date {
+  return new Date(
+    Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + n, 1, 0, 0, 0, 0),
+  );
+}
+
+function isoWeekKey(d: Date): string {
+  // ISO week key in "YYYY-W##" form. We aggregate by the Monday anchor so
+  // the label matches the start of the week cashiers think in.
+  const y = d.getUTCFullYear();
+  const m = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(d.getUTCDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
 /**
  * Today's sales count + total (UTC day). Displayed on the dashboard.
  * Cached for 30s so rapid dashboard navigations don't re-aggregate.
@@ -86,6 +123,168 @@ export const salesByDay = unstable_cache(
     return out.reverse();
   },
   ["reports:salesByDay"],
+  { revalidate: AGGREGATE_TTL_SECONDS, tags: [REPORT_TAGS.sales] },
+);
+
+/**
+ * Group COMPLETED sales by ISO week (Monday-anchored, UTC) for the last
+ * `weeks` weeks. Returns newest-first so tables and charts show the
+ * most-recent period at the top.
+ */
+export const salesByWeek = unstable_cache(
+  async (weeks = 12) => {
+    const thisWeekStart = startOfUtcWeek(new Date());
+    const windowStart = addDaysUtc(thisWeekStart, -7 * (weeks - 1));
+
+    const sales = await prisma.sale.findMany({
+      where: { status: "COMPLETED", soldAt: { gte: windowStart } },
+      select: { soldAt: true, total: true },
+    });
+
+    const buckets = new Map<string, { count: number; total: Prisma.Decimal }>();
+    for (const s of sales) {
+      const key = isoWeekKey(startOfUtcWeek(s.soldAt));
+      const cur = buckets.get(key) ?? { count: 0, total: new Prisma.Decimal(0) };
+      cur.count += 1;
+      cur.total = cur.total.add(s.total);
+      buckets.set(key, cur);
+    }
+
+    const out: Array<{ date: string; count: number; total: string }> = [];
+    for (let i = 0; i < weeks; i++) {
+      const weekStart = addDaysUtc(windowStart, 7 * i);
+      const key = isoWeekKey(weekStart);
+      const bucket = buckets.get(key);
+      out.push({
+        date: key,
+        count: bucket?.count ?? 0,
+        total: (bucket?.total ?? new Prisma.Decimal(0)).toString(),
+      });
+    }
+    return out.reverse();
+  },
+  ["reports:salesByWeek"],
+  { revalidate: AGGREGATE_TTL_SECONDS, tags: [REPORT_TAGS.sales] },
+);
+
+/**
+ * Group COMPLETED sales by calendar month (UTC) for the last `months`
+ * months. The label is the first day of the month in `YYYY-MM-01` form
+ * so it sorts lexicographically.
+ */
+export const salesByMonth = unstable_cache(
+  async (months = 12) => {
+    const thisMonthStart = startOfUtcMonth(new Date());
+    const windowStart = addMonthsUtc(thisMonthStart, -(months - 1));
+
+    const sales = await prisma.sale.findMany({
+      where: { status: "COMPLETED", soldAt: { gte: windowStart } },
+      select: { soldAt: true, total: true },
+    });
+
+    const buckets = new Map<string, { count: number; total: Prisma.Decimal }>();
+    for (const s of sales) {
+      const key = formatYmd(startOfUtcMonth(s.soldAt));
+      const cur = buckets.get(key) ?? { count: 0, total: new Prisma.Decimal(0) };
+      cur.count += 1;
+      cur.total = cur.total.add(s.total);
+      buckets.set(key, cur);
+    }
+
+    const out: Array<{ date: string; count: number; total: string }> = [];
+    for (let i = 0; i < months; i++) {
+      const monthStart = addMonthsUtc(windowStart, i);
+      const key = formatYmd(monthStart);
+      const bucket = buckets.get(key);
+      out.push({
+        date: key,
+        count: bucket?.count ?? 0,
+        total: (bucket?.total ?? new Prisma.Decimal(0)).toString(),
+      });
+    }
+    return out.reverse();
+  },
+  ["reports:salesByMonth"],
+  { revalidate: AGGREGATE_TTL_SECONDS, tags: [REPORT_TAGS.sales] },
+);
+
+export type ReportRange = "daily" | "weekly" | "monthly";
+
+/**
+ * Revenue + transaction count for the "current" window implied by `range`
+ * (today / this week / this month) plus the previous equivalent window so
+ * the UI can show a delta. Returns strings for JSON-serialisability.
+ *
+ * Used by the top-of-page KPI cards on /reports — the aim is one cached
+ * read instead of four ad-hoc aggregates.
+ */
+export const periodSummary = unstable_cache(
+  async (range: ReportRange) => {
+    const now = new Date();
+    let currentStart: Date;
+    let previousStart: Date;
+    let previousEnd: Date; // exclusive
+
+    if (range === "daily") {
+      currentStart = startOfUtcDay(now);
+      previousStart = addDaysUtc(currentStart, -1);
+      previousEnd = currentStart;
+    } else if (range === "weekly") {
+      currentStart = startOfUtcWeek(now);
+      previousStart = addDaysUtc(currentStart, -7);
+      previousEnd = currentStart;
+    } else {
+      currentStart = startOfUtcMonth(now);
+      previousStart = addMonthsUtc(currentStart, -1);
+      previousEnd = currentStart;
+    }
+
+    const sales = await prisma.sale.findMany({
+      where: {
+        status: "COMPLETED",
+        soldAt: { gte: previousStart },
+      },
+      select: { soldAt: true, total: true },
+    });
+
+    let currTotal = new Prisma.Decimal(0);
+    let prevTotal = new Prisma.Decimal(0);
+    let currCount = 0;
+    let prevCount = 0;
+    for (const s of sales) {
+      if (s.soldAt >= currentStart) {
+        currTotal = currTotal.add(s.total);
+        currCount += 1;
+      } else if (s.soldAt >= previousStart && s.soldAt < previousEnd) {
+        prevTotal = prevTotal.add(s.total);
+        prevCount += 1;
+      }
+    }
+
+    const avg =
+      currCount > 0
+        ? currTotal.div(currCount)
+        : new Prisma.Decimal(0);
+    const prevNumber = Number(prevTotal);
+    const deltaPct =
+      prevNumber > 0
+        ? ((Number(currTotal) - prevNumber) / prevNumber) * 100
+        : null;
+
+    return {
+      range,
+      currentStart: currentStart.toISOString(),
+      previousStart: previousStart.toISOString(),
+      previousEnd: previousEnd.toISOString(),
+      currentTotal: currTotal.toFixed(2),
+      currentCount: currCount,
+      averageSale: avg.toFixed(2),
+      previousTotal: prevTotal.toFixed(2),
+      previousCount: prevCount,
+      deltaPct: deltaPct === null ? null : deltaPct.toFixed(1),
+    };
+  },
+  ["reports:periodSummary"],
   { revalidate: AGGREGATE_TTL_SECONDS, tags: [REPORT_TAGS.sales] },
 );
 
