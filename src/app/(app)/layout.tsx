@@ -14,7 +14,7 @@ export default async function AppLayout({
     <div className="flex min-h-screen bg-page">
       <Sidebar role={user.role} />
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="no-print flex h-14 items-center justify-between border-b border-white/10 bg-card px-6">
+        <header className="no-print flex h-20 items-center justify-between border-b border-white/10 bg-card px-6">
           {/* Logo only on mobile where the sidebar is hidden, to keep the
               desktop header uncluttered since the sidebar carries the brand. */}
           <div className="md:hidden">

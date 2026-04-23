@@ -41,8 +41,8 @@ export function Sidebar({ role }: { role: UserRole }) {
 
   return (
     <aside className="hidden w-56 flex-shrink-0 border-r border-white/10 bg-card md:block">
-      <div className="flex h-14 items-center border-b border-white/10 px-4">
-        <RoseLogo size="sm" />
+      <div className="flex h-20 items-center border-b border-white/10 px-4">
+        <RoseLogo size="lg" />
       </div>
       <nav className="p-3">
         <ul className="space-y-1">

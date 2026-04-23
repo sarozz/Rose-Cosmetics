@@ -183,10 +183,10 @@ export function CategoryDonut({ data }: { data: CategorySlice[] }) {
           No sales in the last 30 days.
         </p>
       ) : (
-        <div className="flex items-center gap-5">
+        <div className="flex items-center gap-4">
           <svg
             viewBox="0 0 120 120"
-            className="h-36 w-36 shrink-0 -rotate-90"
+            className="h-24 w-24 shrink-0 -rotate-90 sm:h-28 sm:w-28"
             role="img"
             aria-label="Revenue share by category"
           >
@@ -200,15 +200,15 @@ export function CategoryDonut({ data }: { data: CategorySlice[] }) {
             />
             {slices}
           </svg>
-          <ul className="flex-1 space-y-1.5 text-sm">
+          <ul className="min-w-0 flex-1 space-y-1.5 text-sm">
             {data.map((d, i) => {
               const pct = grand === 0 ? 0 : (Number(d.total) / grand) * 100;
               return (
                 <li
                   key={d.id}
-                  className="flex items-center justify-between gap-3"
+                  className="flex items-center justify-between gap-2"
                 >
-                  <span className="flex min-w-0 items-center gap-2">
+                  <span className="flex min-w-0 flex-1 items-center gap-2">
                     <span
                       aria-hidden
                       className="inline-block h-2.5 w-2.5 shrink-0 rounded-sm"
@@ -217,11 +217,11 @@ export function CategoryDonut({ data }: { data: CategorySlice[] }) {
                           DONUT_PALETTE[i % DONUT_PALETTE.length],
                       }}
                     />
-                    <span className="truncate text-ink" title={d.name}>
+                    <span className="min-w-0 truncate text-ink" title={d.name}>
                       {d.name}
                     </span>
                   </span>
-                  <span className="tabular-nums text-ink-muted">
+                  <span className="shrink-0 tabular-nums text-ink-muted">
                     {pct.toFixed(0)}%
                   </span>
                 </li>
