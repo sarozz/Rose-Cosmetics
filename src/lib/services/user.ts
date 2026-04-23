@@ -163,3 +163,70 @@ export async function updateStaff(
   revalidateTag(AUTH_USER_TAG);
   return updated;
 }
+
+/**
+ * Hard-delete a staff row. Refuses when the user has activity on file
+ * (sales/purchases/returns/movements/closes) — in that case the operator is
+ * told to deactivate instead, since wiping the row would orphan history or
+ * require silent anonymisation the audit log can't recover from.
+ *
+ * Same owner-preservation invariants as updateStaff apply: you can't delete
+ * yourself, and you can't delete the last active OWNER.
+ */
+export async function deleteStaff(actorUserId: string, id: string) {
+  const user = await prisma.user.findUnique({ where: { id } });
+  if (!user) throw new StaffValidationError("Staff member not found");
+  if (user.id === actorUserId) {
+    throw new StaffValidationError("You cannot delete yourself");
+  }
+  if (user.role === "OWNER" && user.isActive) {
+    const otherOwners = await prisma.user.count({
+      where: { role: "OWNER", isActive: true, id: { not: id } },
+    });
+    if (otherOwners === 0) {
+      throw new StaffValidationError(
+        "At least one active OWNER must remain",
+      );
+    }
+  }
+
+  const [sales, purchases, returns, movements, closes] = await Promise.all([
+    prisma.sale.count({ where: { cashierId: id } }),
+    prisma.purchase.count({ where: { createdById: id } }),
+    prisma.return.count({ where: { createdById: id } }),
+    prisma.inventoryMovement.count({ where: { createdById: id } }),
+    prisma.shiftClose.count({ where: { closedById: id } }),
+  ]);
+  if (sales + purchases + returns + movements + closes > 0) {
+    throw new StaffValidationError(
+      "This staff member has activity on record (sales, receipts, or closes). Deactivate them instead so history stays intact.",
+    );
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await writeAuditLog(tx, {
+      actorUserId,
+      entityType: "user",
+      entityId: id,
+      action: "DELETE",
+      before: user,
+    });
+    // Audit rows this user authored stay for history; we just null out the
+    // actor so the FK doesn't block the delete.
+    await tx.auditLog.updateMany({
+      where: { actorUserId: id },
+      data: { actorUserId: null },
+    });
+    await tx.user.delete({ where: { id } });
+  });
+
+  // Drop the Supabase auth entry so the email is free to re-invite and the
+  // deleted user can't sign back in. Best-effort — the Prisma row is already
+  // gone by this point.
+  if (user.authId) {
+    const admin = createSupabaseAdminClient();
+    await admin.auth.admin.deleteUser(user.authId).catch(() => undefined);
+  }
+
+  revalidateTag(AUTH_USER_TAG);
+}
