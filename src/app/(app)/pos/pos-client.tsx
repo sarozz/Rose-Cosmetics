@@ -9,6 +9,38 @@ import { SubmitButton } from "@/components/form/submit-button";
 import { checkoutAction, scanBarcodeAction } from "./actions";
 import { emptyCheckoutState } from "./state";
 
+/**
+ * Post to the customer-facing display window via BroadcastChannel. The
+ * channel is same-origin/same-browser only, so opening /display in a
+ * second window on the same laptop picks these up with no server round
+ * trip. When no display is open the post is a no-op — nothing to handle.
+ */
+const DISPLAY_CHANNEL = "rose-pos-display";
+
+type DisplayMessage =
+  | {
+      type: "scan";
+      product: {
+        name: string;
+        brand: string | null;
+        sellPrice: string;
+        qty: number;
+        lineTotal: string;
+      };
+    }
+  | { type: "cart-total"; subtotal: string; itemCount: number }
+  | { type: "thank-you"; total: string; saleRef: string }
+  | { type: "idle" };
+
+function broadcastToDisplay(msg: DisplayMessage) {
+  if (typeof window === "undefined" || typeof BroadcastChannel === "undefined") {
+    return;
+  }
+  const channel = new BroadcastChannel(DISPLAY_CHANNEL);
+  channel.postMessage(msg);
+  channel.close();
+}
+
 type CartLine = {
   productId: string;
   name: string;
@@ -37,12 +69,6 @@ export function PosClient() {
     scanRef.current?.focus();
   }, []);
 
-  useEffect(() => {
-    if (state.saleRef) {
-      router.push(`/pos/thanks/${state.saleRef}`);
-    }
-  }, [state.saleRef, router]);
-
   const subtotal = useMemo(
     () =>
       lines.reduce((sum, line) => {
@@ -59,6 +85,37 @@ export function PosClient() {
   const canCheckout =
     lines.length > 0 && total > 0 && cashNum >= total && !state.saleRef;
 
+  useEffect(() => {
+    if (state.saleRef) {
+      broadcastToDisplay({
+        type: "thank-you",
+        total: total.toFixed(2),
+        saleRef: state.saleRef,
+      });
+      router.push(`/pos/thanks/${state.saleRef}`);
+    }
+    // `total` intentionally excluded from deps: reading it at the moment
+    // saleRef flips gives the final charged amount. Watching it would
+    // refire on every mutation and re-broadcast incorrectly.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.saleRef, router]);
+
+  // Mirror the running cart total to the customer display so the shopper
+  // always sees how much their basket is at. Suppress while the cart is
+  // empty so we don't stomp the idle screen between customers.
+  useEffect(() => {
+    if (lines.length === 0) {
+      broadcastToDisplay({ type: "cart-total", subtotal: "0.00", itemCount: 0 });
+      return;
+    }
+    const itemCount = lines.reduce((n, l) => n + l.qty, 0);
+    broadcastToDisplay({
+      type: "cart-total",
+      subtotal: subtotal.toFixed(2),
+      itemCount,
+    });
+  }, [lines, subtotal]);
+
   function handleScan(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const code = scanInput.trim();
@@ -71,6 +128,7 @@ export function PosClient() {
         return;
       }
       const product = result.product;
+      let addedQty: number | null = null;
       setLines((prev) => {
         const existing = prev.find((l) => l.productId === product.id);
         if (existing) {
@@ -78,6 +136,7 @@ export function PosClient() {
             setScanError(`Only ${product.currentStock} in stock for ${product.name}`);
             return prev;
           }
+          addedQty = existing.qty + 1;
           return prev.map((l) =>
             l.productId === product.id ? { ...l, qty: l.qty + 1 } : l,
           );
@@ -86,6 +145,7 @@ export function PosClient() {
           setScanError(`${product.name} is out of stock`);
           return prev;
         }
+        addedQty = 1;
         return [
           ...prev,
           {
@@ -100,6 +160,20 @@ export function PosClient() {
           },
         ];
       });
+      if (addedQty !== null) {
+        const unit = Number(product.sellPrice) || 0;
+        const lineTotal = (unit * addedQty).toFixed(2);
+        broadcastToDisplay({
+          type: "scan",
+          product: {
+            name: product.name,
+            brand: product.brand,
+            sellPrice: product.sellPrice,
+            qty: addedQty,
+            lineTotal,
+          },
+        });
+      }
       setScanInput("");
       scanRef.current?.focus();
     });
