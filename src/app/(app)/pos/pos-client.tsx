@@ -28,7 +28,19 @@ type DisplayMessage =
         lineTotal: string;
       };
     }
-  | { type: "cart-total"; subtotal: string; itemCount: number }
+  | {
+      type: "cart";
+      lines: Array<{
+        productId: string;
+        name: string;
+        brand: string | null;
+        qty: number;
+        unitPrice: string;
+        lineTotal: string;
+      }>;
+      subtotal: string;
+      total: string;
+    }
   | { type: "thank-you"; total: string; saleRef: string }
   | { type: "idle" };
 
@@ -100,21 +112,40 @@ export function PosClient() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.saleRef, router]);
 
-  // Mirror the running cart total to the customer display so the shopper
-  // always sees how much their basket is at. Suppress while the cart is
-  // empty so we don't stomp the idle screen between customers.
+  // Mirror the full cart to the customer display on any change — add,
+  // qty edit, discount edit, remove — so the shopper always sees exactly
+  // what they're being charged, not just a subtotal number.
   useEffect(() => {
     if (lines.length === 0) {
-      broadcastToDisplay({ type: "cart-total", subtotal: "0.00", itemCount: 0 });
+      broadcastToDisplay({
+        type: "cart",
+        lines: [],
+        subtotal: "0.00",
+        total: "0.00",
+      });
       return;
     }
-    const itemCount = lines.reduce((n, l) => n + l.qty, 0);
-    broadcastToDisplay({
-      type: "cart-total",
-      subtotal: subtotal.toFixed(2),
-      itemCount,
+    const cartLines = lines.map((l) => {
+      const unit = Number(l.unitPrice) || 0;
+      const qty = l.qty;
+      const discount = Number(l.discount || 0);
+      const lineTotal = Math.max(0, unit * qty - discount);
+      return {
+        productId: l.productId,
+        name: l.name,
+        brand: l.brand,
+        qty,
+        unitPrice: unit.toFixed(2),
+        lineTotal: lineTotal.toFixed(2),
+      };
     });
-  }, [lines, subtotal]);
+    broadcastToDisplay({
+      type: "cart",
+      lines: cartLines,
+      subtotal: subtotal.toFixed(2),
+      total: total.toFixed(2),
+    });
+  }, [lines, subtotal, total]);
 
   function handleScan(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
