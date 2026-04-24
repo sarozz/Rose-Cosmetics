@@ -26,7 +26,9 @@ export type DisplayMessage =
       type: "cart";
       lines: CartLine[];
       subtotal: string;
+      discount: string;
       total: string;
+      paymentMethod: "CASH" | "DIGITAL" | null;
     }
   | { type: "thank-you"; total: string; saleRef: string }
   | { type: "idle" };
@@ -46,8 +48,16 @@ export function DisplayClient() {
   const [cart, setCart] = useState<{
     lines: CartLine[];
     subtotal: string;
+    discount: string;
     total: string;
-  }>({ lines: [], subtotal: "0.00", total: "0.00" });
+    paymentMethod: "CASH" | "DIGITAL" | null;
+  }>({
+    lines: [],
+    subtotal: "0.00",
+    discount: "0.00",
+    total: "0.00",
+    paymentMethod: null,
+  });
   const [highlight, setHighlight] = useState<HighlightState>(null);
   const [thankYou, setThankYou] = useState<
     { total: string; saleRef: string } | null
@@ -59,12 +69,28 @@ export function DisplayClient() {
     const handle = (event: MessageEvent<DisplayMessage>) => {
       const msg = event.data;
       if (msg.type === "cart") {
-        setCart({ lines: msg.lines, subtotal: msg.subtotal, total: msg.total });
+        setCart({
+          lines: msg.lines,
+          subtotal: msg.subtotal,
+          discount: msg.discount,
+          total: msg.total,
+          paymentMethod: msg.paymentMethod,
+        });
       } else if (msg.type === "scan") {
         seqRef.current += 1;
         setHighlight({ product: msg.product, seq: seqRef.current });
       } else if (msg.type === "thank-you") {
         setThankYou({ total: msg.total, saleRef: msg.saleRef });
+        // Clear the displayed cart so when the thank-you screen times out we
+        // fall back to the idle welcome, not to the previous customer's basket.
+        setCart({
+          lines: [],
+          subtotal: "0.00",
+          discount: "0.00",
+          total: "0.00",
+          paymentMethod: null,
+        });
+        setHighlight(null);
       } else if (msg.type === "idle") {
         setHighlight(null);
         setThankYou(null);
@@ -162,36 +188,56 @@ function CartScreen({
   cart,
   highlight,
 }: {
-  cart: { lines: CartLine[]; subtotal: string; total: string };
+  cart: {
+    lines: CartLine[];
+    subtotal: string;
+    discount: string;
+    total: string;
+    paymentMethod: "CASH" | "DIGITAL" | null;
+  };
   highlight: HighlightState;
 }) {
+  const itemCount = cart.lines.reduce((n, l) => n + l.qty, 0);
+  const hasDiscount = Number(cart.discount) > 0;
   return (
     <div className="absolute inset-0 flex flex-col gap-6 p-8 lg:p-12">
       <header className="flex items-center justify-between">
-        <div style={{ transform: "scale(1.25)", transformOrigin: "left center" }}>
-          <RoseLogo size="md" />
+        <div className="flex items-center gap-4">
+          <PinkCart />
+          <div>
+            <div className="text-xs uppercase tracking-[0.3em] text-rose-300">
+              Your basket
+            </div>
+            <div className="text-2xl font-semibold text-ink">
+              {itemCount} item{itemCount === 1 ? "" : "s"}
+            </div>
+          </div>
         </div>
-        <div className="text-right">
-          <div className="text-[10px] uppercase tracking-[0.3em] text-ink-muted">
-            Your basket
-          </div>
-          <div className="mt-0.5 text-xs text-ink-muted">
-            {cart.lines.reduce((n, l) => n + l.qty, 0)} item
-            {cart.lines.reduce((n, l) => n + l.qty, 0) === 1 ? "" : "s"}
-          </div>
+        <div style={{ transform: "scale(1.15)", transformOrigin: "right center" }}>
+          <RoseLogo size="md" />
         </div>
       </header>
 
       <CartLines lines={cart.lines} highlight={highlight} />
 
-      <footer className="mt-auto flex items-end justify-between gap-6 rounded-2xl border border-white/10 bg-card/70 px-8 py-6 backdrop-blur-sm">
-        <div>
-          <div className="text-sm uppercase tracking-[0.3em] text-ink-muted">
-            Total to pay
+      <footer className="mt-auto flex items-stretch justify-between gap-6 rounded-2xl border border-white/10 bg-card/70 px-8 py-6 backdrop-blur-sm">
+        <div className="flex flex-col justify-between">
+          <div>
+            <div className="text-sm uppercase tracking-[0.3em] text-ink-muted">
+              Total to pay
+            </div>
+            <div className="mt-1 flex flex-col gap-0.5 text-xs text-ink-muted">
+              <span>Subtotal Rs <span className="tabular-nums text-ink-soft">{cart.subtotal}</span></span>
+              {hasDiscount ? (
+                <span className="text-emerald-300">
+                  Discount −Rs <span className="tabular-nums">{cart.discount}</span>
+                </span>
+              ) : null}
+            </div>
           </div>
-          <div className="mt-1 text-xs text-ink-muted">
-            Subtotal Rs {cart.subtotal}
-          </div>
+          {cart.paymentMethod ? (
+            <PaymentMethodBadge method={cart.paymentMethod} />
+          ) : null}
         </div>
         <div className="text-right">
           <div className="text-xs uppercase tracking-[0.3em] text-ink-muted">
@@ -210,6 +256,48 @@ function CartScreen({
       </footer>
 
       {highlight ? <ScanOverlay highlight={highlight} /> : null}
+    </div>
+  );
+}
+
+function PinkCart() {
+  // Pink cart icon, sized to read as a hero glyph at the top of the screen.
+  // SVG rather than emoji so we can control colour & stroke weight.
+  return (
+    <span
+      aria-hidden
+      className="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-rose-500/15 text-rose-300 ring-1 ring-rose-400/30 animate-cart-bob"
+    >
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        className="h-9 w-9"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          d="M3 4h2l2 12h12l2-8H7"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <circle cx="9" cy="20" r="1.6" fill="currentColor" />
+        <circle cx="17" cy="20" r="1.6" fill="currentColor" />
+      </svg>
+    </span>
+  );
+}
+
+function PaymentMethodBadge({ method }: { method: "CASH" | "DIGITAL" }) {
+  const label = method === "CASH" ? "Cash" : "Digital";
+  const icon = method === "CASH" ? "💵" : "📱";
+  return (
+    <div
+      key={method}
+      className="mt-3 inline-flex items-center gap-2 self-start rounded-full border border-rose-400/40 bg-rose-500/10 px-3 py-1.5 text-sm text-rose-200 animate-badge-pop"
+    >
+      <span aria-hidden>{icon}</span>
+      <span className="uppercase tracking-widest text-xs">Paying by {label}</span>
     </div>
   );
 }
@@ -384,12 +472,38 @@ function Sparkle({ delay }: { delay: number }) {
 
 /* --------------------------- Rose petal rain ----------------------------- */
 
-// Soft pink palette for the petals — deeper centre, lighter edges.
+// Red rose palette. Five stops per petal give the gradient depth so it reads
+// as velvety rather than flat — highlight on the upper crest, deepest tone
+// near the base where the petal curls under.
 const PETAL_PALETTES = [
-  { light: "#FFE4EC", mid: "#F49AB5", dark: "#C7386A" },
-  { light: "#FFC8DA", mid: "#EE7AA0", dark: "#A62653" },
-  { light: "#FFD6E0", mid: "#F59EB8", dark: "#B83866" },
-  { light: "#FFF0F4", mid: "#F8B6CA", dark: "#D05A82" },
+  {
+    highlight: "#FFE2E2",
+    light: "#F66A6A",
+    mid: "#D81F26",
+    dark: "#8C0010",
+    shadow: "#4A0000",
+  },
+  {
+    highlight: "#FFCACA",
+    light: "#EA3A3A",
+    mid: "#B81414",
+    dark: "#720008",
+    shadow: "#3C0004",
+  },
+  {
+    highlight: "#FFD8D8",
+    light: "#F04A4A",
+    mid: "#CA1A20",
+    dark: "#7E000A",
+    shadow: "#410005",
+  },
+  {
+    highlight: "#FFECEC",
+    light: "#F7807D",
+    mid: "#DC2C36",
+    dark: "#940015",
+    shadow: "#450006",
+  },
 ];
 
 function PetalRain() {
@@ -436,53 +550,85 @@ function RosePetal({
   palette: (typeof PETAL_PALETTES)[number];
   index: number;
 }) {
-  // Unique gradient id per petal so multiple SVGs on the page don't collide.
-  const id = `petal-gradient-${index}`;
-  const highlightId = `petal-highlight-${index}`;
+  // Unique gradient ids per petal so multiple SVGs on the page don't collide
+  // when they share the DOM. We build a layered look: soft drop shadow,
+  // radial body with 5 stops, a curled under-shadow lobe at the base, and
+  // a diagonal sheen for 3D highlight.
+  const bodyId = `petal-body-${index}`;
+  const curlId = `petal-curl-${index}`;
+  const sheenId = `petal-sheen-${index}`;
+  const shadowId = `petal-shadow-${index}`;
   return (
     <svg
-      width="26"
-      height="40"
+      width="30"
+      height="44"
       viewBox="0 0 40 60"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       aria-hidden
+      style={{
+        filter: `drop-shadow(0 4px 6px rgba(0,0,0,0.35)) drop-shadow(0 1px 1px ${palette.shadow})`,
+      }}
     >
       <defs>
-        <radialGradient id={id} cx="50%" cy="30%" r="75%">
-          <stop offset="0%" stopColor={palette.light} />
+        {/* Body: highlight → light → mid → dark. Off-centre so the top-left
+            crest reads as the lit side. */}
+        <radialGradient id={bodyId} cx="38%" cy="22%" r="85%">
+          <stop offset="0%" stopColor={palette.highlight} />
+          <stop offset="20%" stopColor={palette.light} />
           <stop offset="55%" stopColor={palette.mid} />
-          <stop offset="100%" stopColor={palette.dark} />
+          <stop offset="85%" stopColor={palette.dark} />
+          <stop offset="100%" stopColor={palette.shadow} />
         </radialGradient>
-        <linearGradient id={highlightId} x1="40%" y1="0%" x2="60%" y2="100%">
-          <stop offset="0%" stopColor="#ffffff" stopOpacity="0.55" />
-          <stop offset="50%" stopColor="#ffffff" stopOpacity="0.1" />
+        {/* Curl: darker lobe sits under the base to suggest the petal folding. */}
+        <radialGradient id={curlId} cx="50%" cy="70%" r="60%">
+          <stop offset="0%" stopColor={palette.dark} stopOpacity="0.0" />
+          <stop offset="60%" stopColor={palette.shadow} stopOpacity="0.55" />
+          <stop offset="100%" stopColor={palette.shadow} stopOpacity="0.85" />
+        </radialGradient>
+        {/* Sheen: diagonal specular highlight across the petal's upper side. */}
+        <linearGradient id={sheenId} x1="20%" y1="10%" x2="70%" y2="70%">
+          <stop offset="0%" stopColor="#ffffff" stopOpacity="0.85" />
+          <stop offset="35%" stopColor="#ffffff" stopOpacity="0.28" />
           <stop offset="100%" stopColor="#ffffff" stopOpacity="0" />
         </linearGradient>
+        {/* Edge shadow — darkens the rim so the silhouette doesn't look flat. */}
+        <linearGradient id={shadowId} x1="50%" y1="100%" x2="50%" y2="0%">
+          <stop offset="0%" stopColor={palette.shadow} stopOpacity="0.7" />
+          <stop offset="100%" stopColor={palette.shadow} stopOpacity="0" />
+        </linearGradient>
       </defs>
-      {/*
-        Petal silhouette: pointed at the top, round-cupped at the base, with
-        a slight asymmetry so it reads as a natural petal rather than a
-        symmetric leaf.
-      */}
+
+      {/* Base silhouette. Asymmetric curve so it reads as a real petal
+          rather than a symmetric almond. */}
       <path
-        d="M20 2 C 4 10, 2 40, 20 58 C 30 46, 38 22, 20 2 Z"
-        fill={`url(#${id})`}
+        d="M20 1 C 4 9, 1 38, 18 58 L 22 58 C 34 46, 39 20, 20 1 Z"
+        fill={`url(#${bodyId})`}
       />
-      {/* Soft sheen — sits off-centre to hint at curvature. */}
+      {/* Edge shadow at the base */}
       <path
-        d="M20 6 C 12 14, 10 36, 20 54"
-        stroke={`url(#${highlightId})`}
-        strokeWidth="4"
+        d="M20 1 C 4 9, 1 38, 18 58 L 22 58 C 34 46, 39 20, 20 1 Z"
+        fill={`url(#${shadowId})`}
+      />
+      {/* Curl shadow near base → 3D fold */}
+      <path
+        d="M8 40 C 14 52, 26 52, 32 40 L 30 58 L 10 58 Z"
+        fill={`url(#${curlId})`}
+      />
+      {/* Specular sheen — offset to the upper-left crest */}
+      <path
+        d="M18 4 C 10 14, 8 32, 16 50"
+        stroke={`url(#${sheenId})`}
+        strokeWidth="5"
         strokeLinecap="round"
         fill="none"
       />
-      {/* Central vein — very faint to hint at structure without cartoony lines. */}
+      {/* Central vein, very faint */}
       <path
-        d="M20 6 C 18 22, 18 42, 20 56"
-        stroke={palette.dark}
+        d="M20 4 C 18 22, 18 44, 20 58"
+        stroke={palette.shadow}
         strokeWidth="0.6"
-        strokeOpacity="0.35"
+        strokeOpacity="0.5"
         fill="none"
       />
     </svg>
@@ -525,6 +671,19 @@ function GlobalStyles() {
         100% { transform: scale(1); }
       }
       .animate-total { animation: total 360ms ease-out both; transform-origin: right center; }
+
+      @keyframes cart-bob {
+        0%, 100% { transform: translateY(0); }
+        50%      { transform: translateY(-3px); }
+      }
+      .animate-cart-bob { animation: cart-bob 2.4s ease-in-out infinite; }
+
+      @keyframes badge-pop {
+        0%   { opacity: 0; transform: scale(0.85); }
+        70%  { opacity: 1; transform: scale(1.06); }
+        100% { opacity: 1; transform: scale(1); }
+      }
+      .animate-badge-pop { animation: badge-pop 440ms ease-out both; }
 
       @keyframes scan-hero {
         0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.86); }
@@ -576,7 +735,9 @@ function GlobalStyles() {
         .animate-row-pop,
         .animate-total,
         .animate-scan-hero,
-        .animate-strip {
+        .animate-strip,
+        .animate-cart-bob,
+        .animate-badge-pop {
           animation: none !important;
         }
       }

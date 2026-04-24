@@ -39,7 +39,9 @@ type DisplayMessage =
         lineTotal: string;
       }>;
       subtotal: string;
+      discount: string;
       total: string;
+      paymentMethod: "CASH" | "DIGITAL" | null;
     }
   | { type: "thank-you"; total: string; saleRef: string }
   | { type: "idle" };
@@ -113,15 +115,17 @@ export function PosClient() {
   }, [state.saleRef, router]);
 
   // Mirror the full cart to the customer display on any change — add,
-  // qty edit, discount edit, remove — so the shopper always sees exactly
-  // what they're being charged, not just a subtotal number.
+  // qty edit, discount edit, remove, payment-method toggle — so the
+  // shopper always sees exactly what they're being charged.
   useEffect(() => {
     if (lines.length === 0) {
       broadcastToDisplay({
         type: "cart",
         lines: [],
         subtotal: "0.00",
+        discount: "0.00",
         total: "0.00",
+        paymentMethod: null,
       });
       return;
     }
@@ -139,13 +143,22 @@ export function PosClient() {
         lineTotal: lineTotal.toFixed(2),
       };
     });
+    // Total discount = sale-level discount + sum of per-line discounts.
+    const lineDiscountTotal = lines.reduce(
+      (sum, l) => sum + (Number(l.discount) || 0),
+      0,
+    );
+    const saleDiscountNum = Number(saleDiscount) || 0;
+    const totalDiscount = lineDiscountTotal + saleDiscountNum;
     broadcastToDisplay({
       type: "cart",
       lines: cartLines,
       subtotal: subtotal.toFixed(2),
+      discount: totalDiscount.toFixed(2),
       total: total.toFixed(2),
+      paymentMethod,
     });
-  }, [lines, subtotal, total]);
+  }, [lines, subtotal, total, saleDiscount, paymentMethod]);
 
   function handleScan(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
