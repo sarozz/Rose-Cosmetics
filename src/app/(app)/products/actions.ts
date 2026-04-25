@@ -5,6 +5,10 @@ import { redirect } from "next/navigation";
 import { CATALOG_WRITE_ROLES, requireRole } from "@/lib/auth";
 import { productSchema } from "@/lib/validation/product";
 import { createProduct, updateProduct } from "@/lib/services/product";
+import {
+  lookupBeautyByBarcode,
+  type LookupResult,
+} from "@/lib/services/external-product-lookup";
 import type { ProductFormState } from "./state";
 
 function parse(formData: FormData) {
@@ -64,6 +68,18 @@ export async function updateProductAction(
   }
   revalidatePath("/products");
   redirect("/products");
+}
+
+/**
+ * Hit Open Beauty Facts to pre-fill the product form from a barcode.
+ * Auth-gated to catalog writers — the backing API is public, but we don't
+ * want random visitors firing requests through our origin.
+ */
+export async function lookupExternalProductAction(
+  barcode: string,
+): Promise<LookupResult> {
+  await requireRole(CATALOG_WRITE_ROLES);
+  return lookupBeautyByBarcode(barcode);
 }
 
 function toFieldErrors(
