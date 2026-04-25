@@ -1,9 +1,12 @@
 "use client";
 
+import Image from "next/image";
+import { useState, useTransition } from "react";
 import { useFormState } from "react-dom";
 import { Field, FieldGroup, inputClass } from "@/components/form/field";
 import { FormError } from "@/components/form/form-error";
 import { SubmitButton } from "@/components/form/submit-button";
+import { lookupExternalProductAction } from "./actions";
 import { emptyProductState, type ProductFormState } from "./state";
 
 type Option = { id: string; name: string };
@@ -19,6 +22,15 @@ type Defaults = {
   reorderLevel?: number;
   isActive?: boolean;
 };
+
+type LookupState =
+  | { kind: "idle" }
+  | { kind: "loading" }
+  | {
+      kind: "found";
+      hint: { categoryHint: string | null; imageUrl: string | null };
+    }
+  | { kind: "error"; message: string };
 
 export function ProductForm({
   action,
@@ -37,6 +49,47 @@ export function ProductForm({
   const [state, formAction] = useFormState(action, emptyProductState);
   const isActive = defaults?.isActive ?? true;
 
+  // Auto-fill targets are controlled so the Lookup button can populate them
+  // without fighting React over uncontrolled state.
+  const [name, setName] = useState(defaults?.name ?? "");
+  const [brand, setBrand] = useState(defaults?.brand ?? "");
+  const [barcode, setBarcode] = useState(defaults?.barcode ?? "");
+  const [lookup, setLookup] = useState<LookupState>({ kind: "idle" });
+  const [pending, startLookup] = useTransition();
+
+  function runLookup() {
+    const code = barcode.trim();
+    if (!code) {
+      setLookup({ kind: "error", message: "Enter a barcode first." });
+      return;
+    }
+    setLookup({ kind: "loading" });
+    startLookup(async () => {
+      const result = await lookupExternalProductAction(code);
+      if (!result.ok) {
+        const message =
+          result.reason === "invalid-barcode"
+            ? "Barcode must be 8–14 digits."
+            : result.reason === "not-found"
+              ? "Not found in Open Beauty Facts. Fill manually."
+              : "Couldn't reach Open Beauty Facts. Try again.";
+        setLookup({ kind: "error", message });
+        return;
+      }
+      // Only overwrite a field when it's empty — don't clobber edits the
+      // cashier already made.
+      if (result.product.name && !name.trim()) setName(result.product.name);
+      if (result.product.brand && !brand.trim()) setBrand(result.product.brand);
+      setLookup({
+        kind: "found",
+        hint: {
+          categoryHint: result.product.categoryHint,
+          imageUrl: result.product.imageUrl,
+        },
+      });
+    });
+  }
+
   return (
     <form action={formAction} className="max-w-2xl space-y-8">
       <FormError message={state.formError} />
@@ -51,7 +104,8 @@ export function ProductForm({
           <input
             id="name"
             name="name"
-            defaultValue={defaults?.name ?? ""}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
             required
             autoFocus
             className={inputClass()}
@@ -63,7 +117,8 @@ export function ProductForm({
             <input
               id="brand"
               name="brand"
-              defaultValue={defaults?.brand ?? ""}
+              value={brand}
+              onChange={(e) => setBrand(e.target.value)}
               className={inputClass()}
             />
           </Field>
@@ -101,7 +156,8 @@ export function ProductForm({
               name="barcode"
               inputMode="numeric"
               pattern="\d*"
-              defaultValue={defaults?.barcode ?? ""}
+              value={barcode}
+              onChange={(e) => setBarcode(e.target.value)}
               className={inputClass()}
             />
           </Field>
@@ -114,6 +170,12 @@ export function ProductForm({
             />
           </Field>
         </div>
+
+        <LookupPanel
+          state={lookup}
+          pending={pending}
+          onLookup={runLookup}
+        />
       </FieldGroup>
 
       <FieldGroup title="Pricing" description="All amounts in shop currency">
@@ -193,6 +255,73 @@ export function ProductForm({
         </a>
       </div>
     </form>
+  );
+}
+
+function LookupPanel({
+  state,
+  pending,
+  onLookup,
+}: {
+  state: LookupState;
+  pending: boolean;
+  onLookup: () => void;
+}) {
+  return (
+    <div className="rounded-lg border border-white/10 bg-surface/40 p-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <div className="text-xs font-medium uppercase tracking-wider text-rose-300">
+            Auto-fill from barcode
+          </div>
+          <p className="mt-0.5 text-xs text-ink-muted">
+            Looks the barcode up on Open Beauty Facts and fills empty fields.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onLookup}
+          disabled={pending}
+          className="btn-secondary text-sm disabled:opacity-50"
+        >
+          {pending || state.kind === "loading" ? "Looking up…" : "Look up"}
+        </button>
+      </div>
+
+      {state.kind === "found" ? (
+        <div className="mt-3 flex items-start gap-3 rounded-md bg-emerald-500/10 p-3 text-xs text-emerald-200">
+          {state.hint.imageUrl ? (
+            <Image
+              src={state.hint.imageUrl}
+              alt=""
+              width={48}
+              height={48}
+              unoptimized
+              className="h-12 w-12 flex-shrink-0 rounded object-cover"
+            />
+          ) : null}
+          <div>
+            <div className="font-medium">Match found.</div>
+            <div className="mt-0.5 text-emerald-200/80">
+              Name and brand pre-filled (when empty).
+              {state.hint.categoryHint
+                ? ` Category hint: ${state.hint.categoryHint}.`
+                : ""}{" "}
+              Source: openbeautyfacts.org.
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {state.kind === "error" ? (
+        <p
+          role="alert"
+          className="mt-3 rounded-md bg-rose-500/10 px-3 py-2 text-xs text-rose-200"
+        >
+          {state.message}
+        </p>
+      ) : null}
+    </div>
   );
 }
 
