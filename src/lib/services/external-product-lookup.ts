@@ -6,10 +6,15 @@
  * The Beauty Facts coverage is best for European/American cosmetics; many
  * regional brands won't be in the database and we silently fall back to
  * `null` so the cashier just fills the fields manually.
+ *
+ * We hit the v0 endpoint (not v2) because v0's response shape is the
+ * canonical `{ status: 1 | 0, product }` documented by Open Food Facts;
+ * v2's response wraps differently and historically we mis-parsed it as
+ * "not found" even on hits.
  */
 
-const API_BASE = "https://world.openbeautyfacts.org/api/v2/product";
-const REQUEST_TIMEOUT_MS = 5000;
+const API_BASE = "https://world.openbeautyfacts.org/api/v0/product";
+const REQUEST_TIMEOUT_MS = 8000;
 
 export type ExternalProduct = {
   /** Best-guess product display name. */
@@ -48,10 +53,11 @@ export async function lookupBeautyByBarcode(
     return { ok: false, reason: "invalid-barcode" };
   }
 
+  const url = `${API_BASE}/${trimmed}.json`;
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   try {
-    const res = await fetch(`${API_BASE}/${trimmed}.json`, {
+    const res = await fetch(url, {
       signal: controller.signal,
       headers: {
         // Open Beauty Facts requests a meaningful user-agent so they can
@@ -64,10 +70,18 @@ export async function lookupBeautyByBarcode(
       cache: "no-store",
     });
     if (!res.ok) {
+      console.error(
+        "openbeautyfacts: HTTP non-2xx",
+        res.status,
+        res.statusText,
+        url,
+      );
       return { ok: false, reason: "network-error" };
     }
     const json = (await res.json()) as {
-      status?: number;
+      // v0 uses numeric `status: 1 | 0`; v2 uses `status: "success" | "failure"`.
+      // We normalise both so a future endpoint switch doesn't silently break us.
+      status?: number | string;
       product?: {
         product_name?: string;
         product_name_en?: string;
@@ -78,10 +92,12 @@ export async function lookupBeautyByBarcode(
         image_front_small_url?: string;
       };
     };
-    if (json.status !== 1 || !json.product) {
+    const found =
+      (json.status === 1 || json.status === "success") && Boolean(json.product);
+    if (!found) {
       return { ok: false, reason: "not-found" };
     }
-    const p = json.product;
+    const p = json.product!;
     const tag = p.categories_tags?.[p.categories_tags.length - 1] ?? null;
     return {
       ok: true,
@@ -94,7 +110,14 @@ export async function lookupBeautyByBarcode(
         source: "openbeautyfacts",
       },
     };
-  } catch {
+  } catch (err) {
+    const reason =
+      err instanceof DOMException && err.name === "AbortError"
+        ? "timed out"
+        : err instanceof Error
+          ? err.message
+          : String(err);
+    console.error("openbeautyfacts: fetch failed", reason, url);
     return { ok: false, reason: "network-error" };
   } finally {
     clearTimeout(timer);
