@@ -23,6 +23,48 @@ export async function listSales(params?: { limit?: number }) {
   });
 }
 
+/**
+ * Today's sales totals for one cashier (UTC day). Surfaced on the
+ * cashier dashboard so they see their own output without exposing
+ * shop-wide revenue.
+ */
+export async function myTodaySummary(cashierId: string) {
+  // Same UTC-day reference used by the rest of report.ts so the dashboard
+  // tile and the daily reports stay in sync.
+  const start = new Date();
+  start.setUTCHours(0, 0, 0, 0);
+  const where = {
+    status: "COMPLETED" as const,
+    soldAt: { gte: start },
+    cashierId,
+  };
+  const [sales, items] = await Promise.all([
+    prisma.sale.findMany({ where, select: { total: true } }),
+    prisma.saleItem.aggregate({
+      where: { sale: where },
+      _sum: { qty: true },
+    }),
+  ]);
+  const total = sales.reduce(
+    (sum, s) => sum.add(s.total),
+    new Prisma.Decimal(0),
+  );
+  return {
+    count: sales.length,
+    total: total.toFixed(2),
+    itemCount: items._sum.qty ?? 0,
+  };
+}
+
+/** The cashier's most recent completed sale, or null if they haven't rung any. */
+export async function myMostRecentSale(cashierId: string) {
+  return prisma.sale.findFirst({
+    where: { cashierId, status: "COMPLETED" },
+    orderBy: { soldAt: "desc" },
+    select: { id: true, saleRef: true, soldAt: true, total: true },
+  });
+}
+
 export async function getSale(saleRef: string) {
   return prisma.sale.findUnique({
     where: { saleRef },
