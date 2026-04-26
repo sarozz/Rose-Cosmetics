@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useFormState } from "react-dom";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Field, inputClass } from "@/components/form/field";
 import { FormError } from "@/components/form/form-error";
 import { SubmitButton } from "@/components/form/submit-button";
@@ -160,68 +160,93 @@ export function PosClient() {
     });
   }, [lines, subtotal, total, saleDiscount, paymentMethod]);
 
-  function handleScan(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const code = scanInput.trim();
-    if (!code) return;
-    setScanError(null);
-    startScan(async () => {
-      const result = await scanBarcodeAction(code);
-      if (!result.ok) {
-        setScanError(result.error);
-        return;
-      }
-      const product = result.product;
-      let addedQty: number | null = null;
-      setLines((prev) => {
-        const existing = prev.find((l) => l.productId === product.id);
-        if (existing) {
-          if (existing.qty + 1 > product.currentStock) {
-            setScanError(`Only ${product.currentStock} in stock for ${product.name}`);
+  const processScan = useCallback(
+    (rawCode: string) => {
+      const code = rawCode.trim();
+      if (!code) return;
+      setScanError(null);
+      startScan(async () => {
+        const result = await scanBarcodeAction(code);
+        if (!result.ok) {
+          setScanError(result.error);
+          return;
+        }
+        const product = result.product;
+        let addedQty: number | null = null;
+        setLines((prev) => {
+          const existing = prev.find((l) => l.productId === product.id);
+          if (existing) {
+            if (existing.qty + 1 > product.currentStock) {
+              setScanError(`Only ${product.currentStock} in stock for ${product.name}`);
+              return prev;
+            }
+            addedQty = existing.qty + 1;
+            return prev.map((l) =>
+              l.productId === product.id ? { ...l, qty: l.qty + 1 } : l,
+            );
+          }
+          if (product.currentStock < 1) {
+            setScanError(`${product.name} is out of stock`);
             return prev;
           }
-          addedQty = existing.qty + 1;
-          return prev.map((l) =>
-            l.productId === product.id ? { ...l, qty: l.qty + 1 } : l,
-          );
-        }
-        if (product.currentStock < 1) {
-          setScanError(`${product.name} is out of stock`);
-          return prev;
-        }
-        addedQty = 1;
-        return [
-          ...prev,
-          {
-            productId: product.id,
-            name: product.name,
-            brand: product.brand,
-            code: product.barcode ?? product.sku ?? "",
-            unitPrice: product.sellPrice,
-            qty: 1,
-            discount: "0",
-            currentStock: product.currentStock,
-          },
-        ];
-      });
-      if (addedQty !== null) {
-        const unit = Number(product.sellPrice) || 0;
-        const lineTotal = (unit * addedQty).toFixed(2);
-        broadcastToDisplay({
-          type: "scan",
-          product: {
-            name: product.name,
-            brand: product.brand,
-            sellPrice: product.sellPrice,
-            qty: addedQty,
-            lineTotal,
-          },
+          addedQty = 1;
+          return [
+            ...prev,
+            {
+              productId: product.id,
+              name: product.name,
+              brand: product.brand,
+              code: product.barcode ?? product.sku ?? "",
+              unitPrice: product.sellPrice,
+              qty: 1,
+              discount: "0",
+              currentStock: product.currentStock,
+            },
+          ];
         });
-      }
-      setScanInput("");
-      scanRef.current?.focus();
-    });
+        if (addedQty !== null) {
+          const unit = Number(product.sellPrice) || 0;
+          const lineTotal = (unit * addedQty).toFixed(2);
+          broadcastToDisplay({
+            type: "scan",
+            product: {
+              name: product.name,
+              brand: product.brand,
+              sellPrice: product.sellPrice,
+              qty: addedQty,
+              lineTotal,
+            },
+          });
+        }
+        setScanInput("");
+        scanRef.current?.focus();
+      });
+    },
+    [startScan],
+  );
+
+  function handleScan(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    processScan(scanInput);
   }
+
+  // Cashiers can scan from any page in the app — a global keyboard
+  // listener routes them here with `?scan=<barcode>`. We pick that up
+  // once on mount, fire the same scan flow as a manual entry, and strip
+  // the param so a back/forward navigation doesn't double-add.
+  const searchParams = useSearchParams();
+  useEffect(() => {
+    const scan = searchParams.get("scan");
+    if (!scan) return;
+    processScan(scan);
+    // Strip the param without adding to history.
+    router.replace("/pos");
+    // Re-running on every searchParams change would double-add when the
+    // user later visits /pos via the listener again — but `router.replace`
+    // immediately mutates searchParams, so this effect fires once and the
+    // second pass returns early because `scan` is now null.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   function updateLine(productId: string, patch: Partial<CartLine>) {
     setLines((prev) =>
