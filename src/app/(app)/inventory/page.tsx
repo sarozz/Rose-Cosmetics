@@ -5,6 +5,7 @@ import type {
   InventoryProduct,
 } from "@/lib/services/inventory";
 import { PageHeader } from "@/components/page-header";
+import { InventorySearch } from "./inventory-search";
 
 export const metadata = { title: "Inventory — Rose Cosmetics POS" };
 
@@ -31,38 +32,7 @@ export default async function InventoryPage({
         description="Everything currently on the shelf, grouped by category. Search by name, brand, SKU, barcode, or category."
       />
 
-      <form action="/inventory" method="get">
-        <div className="relative">
-          <span
-            aria-hidden
-            className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-ink-muted"
-          >
-            <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4">
-              <circle
-                cx="11"
-                cy="11"
-                r="7"
-                stroke="currentColor"
-                strokeWidth="2"
-              />
-              <path
-                d="m20 20-3-3"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-              />
-            </svg>
-          </span>
-          <input
-            type="search"
-            name="q"
-            defaultValue={query}
-            placeholder="Search inventory…"
-            aria-label="Search inventory"
-            className="block w-full rounded-lg border border-white/10 bg-surface/60 py-2.5 pl-9 pr-3 text-sm text-ink placeholder:text-ink-muted transition-colors hover:border-white/20 focus:border-rose-400 focus:outline-none focus:ring-2 focus:ring-rose-400/30"
-          />
-        </div>
-      </form>
+      <InventorySearch defaultQuery={query} />
 
       <section className="grid grid-cols-2 gap-3 md:grid-cols-5">
         <StatCard label="Unique SKUs" value={String(totals.skuCount)} />
