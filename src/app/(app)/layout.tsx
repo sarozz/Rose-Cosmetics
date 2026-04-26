@@ -2,6 +2,7 @@ import { requireUser } from "@/lib/auth";
 import { RoseLogo } from "@/components/rose-logo";
 import { Sidebar } from "./sidebar";
 import { UserMenu } from "./user-menu";
+import { GlobalScanListener } from "@/components/global-scan-listener";
 
 export default async function AppLayout({
   children,
@@ -12,6 +13,7 @@ export default async function AppLayout({
 
   return (
     <div className="flex min-h-screen bg-page">
+      <GlobalScanListener role={user.role} />
       <Sidebar role={user.role} />
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="no-print flex h-20 items-center justify-between border-b border-white/10 bg-card px-6">
