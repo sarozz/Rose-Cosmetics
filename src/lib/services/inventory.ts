@@ -39,6 +39,86 @@ export type InventorySnapshot = {
   categories: InventoryCategory[];
 };
 
+export type InventorySuggestion = {
+  id: string;
+  name: string;
+  brand: string | null;
+  category: string | null;
+  sellPrice: string;
+  currentStock: number;
+  status: "OUT" | "LOW" | "OK";
+};
+
+/**
+ * Compact, paginated search used by the Inventory autocomplete. Same
+ * search predicate as the snapshot view (name / brand / sku / barcode /
+ * category) but returns a flat result list capped at `limit` so it's
+ * cheap to fire on each keystroke. Suggestions are ordered by relevance
+ * heuristic — prefix matches on name first, then everything else.
+ */
+export async function searchInventorySuggestions(
+  query: string,
+  limit = 8,
+): Promise<InventorySuggestion[]> {
+  const q = query.trim();
+  if (q.length === 0) return [];
+
+  const products = await prisma.product.findMany({
+    where: {
+      isActive: true,
+      OR: [
+        { name: { contains: q, mode: "insensitive" } },
+        { brand: { contains: q, mode: "insensitive" } },
+        { sku: { contains: q, mode: "insensitive" } },
+        { barcode: { contains: q, mode: "insensitive" } },
+        { category: { name: { contains: q, mode: "insensitive" } } },
+      ],
+    },
+    include: { category: { select: { name: true } } },
+    // Pull a slightly larger window than `limit` so the prefix-match
+    // re-ranking has room to choose without clipping good matches.
+    take: limit * 2,
+    orderBy: [{ name: "asc" }],
+  });
+
+  const lower = q.toLowerCase();
+  const ranked = products
+    .map((p) => {
+      const name = p.name.toLowerCase();
+      const brand = (p.brand ?? "").toLowerCase();
+      const score =
+        name.startsWith(lower)
+          ? 0
+          : brand.startsWith(lower)
+            ? 1
+            : name.includes(lower)
+              ? 2
+              : 3;
+      return { product: p, score };
+    })
+    .sort((a, b) => a.score - b.score || a.product.name.localeCompare(b.product.name))
+    .slice(0, limit);
+
+  return ranked.map(({ product: p }) => {
+    const tracked = p.reorderLevel > 0;
+    const status: InventorySuggestion["status"] =
+      p.currentStock <= 0
+        ? "OUT"
+        : tracked && p.currentStock <= p.reorderLevel
+          ? "LOW"
+          : "OK";
+    return {
+      id: p.id,
+      name: p.name,
+      brand: p.brand,
+      category: p.category?.name ?? null,
+      sellPrice: p.sellPrice.toFixed(2),
+      currentStock: p.currentStock,
+      status,
+    };
+  });
+}
+
 /**
  * Grouped-by-category snapshot of on-hand stock, with overall totals and
  * per-product status pills derived in one pass. Cashiers use this as a
