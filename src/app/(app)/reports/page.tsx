@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireRole, REPORT_VIEW_ROLES } from "@/lib/auth";
 import { PageHeader } from "@/components/page-header";
+import { PrintButton } from "@/components/print-button";
 import {
   lowStock,
   paymentMethodSplit,
@@ -98,7 +99,8 @@ export default async function ReportsPage({
         title="Sales analytics"
         description="Track revenue, best-sellers, and stock health. Switch period up top — every table exports to CSV."
         actions={
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            <PrintButton label="Print report" />
             <Link href="/reports/profit" className="btn-secondary">
               Profit & inventory
             </Link>
