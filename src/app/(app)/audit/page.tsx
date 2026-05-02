@@ -1,5 +1,6 @@
 import { requireRole, AUDIT_VIEW_ROLES } from "@/lib/auth";
 import { PageHeader } from "@/components/page-header";
+import { PrintButton } from "@/components/print-button";
 import { prisma } from "@/lib/prisma";
 import {
   AUDIT_ENTITY_TYPES,
@@ -70,6 +71,7 @@ export default async function AuditPage({
         eyebrow="Administration"
         title="Audit log"
         description="Who changed what, when. Every catalog, staff, sale, purchase, and return mutation writes exactly one row here."
+        actions={<PrintButton label="Print log" />}
       />
 
       <form method="get" className="flex flex-wrap items-end gap-3">

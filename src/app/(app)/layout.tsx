@@ -2,6 +2,7 @@ import { requireUser } from "@/lib/auth";
 import { RoseLogo } from "@/components/rose-logo";
 import { Sidebar } from "./sidebar";
 import { UserMenu } from "./user-menu";
+import { HeaderBreadcrumb } from "./header-breadcrumb";
 import { GlobalScanListener } from "@/components/global-scan-listener";
 
 export default async function AppLayout({
@@ -22,7 +23,7 @@ export default async function AppLayout({
           <div className="md:hidden">
             <RoseLogo size="sm" />
           </div>
-          <p className="hidden text-sm text-ink-muted md:block">Point of sale</p>
+          <HeaderBreadcrumb />
           <UserMenu displayName={user.displayName} role={user.role} />
         </header>
         <main className="flex-1 overflow-y-auto px-4 py-6 sm:px-6 sm:py-8">

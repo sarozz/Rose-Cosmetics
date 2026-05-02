@@ -49,15 +49,30 @@ export function SalesByDayChart({ data }: { data: SalesPoint[] }) {
           const y = padY + chartH - h;
           const isLast = i === points.length - 1;
           return (
-            <g key={p.date}>
+            <g key={p.date} className="group/bar cursor-pointer">
+              {/* Wider hit-target so hover tooltips show on narrow bars too. */}
+              <rect
+                x={x}
+                y={padY}
+                width={barW}
+                height={chartH}
+                className="fill-transparent"
+              />
               <rect
                 x={x}
                 y={y}
                 width={barW}
                 height={h}
                 rx={2}
-                className={isLast ? "fill-rose-400" : "fill-rose-500/40"}
-              />
+                className={`origin-bottom transition-all duration-150 ease-out group-hover/bar:fill-rose-300 ${
+                  isLast ? "fill-rose-400" : "fill-rose-500/40"
+                }`}
+              >
+                <title>
+                  {formatShortDate(p.date)} · Rs {value.toFixed(2)} ·{" "}
+                  {p.count} txn
+                </title>
+              </rect>
               {i % 2 === 0 ? (
                 <text
                   x={x + barW / 2}
@@ -93,18 +108,23 @@ export function TopProductsChart({ data }: { data: TopProduct[] }) {
         </p>
       ) : (
         <ul className="space-y-2">
-          {data.map((p) => {
+          {data.map((p, i) => {
             const pct = (p.qty / max) * 100;
             return (
-              <li key={p.name} className="grid grid-cols-[1fr_auto] items-center gap-3">
+              <li
+                key={p.name}
+                className="group grid cursor-default grid-cols-[1fr_auto] items-center gap-3 rounded-md px-2 py-1 transition-colors hover:bg-white/5"
+                title={`${p.name} · ${p.qty} units · Rs ${p.revenue}`}
+              >
                 <div>
-                  <p className="truncate text-sm text-ink" title={p.name}>
-                    {p.name}
-                  </p>
+                  <p className="truncate text-sm text-ink">{p.name}</p>
                   <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-surface">
                     <div
-                      className="h-full rounded-full bg-rose-500"
-                      style={{ width: `${pct}%` }}
+                      className="h-full rounded-full bg-gradient-to-r from-rose-500 to-rose-300 transition-[width] duration-500 ease-out group-hover:from-rose-400 group-hover:to-rose-200"
+                      style={{
+                        width: `${pct}%`,
+                        animation: `bar-grow-${i} 600ms ease-out both`,
+                      }}
                     />
                   </div>
                 </div>
