@@ -1,11 +1,21 @@
-import type { CSSProperties } from "react";
+import { Allura } from "next/font/google";
+
+// Allura is the closest free Google Font to Apple's "Snell Roundhand", which
+// only ships on macOS / iOS. Loading it via next/font means every device
+// (Windows, Android, ChromeOS, …) renders the wordmark from the same font
+// file, so the brand mark stops drifting between platforms.
+const allura = Allura({
+  weight: "400",
+  subsets: ["latin"],
+  display: "swap",
+});
 
 type Size = "sm" | "md" | "lg";
 
 const wordClass: Record<Size, string> = {
-  sm: "text-base leading-none",
-  md: "text-xl leading-none",
-  lg: "text-4xl leading-none",
+  sm: "text-2xl leading-none",
+  md: "text-3xl leading-none",
+  lg: "text-5xl leading-none",
 };
 const subClass: Record<Size, string> = {
   sm: "text-[8px] tracking-[0.25em]",
@@ -14,9 +24,9 @@ const subClass: Record<Size, string> = {
 };
 
 /**
- * Script "Rose" wordmark with a "COSMETICS" sub-line. Typeset-only so
- * the mark stays crisp on retina / print and nothing leans on a custom
- * asset.
+ * Script "Rose" wordmark with a "COSMETICS" sub-line. The wordmark uses a
+ * web-loaded script font so it renders identically on every device. The
+ * sub-line keeps the system sans for scale neutrality.
  */
 export function RoseLogo({
   size = "md",
@@ -25,17 +35,10 @@ export function RoseLogo({
   size?: Size;
   className?: string;
 }) {
-  const fontStyle: CSSProperties = {
-    fontFamily:
-      '"Snell Roundhand", "Lucida Handwriting", "Brush Script MT", ui-serif, Georgia, serif',
-    fontStyle: "italic",
-    fontWeight: 600,
-  };
   return (
     <span className={`inline-flex flex-col ${className}`}>
       <span
-        className={`text-rose-400 drop-shadow-[0_0_8px_rgba(233,80,125,0.35)] ${wordClass[size]}`}
-        style={fontStyle}
+        className={`${allura.className} text-rose-400 drop-shadow-[0_0_8px_rgba(233,80,125,0.35)] ${wordClass[size]}`}
       >
         Rose
       </span>

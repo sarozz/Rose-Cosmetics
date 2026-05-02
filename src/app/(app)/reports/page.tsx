@@ -147,7 +147,7 @@ export default async function ReportsPage({
           range={range}
           emptyMessage="No sales recorded in this window yet."
         />
-        <div className="mt-3 overflow-hidden rounded-xl border border-white/10 bg-card shadow-sm">
+        <div className="mt-3 overflow-x-auto rounded-xl border border-white/10 bg-card shadow-sm">
           <table className="min-w-full divide-y divide-white/10 text-sm">
             <thead className="bg-surface text-left text-xs uppercase tracking-wider text-ink-muted">
               <tr>
@@ -193,7 +193,7 @@ export default async function ReportsPage({
           csvHref={`/reports/download?kind=top-products&range=${range}`}
           csvLabel="Download top products CSV"
         />
-        <div className="overflow-hidden rounded-xl border border-white/10 bg-card shadow-sm">
+        <div className="overflow-x-auto rounded-xl border border-white/10 bg-card shadow-sm">
           <table className="min-w-full divide-y divide-white/10 text-sm">
             <thead className="bg-surface text-left text-xs uppercase tracking-wider text-ink-muted">
               <tr>
@@ -294,7 +294,7 @@ export default async function ReportsPage({
           csvHref="/reports/download?kind=low-stock"
           csvLabel="Download low-stock CSV"
         />
-        <div className="overflow-hidden rounded-xl border border-white/10 bg-card shadow-sm">
+        <div className="overflow-x-auto rounded-xl border border-white/10 bg-card shadow-sm">
           <table className="min-w-full divide-y divide-white/10 text-sm">
             <thead className="bg-surface text-left text-xs uppercase tracking-wider text-ink-muted">
               <tr>

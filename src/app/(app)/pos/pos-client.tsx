@@ -294,7 +294,7 @@ export function PosClient() {
           </p>
         ) : null}
 
-        <div className="overflow-hidden rounded-lg border border-white/10 bg-card">
+        <div className="overflow-x-auto rounded-lg border border-white/10 bg-card">
           <table className="min-w-full divide-y divide-white/10 text-sm">
             <thead className="bg-surface text-left text-xs uppercase tracking-wider text-ink-muted">
               <tr>

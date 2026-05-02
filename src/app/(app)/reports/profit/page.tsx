@@ -70,7 +70,7 @@ export default async function ProfitReportPage() {
         <h2 className="mb-3 text-sm font-semibold text-ink">
           Profit · last 30 days
         </h2>
-        <div className="overflow-hidden rounded-lg border border-white/10 bg-card">
+        <div className="overflow-x-auto rounded-lg border border-white/10 bg-card">
           <table className="min-w-full divide-y divide-white/10 text-sm">
             <thead className="bg-surface text-left text-xs uppercase tracking-wider text-ink-muted">
               <tr>
@@ -110,7 +110,7 @@ export default async function ProfitReportPage() {
         <h2 className="mb-3 text-sm font-semibold text-ink">
           Top products by profit · last 30 days
         </h2>
-        <div className="overflow-hidden rounded-lg border border-white/10 bg-card">
+        <div className="overflow-x-auto rounded-lg border border-white/10 bg-card">
           <table className="min-w-full divide-y divide-white/10 text-sm">
             <thead className="bg-surface text-left text-xs uppercase tracking-wider text-ink-muted">
               <tr>
