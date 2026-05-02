@@ -99,38 +99,51 @@ export function Sidebar({ role }: { role: UserRole }) {
       }`}
       aria-label="Primary"
     >
-      <div
-        className={`flex h-20 items-center border-b border-white/10 ${
-          collapsed ? "justify-center px-2" : "justify-between px-4"
-        }`}
-      >
-        {!collapsed ? (
-          <RoseLogo size="lg" />
-        ) : (
-          <span className="font-[Allura,cursive] text-3xl text-rose-400">
-            R
-          </span>
-        )}
+      {collapsed ? (
+        // The entire header block is the expand button — bigger hit-target,
+        // chevron sits centred and prominent so the affordance is obvious.
         <button
           type="button"
           onClick={toggle}
-          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          aria-pressed={collapsed}
-          className={`flex h-8 w-8 items-center justify-center rounded-md text-ink-muted transition hover:bg-white/5 hover:text-ink ${
-            collapsed ? "absolute right-2 top-2" : ""
-          }`}
+          aria-label="Expand sidebar"
+          aria-pressed
+          title="Expand sidebar"
+          className="group/expand flex h-20 items-center justify-center border-b border-white/10 transition-colors hover:bg-rose-500/5"
         >
-          <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4">
-            <path
-              d={collapsed ? "M9 6 15 12 9 18" : "M15 6 9 12 15 18"}
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
+          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-rose-500/10 text-rose-300 ring-1 ring-rose-400/30 transition-all group-hover/expand:bg-rose-500/20 group-hover/expand:text-rose-200">
+            <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
+              <path
+                d="M9 6 15 12 9 18"
+                stroke="currentColor"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </span>
         </button>
-      </div>
+      ) : (
+        <div className="flex h-20 items-center justify-between border-b border-white/10 px-4">
+          <RoseLogo size="lg" />
+          <button
+            type="button"
+            onClick={toggle}
+            aria-label="Collapse sidebar"
+            title="Collapse sidebar"
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-surface/60 text-ink-muted transition-colors hover:border-rose-400/40 hover:bg-rose-500/10 hover:text-rose-200"
+          >
+            <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4">
+              <path
+                d="M15 6 9 12 15 18"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
+      )}
 
       <nav className="flex-1 overflow-y-auto p-2">
         <ul className="space-y-0.5">
