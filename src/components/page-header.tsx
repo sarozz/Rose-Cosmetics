@@ -10,19 +10,25 @@ export function PageHeader({
   actions?: React.ReactNode;
 }) {
   return (
-    <header className="mb-6 flex items-start justify-between gap-4">
+    <header className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
       <div>
         {eyebrow ? (
-          <p className="text-sm font-medium uppercase tracking-wider text-rose-400">
+          <p className="text-xs font-medium uppercase tracking-wider text-rose-400 sm:text-sm">
             {eyebrow}
           </p>
         ) : null}
-        <h1 className="mt-1 text-2xl font-semibold text-ink">{title}</h1>
+        <h1 className="mt-1 text-xl font-semibold text-ink sm:text-2xl">
+          {title}
+        </h1>
         {description ? (
           <p className="mt-1 max-w-2xl text-sm text-ink-muted">{description}</p>
         ) : null}
       </div>
-      {actions ? <div className="flex-shrink-0">{actions}</div> : null}
+      {actions ? (
+        <div className="flex flex-wrap items-center gap-2 sm:flex-shrink-0">
+          {actions}
+        </div>
+      ) : null}
     </header>
   );
 }

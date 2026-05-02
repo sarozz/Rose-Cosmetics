@@ -16,7 +16,7 @@ export default async function AppLayout({
       <GlobalScanListener role={user.role} />
       <Sidebar role={user.role} />
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="no-print flex h-20 items-center justify-between border-b border-white/10 bg-card px-6">
+        <header className="no-print flex h-16 items-center justify-between gap-3 border-b border-white/10 bg-card px-4 sm:h-20 sm:px-6">
           {/* Logo only on mobile where the sidebar is hidden, to keep the
               desktop header uncluttered since the sidebar carries the brand. */}
           <div className="md:hidden">
@@ -25,7 +25,9 @@ export default async function AppLayout({
           <p className="hidden text-sm text-ink-muted md:block">Point of sale</p>
           <UserMenu displayName={user.displayName} role={user.role} />
         </header>
-        <main className="flex-1 overflow-y-auto px-6 py-8">{children}</main>
+        <main className="flex-1 overflow-y-auto px-4 py-6 sm:px-6 sm:py-8">
+          {children}
+        </main>
       </div>
     </div>
   );
