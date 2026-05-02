@@ -104,6 +104,9 @@ export default async function ReportsPage({
             <Link href="/reports/profit" className="btn-secondary">
               Profit & inventory
             </Link>
+            <Link href="/reports/staff" className="btn-secondary">
+              Staff performance
+            </Link>
             <Link href="/reports/ledger" className="btn-secondary">
               Inventory ledger
             </Link>

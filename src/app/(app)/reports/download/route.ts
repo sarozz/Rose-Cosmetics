@@ -9,16 +9,27 @@ import {
   topProducts,
   type ReportRange,
 } from "@/lib/services/report";
+import {
+  parseMonthValue,
+  staffPerformanceForMonth,
+} from "@/lib/services/staff-performance";
 
 /**
  * CSV exporter for the reports page. One endpoint, `kind` picks the
- * dataset and `range` sizes the window. Every response is text/csv with
- * Content-Disposition: attachment so the browser downloads rather than
- * rendering. Strings go through `csvEscape` to neutralise commas and
- * stray quotes so the file opens cleanly in Excel / Sheets.
+ * dataset and `range` (or `month` for the staff kind) sizes the window.
+ * Every response is text/csv with Content-Disposition: attachment so
+ * the browser downloads rather than rendering. Strings go through
+ * `csvEscape` to neutralise commas and stray quotes so the file opens
+ * cleanly in Excel / Sheets.
  */
 
-const KINDS = ["sales", "top-products", "payments", "low-stock"] as const;
+const KINDS = [
+  "sales",
+  "top-products",
+  "payments",
+  "low-stock",
+  "staff",
+] as const;
 type Kind = (typeof KINDS)[number];
 
 function parseRange(raw: string | null): ReportRange {
@@ -99,6 +110,34 @@ export async function GET(request: Request) {
       ...rows.map((r) => [r.method, r.total]),
     ]);
     filename = `rose-payments-${range}-${todayStamp()}.csv`;
+  } else if (kind === "staff") {
+    const { year, monthIndex, value } = parseMonthValue(
+      searchParams.get("month") ?? undefined,
+    );
+    const rows = await staffPerformanceForMonth(year, monthIndex);
+    body = toCsv([
+      [
+        "Staff",
+        "Role",
+        "Sales",
+        "Items",
+        "Revenue",
+        "Average sale",
+        "Top product",
+        "Top product qty",
+      ],
+      ...rows.map((r) => [
+        r.displayName,
+        r.role,
+        r.salesCount,
+        r.itemsSold,
+        r.revenue,
+        r.averageSale,
+        r.topProductName ?? "",
+        r.topProductQty,
+      ]),
+    ]);
+    filename = `rose-staff-performance-${value}.csv`;
   } else {
     const rows = await lowStock(200);
     body = toCsv([
