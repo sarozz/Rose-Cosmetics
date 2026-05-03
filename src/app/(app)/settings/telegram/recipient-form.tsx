@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useFormState } from "react-dom";
 import { Field, FieldGroup, inputClass } from "@/components/form/field";
 import { FormError } from "@/components/form/form-error";
@@ -91,9 +92,9 @@ export function RecipientForm({
 
       <div className="flex gap-3 pt-2">
         <SubmitButton pendingLabel="Saving…">{submitLabel}</SubmitButton>
-        <a href="/settings/telegram" className="btn-secondary">
+        <Link href="/settings/telegram" className="btn-secondary">
           Cancel
-        </a>
+        </Link>
       </div>
     </form>
   );

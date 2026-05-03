@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useFormState } from "react-dom";
 import { Field, inputClass } from "@/components/form/field";
@@ -213,9 +214,9 @@ export function ReturnForm({
         <SubmitButton pendingLabel="Processing…">
           {anySelected ? `Refund ${refundTotal.toFixed(2)}` : "Refund"}
         </SubmitButton>
-        <a href="/returns" className="btn-secondary">
+        <Link href="/returns" className="btn-secondary">
           Cancel
-        </a>
+        </Link>
       </div>
     </form>
   );

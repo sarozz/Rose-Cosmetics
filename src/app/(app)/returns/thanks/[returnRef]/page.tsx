@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireRole, RETURN_WRITE_ROLES } from "@/lib/auth";
 import { PageHeader } from "@/components/page-header";
@@ -22,9 +23,9 @@ export default async function ReturnThanksPage({
         title="Return complete"
         description={`Reference ${refund.returnRef} — refunded against sale ${refund.originalSale.saleRef} by ${refund.createdBy.displayName}.`}
         actions={
-          <a href="/returns" className="btn-primary">
+          <Link href="/returns" className="btn-primary">
             Back to returns
-          </a>
+          </Link>
         }
       />
 

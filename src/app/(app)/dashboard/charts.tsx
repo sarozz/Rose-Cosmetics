@@ -1,3 +1,4 @@
+import Link from "next/link";
 type SalesPoint = { date: string; count: number; total: string };
 type TopProduct = { name: string; qty: number; revenue: string };
 type CategorySlice = { id: string; name: string; total: string };
@@ -329,9 +330,9 @@ export function LowStockPreview({ data }: { data: LowStockItem[] }) {
     <div className="rounded-lg border border-white/10 bg-card p-5 shadow-sm">
       <div className="mb-3 flex items-baseline justify-between">
         <h2 className="text-sm font-medium text-ink">Low stock · top 5</h2>
-        <a href="/reports" className="text-xs text-rose-300 hover:text-rose-200">
+        <Link href="/reports" className="text-xs text-rose-300 hover:text-rose-200">
           View all →
-        </a>
+        </Link>
       </div>
       {data.length === 0 ? (
         <p className="py-6 text-center text-sm text-ink-muted">

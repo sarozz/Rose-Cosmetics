@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useFormState } from "react-dom";
 import { Field, inputClass } from "@/components/form/field";
 import { FormError } from "@/components/form/form-error";
@@ -106,9 +107,9 @@ export function SupplierForm({
 
       <div className="flex gap-3 pt-2">
         <SubmitButton pendingLabel="Saving…">{submitLabel}</SubmitButton>
-        <a href="/suppliers" className="btn-secondary">
+        <Link href="/suppliers" className="btn-secondary">
           Cancel
-        </a>
+        </Link>
       </div>
     </form>
   );

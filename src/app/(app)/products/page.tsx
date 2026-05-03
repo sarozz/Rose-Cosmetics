@@ -1,3 +1,5 @@
+import Link from "next/link";
+import type { Route } from "next";
 import { CATALOG_WRITE_ROLES, hasRole, requireUser } from "@/lib/auth";
 import { listProducts } from "@/lib/services/product";
 import { PageHeader } from "@/components/page-header";
@@ -24,9 +26,9 @@ export default async function ProductsPage({
         description="Everything the store sells — scanned by barcode at the till. On-hand stock refreshes after every sale and receipt."
         actions={
           canWrite ? (
-            <a href="/products/new" className="btn-primary">
+            <Link href="/products/new" className="btn-primary">
               Add product
-            </a>
+            </Link>
           ) : null
         }
       />
@@ -139,12 +141,12 @@ export default async function ProductsPage({
                     <td className="px-4 py-3 text-right">
                       {canWrite ? (
                         <div className="inline-flex items-start gap-4">
-                          <a
-                            href={`/products/${p.id}/edit`}
+                          <Link
+                            href={`/products/${p.id}/edit` as Route}
                             className="text-rose-300 hover:underline"
                           >
                             Edit
-                          </a>
+                          </Link>
                           <DeleteEntityButton
                             id={p.id}
                             name={p.name}

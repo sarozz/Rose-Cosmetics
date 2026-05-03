@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { hasRole, RETURN_WRITE_ROLES, requireUser } from "@/lib/auth";
 import { listReturns } from "@/lib/services/return";
 import { PageHeader } from "@/components/page-header";
@@ -17,9 +18,9 @@ export default async function ReturnsPage() {
         description="Refunds against past sales. Restocked lines write an inventory ledger entry; damaged lines refund without touching stock."
         actions={
           canWrite ? (
-            <a href="/returns/new" className="btn-primary">
+            <Link href="/returns/new" className="btn-primary">
               New return
-            </a>
+            </Link>
           ) : null
         }
       />

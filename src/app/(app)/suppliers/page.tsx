@@ -1,3 +1,5 @@
+import Link from "next/link";
+import type { Route } from "next";
 import {
   CATALOG_WRITE_ROLES,
   INVENTORY_WRITE_ROLES,
@@ -31,9 +33,9 @@ export default async function SuppliersPage({
         description="People and companies that stock the store."
         actions={
           canWrite ? (
-            <a href="/suppliers/new" className="btn-primary">
+            <Link href="/suppliers/new" className="btn-primary">
               Add supplier
-            </a>
+            </Link>
           ) : null
         }
       />
@@ -110,12 +112,12 @@ export default async function SuppliersPage({
                   <td className="px-4 py-3 text-right">
                     {canWrite ? (
                       <div className="inline-flex items-start gap-4">
-                        <a
-                          href={`/suppliers/${s.id}/edit`}
+                        <Link
+                          href={`/suppliers/${s.id}/edit` as Route}
                           className="text-rose-300 hover:underline"
                         >
                           Edit
-                        </a>
+                        </Link>
                         <DeleteEntityButton
                           id={s.id}
                           name={s.name}
