@@ -4,8 +4,14 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { CATALOG_WRITE_ROLES, requireRole } from "@/lib/auth";
 import { categorySchema } from "@/lib/validation/category";
-import { createCategory, updateCategory } from "@/lib/services/category";
+import {
+  CategoryDeleteError,
+  createCategory,
+  deleteCategory,
+  updateCategory,
+} from "@/lib/services/category";
 import type { CategoryFormState } from "./state";
+import type { DeleteEntityResult } from "@/components/delete-entity-button";
 
 function parse(formData: FormData) {
   return categorySchema.safeParse({
@@ -82,4 +88,22 @@ function friendlyError(err: unknown, entity: string): string {
     return `A ${entity} with that name already exists under the same parent.`;
   }
   return "Something went wrong. Try again.";
+}
+
+export async function deleteCategoryAction(
+  formData: FormData,
+): Promise<DeleteEntityResult> {
+  const actor = await requireRole(CATALOG_WRITE_ROLES);
+  const id = String(formData.get("id") ?? "");
+  if (!id) return { ok: false, message: "Missing category id" };
+  try {
+    await deleteCategory(actor.id, id);
+  } catch (err) {
+    if (err instanceof CategoryDeleteError) {
+      return { ok: false, message: err.message };
+    }
+    return { ok: false, message: friendlyError(err, "category") };
+  }
+  revalidatePath("/categories");
+  return { ok: true };
 }
