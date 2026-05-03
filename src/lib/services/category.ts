@@ -114,26 +114,14 @@ export class CategoryDeleteError extends Error {
 }
 
 /**
- * Hard-delete a category. Refuses when products still belong to it or when
- * sub-categories exist — operator must move/deactivate them first to avoid
- * silently orphaning catalog rows.
+ * Hard cascade delete. Detaches every product that's tagged with this
+ * category (sets categoryId = null) and orphans direct sub-categories
+ * (parentId = null) so they survive as top-level entries — then drops
+ * the row. Used to wipe test data; preserves the catalog rows.
  */
 export async function deleteCategory(actorUserId: string, id: string) {
   const category = await prisma.category.findUnique({ where: { id } });
   if (!category) throw new CategoryDeleteError("Category not found");
-
-  const [products, children] = await Promise.all([
-    prisma.product.count({ where: { categoryId: id } }),
-    prisma.category.count({ where: { parentId: id } }),
-  ]);
-  if (products > 0 || children > 0) {
-    const bits: string[] = [];
-    if (products > 0) bits.push(`${products} product${products === 1 ? "" : "s"}`);
-    if (children > 0) bits.push(`${children} sub-categor${children === 1 ? "y" : "ies"}`);
-    throw new CategoryDeleteError(
-      `This category still has ${bits.join(" and ")}. Move them out (or deactivate) before deleting.`,
-    );
-  }
 
   await prisma.$transaction(async (tx) => {
     await writeAuditLog(tx, {
@@ -142,6 +130,14 @@ export async function deleteCategory(actorUserId: string, id: string) {
       entityId: id,
       action: "DELETE",
       before: category,
+    });
+    await tx.product.updateMany({
+      where: { categoryId: id },
+      data: { categoryId: null },
+    });
+    await tx.category.updateMany({
+      where: { parentId: id },
+      data: { parentId: null },
     });
     await tx.category.delete({ where: { id } });
   });

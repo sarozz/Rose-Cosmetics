@@ -2,6 +2,7 @@ import { revalidateTag, unstable_cache } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { writeAuditLog } from "./audit";
 import type { SupplierData } from "@/lib/validation/supplier";
+import { REPORT_TAGS } from "./report";
 import { CATALOG_TAGS } from "./cache-tags";
 
 export const listSuppliers = unstable_cache(
@@ -77,21 +78,16 @@ export class SupplierDeleteError extends Error {
 }
 
 /**
- * Hard-delete a supplier. Refuses when there's purchase history on file
- * — that's the FK relationship we'd otherwise orphan. Deactivate instead.
+ * Hard cascade delete. Wipes every purchase by this supplier (and the
+ * inventory movements those purchases wrote — PurchaseItem cascades on
+ * the FK), then the supplier. Stock snapshots are *not* reversed: this
+ * is for clearing out test data, not for unwinding a real receipt. If
+ * the operator wants to keep history they should deactivate via Edit
+ * instead.
  */
 export async function deleteSupplier(actorUserId: string, id: string) {
   const supplier = await prisma.supplier.findUnique({ where: { id } });
   if (!supplier) throw new SupplierDeleteError("Supplier not found");
-
-  const purchases = await prisma.purchase.count({ where: { supplierId: id } });
-  if (purchases > 0) {
-    throw new SupplierDeleteError(
-      `This supplier has ${purchases} purchase${
-        purchases === 1 ? "" : "s"
-      } on file. Deactivate via Edit instead so the receipts stay attributable.`,
-    );
-  }
 
   await prisma.$transaction(async (tx) => {
     await writeAuditLog(tx, {
@@ -101,8 +97,24 @@ export async function deleteSupplier(actorUserId: string, id: string) {
       action: "DELETE",
       before: supplier,
     });
+
+    const purchases = await tx.purchase.findMany({
+      where: { supplierId: id },
+      select: { id: true },
+    });
+    const purchaseIds = purchases.map((p) => p.id);
+    if (purchaseIds.length > 0) {
+      await tx.inventoryMovement.deleteMany({
+        where: { sourceTable: "purchases", sourceId: { in: purchaseIds } },
+      });
+      // PurchaseItem.purchaseId has onDelete: Cascade in the schema, so
+      // deleting Purchase removes the line rows automatically.
+      await tx.purchase.deleteMany({ where: { id: { in: purchaseIds } } });
+    }
     await tx.supplier.delete({ where: { id } });
   });
 
   revalidateTag(CATALOG_TAGS.SUPPLIERS);
+  revalidateTag(REPORT_TAGS.stock);
+  revalidateTag(CATALOG_TAGS.STOCK);
 }
