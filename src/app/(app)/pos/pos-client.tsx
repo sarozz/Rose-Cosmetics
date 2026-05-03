@@ -5,7 +5,10 @@ import { useFormState } from "react-dom";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Field, inputClass } from "@/components/form/field";
 import { FormError } from "@/components/form/form-error";
-import { FormPendingOverlay } from "@/components/form-pending-overlay";
+import {
+  FormPendingOverlay,
+  SubmitTracker,
+} from "@/components/form-pending-overlay";
 import { SubmitButton } from "@/components/form/submit-button";
 import { checkoutAction, scanBarcodeAction } from "./actions";
 import { emptyCheckoutState } from "./state";
@@ -80,11 +83,21 @@ export function PosClient() {
   const [cashTendered, setCashTendered] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<"CASH" | "DIGITAL">("CASH");
   const [idempotencyKey] = useState(() => cryptoRandomKey());
+  // Manual flag so the checkout overlay stays open continuously from
+  // submit-click through the navigation to /pos/thanks/[saleRef]. We
+  // set it true on submit start and only flip it back on a server-
+  // returned error; on success the form unmounts and the overlay goes
+  // with it.
+  const [submitting, setSubmitting] = useState(false);
   const scanRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     scanRef.current?.focus();
   }, []);
+
+  useEffect(() => {
+    if (state.formError) setSubmitting(false);
+  }, [state.formError]);
 
   const subtotal = useMemo(
     () =>
@@ -514,7 +527,9 @@ export function PosClient() {
             Enter cash tendered of at least {total.toFixed(2)} to charge.
           </p>
         ) : null}
+        <SubmitTracker onSubmitStart={() => setSubmitting(true)} />
         <FormPendingOverlay
+          open={submitting}
           title="Recording the sale"
           messages={[
             "Saving the cart…",

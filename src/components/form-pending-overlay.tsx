@@ -1,67 +1,38 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useFormStatus } from "react-dom";
 
 /**
- * Full-screen overlay shown while the parent <form> is submitting and kept
- * on screen until the task actually finishes — useful when the action
- * navigates away. `useFormStatus` flips back to false the moment the
- * server returns; if a `redirect()` follows we used to flash the original
- * page for a beat before the new route took over. We add a linger window
- * so the overlay stays visible until either:
+ * Full-screen overlay shown while a form's "in flight" — but unlike a
+ * useFormStatus-driven overlay, this one is *prop-driven*. The parent owns
+ * the open state, sets it true the moment a submit starts, and only sets it
+ * back to false when the action returned an error. On success the action
+ * usually redirect()s; the form unmounts and the overlay disappears with it.
  *
- *   - the form's parent component unmounts (navigation completes), or
- *   - `LINGER_MS` elapses after pending goes false (covers an error
- *     return that keeps us on the same page).
+ * That means the overlay stays continuously visible from click → done,
+ * including the gap between "server action returned" and "Next finished
+ * navigating to the new route". No timer, no flash.
  *
- * Two cues to convince the user the wait is intentional:
- *   - A concentric "radar" pulse using the brand rose tone.
- *   - A rotating sequence of progress messages so the screen never feels
- *     stuck. The cycle resets whenever the overlay unmounts.
+ * Pair with <SubmitTracker /> below, which lives inside the form, watches
+ * useFormStatus, and flips the parent's `open` to true the instant a submit
+ * begins.
  */
-const LINGER_MS = 1200;
-
 export function FormPendingOverlay({
+  open,
   title,
   messages,
   rotateMs = 1800,
 }: {
+  open: boolean;
   title: string;
   messages: string[];
   rotateMs?: number;
 }) {
-  const { pending } = useFormStatus();
-  const [visible, setVisible] = useState(false);
   const [idx, setIdx] = useState(0);
-  const lingerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // Open immediately on pending; on pending->false, hold open for LINGER_MS.
-  useEffect(() => {
-    if (pending) {
-      if (lingerRef.current) {
-        clearTimeout(lingerRef.current);
-        lingerRef.current = null;
-      }
-      setVisible(true);
-      return;
-    }
-    if (visible) {
-      lingerRef.current = setTimeout(() => {
-        setVisible(false);
-        lingerRef.current = null;
-      }, LINGER_MS);
-    }
-    return () => {
-      if (lingerRef.current) {
-        clearTimeout(lingerRef.current);
-        lingerRef.current = null;
-      }
-    };
-  }, [pending, visible]);
 
   useEffect(() => {
-    if (!visible) {
+    if (!open) {
       setIdx(0);
       return;
     }
@@ -70,9 +41,9 @@ export function FormPendingOverlay({
       rotateMs,
     );
     return () => clearInterval(t);
-  }, [visible, messages.length, rotateMs]);
+  }, [open, messages.length, rotateMs]);
 
-  if (!visible) return null;
+  if (!open) return null;
 
   return (
     <div
@@ -116,6 +87,27 @@ export function FormPendingOverlay({
       `}</style>
     </div>
   );
+}
+
+/**
+ * Drop inside a form. Watches useFormStatus and calls `onSubmitStart` the
+ * moment a submit begins (pending false → true). Never reports false back —
+ * the parent decides when to close the overlay (error path) so we don't
+ * race the action's "pending → false" against the navigation.
+ */
+export function SubmitTracker({
+  onSubmitStart,
+}: {
+  onSubmitStart: () => void;
+}) {
+  const { pending } = useFormStatus();
+  useEffect(() => {
+    if (pending) onSubmitStart();
+    // We deliberately don't depend on onSubmitStart so consumers don't need
+    // to memoise the callback. eslint-disable-next-line below.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pending]);
+  return null;
 }
 
 function RoseRadar() {
