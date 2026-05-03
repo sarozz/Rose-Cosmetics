@@ -1,17 +1,34 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useFormState, useFormStatus } from "react-dom";
 import { Field, inputClass } from "@/components/form/field";
-import { FormPendingOverlay } from "@/components/form-pending-overlay";
+import {
+  FormPendingOverlay,
+  SubmitTracker,
+} from "@/components/form-pending-overlay";
 import { signInAction, type SignInState } from "./actions";
 
 const initialState: SignInState = { error: null };
 
 export function LoginForm() {
   const [state, formAction] = useFormState(signInAction, initialState);
+  // Manual flag so the overlay stays open from submit-click all the way
+  // through the redirect. We never rely on useFormStatus alone — that
+  // flips back to false the moment the action returns and would let the
+  // login screen flash before the dashboard mounts.
+  const [submitting, setSubmitting] = useState(false);
+
+  // If the action returned an error, close the overlay so the user can
+  // see + correct it. On success the action redirects and the form
+  // unmounts, taking the overlay with it — no need to flip submitting back.
+  useEffect(() => {
+    if (state.error) setSubmitting(false);
+  }, [state.error]);
 
   return (
     <form action={formAction} className="space-y-4">
+      <SubmitTracker onSubmitStart={() => setSubmitting(true)} />
       <Field label="Email" htmlFor="email" adornment="@">
         <input
           id="email"
@@ -42,6 +59,7 @@ export function LoginForm() {
       ) : null}
       <SubmitButton />
       <FormPendingOverlay
+        open={submitting}
         title="Signing you in"
         messages={[
           "Verifying your credentials…",
