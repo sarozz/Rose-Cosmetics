@@ -261,7 +261,7 @@ function CartScreen({
               className="mt-1 flex items-baseline justify-end gap-2 animate-total"
             >
               <span className="text-2xl text-ink-muted">Rs</span>
-              <span className="text-7xl font-bold tabular-nums text-rose-300">
+              <span className="text-7xl font-bold tabular-nums text-emerald-300">
                 {cart.total}
               </span>
             </div>
@@ -357,13 +357,11 @@ function CashSummary({
 
 function PaymentMethodBadge({ method }: { method: "CASH" | "DIGITAL" }) {
   const label = method === "CASH" ? "Cash" : "Digital";
-  const icon = method === "CASH" ? "💵" : "📱";
   return (
     <div
       key={method}
       className="mt-3 inline-flex items-center gap-2 self-start rounded-full border border-rose-400/40 bg-rose-500/10 px-3 py-1.5 text-sm text-rose-200 animate-badge-pop"
     >
-      <span aria-hidden>{icon}</span>
       <span className="uppercase tracking-widest text-xs">Paying by {label}</span>
     </div>
   );
@@ -649,7 +647,7 @@ function GlobalStyles() {
       .animate-row-pop { animation: row-pop 520ms cubic-bezier(.2,.9,.3,1) both; }
 
       @keyframes total {
-        0%   { transform: scale(0.96); color: #ffd1dc; }
+        0%   { transform: scale(0.96); color: #a7f3d0; }
         60%  { transform: scale(1.04); }
         100% { transform: scale(1); }
       }
