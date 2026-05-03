@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import type { Route } from "next";
 import { usePathname } from "next/navigation";
@@ -13,10 +13,6 @@ type NavItem = {
   icon: React.ReactNode;
   roles?: UserRole[];
 };
-
-const COOKIE_KEY = "rose-sidebar-collapsed";
-// One year — collapse preference is sticky.
-const COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
 
 const NAV: NavItem[] = [
   { label: "Dashboard", href: "/dashboard", icon: <DashboardIcon /> },
@@ -69,92 +65,52 @@ const NAV: NavItem[] = [
   { label: "Audit", href: "/audit", icon: <ShieldIcon />, roles: ["OWNER"] },
 ];
 
-export function Sidebar({
-  role,
-  initialCollapsed = false,
-}: {
-  role: UserRole;
-  initialCollapsed?: boolean;
-}) {
+/**
+ * Hover-expanding sidebar (Instagram-style). Sits at 4.5rem wide showing
+ * just icons; on mouse-enter it slides out to 14rem with full labels and
+ * collapses again when the cursor leaves. Keyboard focus inside the
+ * sidebar also expands it (focus-within) so tab nav still reveals labels.
+ */
+export function Sidebar({ role }: { role: UserRole }) {
   const pathname = usePathname();
-  // Seeded from the server-read cookie so first paint matches the user's
-  // last choice — no hydration flash.
-  const [collapsed, setCollapsed] = useState(initialCollapsed);
-  const [hydrated, setHydrated] = useState(false);
-
-  useEffect(() => {
-    setHydrated(true);
-  }, []);
-
-  function toggle() {
-    setCollapsed((prev) => {
-      const next = !prev;
-      // Persist via cookie so the server can read it on the next nav and
-      // render the correct width up front.
-      document.cookie = `${COOKIE_KEY}=${
-        next ? "1" : "0"
-      }; path=/; max-age=${COOKIE_MAX_AGE}; SameSite=Lax`;
-      return next;
-    });
-  }
+  const [hovered, setHovered] = useState(false);
+  const expanded = hovered;
 
   const visible = NAV.filter((n) => !n.roles || n.roles.includes(role));
 
   return (
     <aside
-      // Width transitions from 14rem → 4.5rem so the collapse animates rather
-      // than snapping. md:block hides the whole aside on phones (mobile drawer
-      // is a future job — for now the page content scrolls full-width).
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      onFocus={() => setHovered(true)}
+      onBlur={(e) => {
+        // Only collapse when focus leaves the aside entirely. Sub-elements
+        // exchanging focus would otherwise oscillate.
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) {
+          setHovered(false);
+        }
+      }}
       className={`hidden flex-shrink-0 flex-col border-r border-white/10 bg-card transition-[width] duration-200 ease-out md:flex ${
-        collapsed ? "w-[4.5rem]" : "w-56"
+        expanded ? "w-56" : "w-[4.5rem]"
       }`}
       aria-label="Primary"
     >
-      {collapsed ? (
-        // The entire header block is the expand button — bigger hit-target,
-        // chevron sits centred and prominent so the affordance is obvious.
-        <button
-          type="button"
-          onClick={toggle}
-          aria-label="Expand sidebar"
-          aria-pressed
-          title="Expand sidebar"
-          className="group/expand flex h-20 items-center justify-center border-b border-white/10 transition-colors hover:bg-rose-500/5"
-        >
-          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-rose-500/10 text-rose-300 ring-1 ring-rose-400/30 transition-all group-hover/expand:bg-rose-500/20 group-hover/expand:text-rose-200">
-            <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
-              <path
-                d="M9 6 15 12 9 18"
-                stroke="currentColor"
-                strokeWidth="2.2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </span>
-        </button>
-      ) : (
-        <div className="flex h-20 items-center justify-between border-b border-white/10 px-4">
+      <div
+        className={`flex h-20 items-center border-b border-white/10 ${
+          expanded ? "justify-start px-4" : "justify-center"
+        }`}
+      >
+        {expanded ? (
           <RoseLogo size="lg" />
-          <button
-            type="button"
-            onClick={toggle}
-            aria-label="Collapse sidebar"
-            title="Collapse sidebar"
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-surface/60 text-ink-muted transition-colors hover:border-rose-400/40 hover:bg-rose-500/10 hover:text-rose-200"
+        ) : (
+          <span
+            className="font-[Allura,cursive] text-3xl text-rose-400 drop-shadow-[0_0_6px_rgba(233,80,125,0.4)]"
+            aria-hidden
           >
-            <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4">
-              <path
-                d="M15 6 9 12 15 18"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </button>
-        </div>
-      )}
+            R
+          </span>
+        )}
+      </div>
 
       <nav className="flex-1 overflow-y-auto p-2">
         <ul className="space-y-0.5">
@@ -166,15 +122,14 @@ export function Sidebar({
               <li key={item.href}>
                 <Link
                   href={item.href as Route}
-                  title={collapsed ? item.label : undefined}
+                  title={expanded ? undefined : item.label}
                   aria-current={active ? "page" : undefined}
                   className={`group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors ${
                     active
                       ? "bg-rose-500/15 text-rose-200"
                       : "text-ink-soft hover:bg-white/5 hover:text-ink"
-                  } ${collapsed ? "justify-center" : ""}`}
+                  } ${expanded ? "" : "justify-center"}`}
                 >
-                  {/* Active indicator bar — vertical accent on the left. */}
                   {active ? (
                     <span
                       aria-hidden
@@ -191,9 +146,18 @@ export function Sidebar({
                   >
                     {item.icon}
                   </span>
-                  {!collapsed ? (
-                    <span className="truncate">{item.label}</span>
-                  ) : null}
+                  {/*
+                    Label slot is always rendered so the row width is stable as
+                    we expand. We just toggle opacity + visibility so the
+                    transition reads as a fade rather than a snap.
+                  */}
+                  <span
+                    className={`truncate transition-opacity duration-150 ${
+                      expanded ? "opacity-100" : "pointer-events-none w-0 opacity-0"
+                    }`}
+                  >
+                    {item.label}
+                  </span>
                 </Link>
               </li>
             );
@@ -201,21 +165,15 @@ export function Sidebar({
         </ul>
       </nav>
 
-      {!hydrated ? null : (
-        <div
-          className={`border-t border-white/5 ${
-            collapsed ? "p-2 text-center" : "p-3"
-          }`}
-        >
-          <p
-            className={`text-[10px] uppercase tracking-wider text-ink-muted ${
-              collapsed ? "" : ""
-            }`}
-          >
-            v1.0
-          </p>
-        </div>
-      )}
+      <div
+        className={`border-t border-white/5 ${
+          expanded ? "p-3" : "p-2 text-center"
+        }`}
+      >
+        <p className="text-[10px] uppercase tracking-wider text-ink-muted">
+          v1.0
+        </p>
+      </div>
     </aside>
   );
 }
