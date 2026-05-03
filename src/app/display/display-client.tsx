@@ -427,7 +427,7 @@ function ThankYouScreen({
   return (
     <div className="absolute inset-0 flex flex-col items-center justify-center gap-8">
       <BackdropGlow />
-      <PetalRain />
+      <Confetti />
       <div className="flex items-center gap-4">
         <Sparkle delay={0} />
         <h2
@@ -470,168 +470,84 @@ function Sparkle({ delay }: { delay: number }) {
   );
 }
 
-/* --------------------------- Rose petal rain ----------------------------- */
+/* -------------------------------- Confetti ------------------------------- */
 
-// Red rose palette. Five stops per petal give the gradient depth so it reads
-// as velvety rather than flat — highlight on the upper crest, deepest tone
-// near the base where the petal curls under.
-const PETAL_PALETTES = [
-  {
-    highlight: "#FFE2E2",
-    light: "#F66A6A",
-    mid: "#D81F26",
-    dark: "#8C0010",
-    shadow: "#4A0000",
-  },
-  {
-    highlight: "#FFCACA",
-    light: "#EA3A3A",
-    mid: "#B81414",
-    dark: "#720008",
-    shadow: "#3C0004",
-  },
-  {
-    highlight: "#FFD8D8",
-    light: "#F04A4A",
-    mid: "#CA1A20",
-    dark: "#7E000A",
-    shadow: "#410005",
-  },
-  {
-    highlight: "#FFECEC",
-    light: "#F7807D",
-    mid: "#DC2C36",
-    dark: "#940015",
-    shadow: "#450006",
-  },
+// Festive multi-colour palette — rose-led to match the brand, plus gold and
+// teal accents so the storm doesn't read as monochrome on a dark backdrop.
+const CONFETTI_COLORS = [
+  "#E9507D", // rose-500
+  "#FF7AA8", // rose-300
+  "#FFD1DC", // blush
+  "#FFFFFF", // white
+  "#F5C518", // gold
+  "#37C6A4", // mint
+  "#7AB8FF", // sky
 ];
 
-function PetalRain() {
-  // Deterministic spread so SSR output matches hydration; only the animation
-  // itself is time-based, so positions stay stable per render.
-  const petals = Array.from({ length: 42 }, (_, i) => i);
+// Three silhouettes give the confetti shape variety without exploding the
+// DOM — every piece is a single CSS-shaped span.
+const SHAPES = ["rect", "square", "circle"] as const;
+type Shape = (typeof SHAPES)[number];
+
+function shapeStyle(shape: Shape, size: number): React.CSSProperties {
+  if (shape === "circle") {
+    return {
+      width: `${size}px`,
+      height: `${size}px`,
+      borderRadius: "9999px",
+    };
+  }
+  if (shape === "square") {
+    return {
+      width: `${size}px`,
+      height: `${size}px`,
+      borderRadius: "1px",
+    };
+  }
+  // rectangle (streamer-style)
+  return {
+    width: `${size * 0.5}px`,
+    height: `${size * 1.2}px`,
+    borderRadius: "1px",
+  };
+}
+
+function Confetti() {
+  // Deterministic spread keeps SSR output stable; only the animation is
+  // time-based, so the look is consistent per render.
+  const pieces = Array.from({ length: 80 }, (_, i) => i);
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden">
-      {petals.map((i) => {
-        const palette = PETAL_PALETTES[i % PETAL_PALETTES.length];
-        const left = (i * 23.7) % 100;
-        const delay = (i * 131) % 2400;
-        const duration = 4800 + ((i * 113) % 3400);
-        const drift = ((i * 19) % 80) - 40; // -40px .. +40px horizontal sway
-        const rotate = ((i * 47) % 120) - 60; // end rotation spread
-        const scale = 0.7 + ((i * 53) % 70) / 100; // 0.7 .. 1.4
+      {pieces.map((i) => {
+        const color = CONFETTI_COLORS[i % CONFETTI_COLORS.length];
+        const shape = SHAPES[i % SHAPES.length];
+        const size = 6 + ((i * 13) % 10); // 6 .. 15
+        const left = (i * 13.7) % 100;
+        const delay = (i * 71) % 2200;
+        const duration = 3600 + ((i * 97) % 2800);
+        const drift = ((i * 19) % 120) - 60; // -60 .. +60 px sway
+        const rotate = 540 + ((i * 53) % 720); // 540 .. 1260° tumble
         return (
           <span
             key={i}
             aria-hidden
-            className="absolute block"
+            className="absolute block animate-confetti-fall"
             style={{
               left: `${left}%`,
               top: "-12%",
-              animation: `petal-fall ${duration}ms linear ${delay}ms infinite`,
+              backgroundColor: color,
+              animationDuration: `${duration}ms`,
+              animationDelay: `${delay}ms`,
               ["--drift-x" as string]: `${drift}px`,
-              ["--rotate-end" as string]: `${rotate + 540}deg`,
-              transform: `scale(${scale})`,
+              ["--rotate-end" as string]: `${rotate}deg`,
+              boxShadow: "0 1px 2px rgba(0,0,0,0.25)",
               willChange: "transform, opacity",
+              ...shapeStyle(shape, size),
             }}
-          >
-            <RosePetal palette={palette} index={i} />
-          </span>
+          />
         );
       })}
     </div>
-  );
-}
-
-function RosePetal({
-  palette,
-  index,
-}: {
-  palette: (typeof PETAL_PALETTES)[number];
-  index: number;
-}) {
-  // Unique gradient ids per petal so multiple SVGs on the page don't collide
-  // when they share the DOM. We build a layered look: soft drop shadow,
-  // radial body with 5 stops, a curled under-shadow lobe at the base, and
-  // a diagonal sheen for 3D highlight.
-  const bodyId = `petal-body-${index}`;
-  const curlId = `petal-curl-${index}`;
-  const sheenId = `petal-sheen-${index}`;
-  const shadowId = `petal-shadow-${index}`;
-  return (
-    <svg
-      width="30"
-      height="44"
-      viewBox="0 0 40 60"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      aria-hidden
-      style={{
-        filter: `drop-shadow(0 4px 6px rgba(0,0,0,0.35)) drop-shadow(0 1px 1px ${palette.shadow})`,
-      }}
-    >
-      <defs>
-        {/* Body: highlight → light → mid → dark. Off-centre so the top-left
-            crest reads as the lit side. */}
-        <radialGradient id={bodyId} cx="38%" cy="22%" r="85%">
-          <stop offset="0%" stopColor={palette.highlight} />
-          <stop offset="20%" stopColor={palette.light} />
-          <stop offset="55%" stopColor={palette.mid} />
-          <stop offset="85%" stopColor={palette.dark} />
-          <stop offset="100%" stopColor={palette.shadow} />
-        </radialGradient>
-        {/* Curl: darker lobe sits under the base to suggest the petal folding. */}
-        <radialGradient id={curlId} cx="50%" cy="70%" r="60%">
-          <stop offset="0%" stopColor={palette.dark} stopOpacity="0.0" />
-          <stop offset="60%" stopColor={palette.shadow} stopOpacity="0.55" />
-          <stop offset="100%" stopColor={palette.shadow} stopOpacity="0.85" />
-        </radialGradient>
-        {/* Sheen: diagonal specular highlight across the petal's upper side. */}
-        <linearGradient id={sheenId} x1="20%" y1="10%" x2="70%" y2="70%">
-          <stop offset="0%" stopColor="#ffffff" stopOpacity="0.85" />
-          <stop offset="35%" stopColor="#ffffff" stopOpacity="0.28" />
-          <stop offset="100%" stopColor="#ffffff" stopOpacity="0" />
-        </linearGradient>
-        {/* Edge shadow — darkens the rim so the silhouette doesn't look flat. */}
-        <linearGradient id={shadowId} x1="50%" y1="100%" x2="50%" y2="0%">
-          <stop offset="0%" stopColor={palette.shadow} stopOpacity="0.7" />
-          <stop offset="100%" stopColor={palette.shadow} stopOpacity="0" />
-        </linearGradient>
-      </defs>
-
-      {/* Base silhouette. Asymmetric curve so it reads as a real petal
-          rather than a symmetric almond. */}
-      <path
-        d="M20 1 C 4 9, 1 38, 18 58 L 22 58 C 34 46, 39 20, 20 1 Z"
-        fill={`url(#${bodyId})`}
-      />
-      {/* Edge shadow at the base */}
-      <path
-        d="M20 1 C 4 9, 1 38, 18 58 L 22 58 C 34 46, 39 20, 20 1 Z"
-        fill={`url(#${shadowId})`}
-      />
-      {/* Curl shadow near base → 3D fold */}
-      <path
-        d="M8 40 C 14 52, 26 52, 32 40 L 30 58 L 10 58 Z"
-        fill={`url(#${curlId})`}
-      />
-      {/* Specular sheen — offset to the upper-left crest */}
-      <path
-        d="M18 4 C 10 14, 8 32, 16 50"
-        stroke={`url(#${sheenId})`}
-        strokeWidth="5"
-        strokeLinecap="round"
-        fill="none"
-      />
-      {/* Central vein, very faint */}
-      <path
-        d="M20 4 C 18 22, 18 44, 20 58"
-        stroke={palette.shadow}
-        strokeWidth="0.6"
-        strokeOpacity="0.5"
-        fill="none"
-      />
-    </svg>
   );
 }
 
@@ -711,11 +627,11 @@ function GlobalStyles() {
       }
 
       /*
-        Falling petal: drifts sideways slightly as it falls and tumbles
-        through 540° so each petal lands at a different pose. CSS variables
-        let us set per-petal drift + end-rotation without inline keyframes.
+        Falling confetti: per-piece horizontal drift + rotation supplied via
+        CSS variables (--drift-x, --rotate-end), so 80 pieces share one
+        keyframe but each lands at its own angle.
       */
-      @keyframes petal-fall {
+      @keyframes confetti-fall {
         0% {
           transform: translate3d(0, -10vh, 0) rotate(0deg);
           opacity: 0;
@@ -723,10 +639,11 @@ function GlobalStyles() {
         8% { opacity: 1; }
         100% {
           transform: translate3d(var(--drift-x, 0), 120vh, 0)
-            rotate(var(--rotate-end, 540deg));
+            rotate(var(--rotate-end, 720deg));
           opacity: 0;
         }
       }
+      .animate-confetti-fall { animation-name: confetti-fall; animation-timing-function: linear; animation-iteration-count: infinite; }
 
       @media (prefers-reduced-motion: reduce) {
         .animate-breathe,
