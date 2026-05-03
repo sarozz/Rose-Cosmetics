@@ -2,6 +2,7 @@
 
 import { useFormState, useFormStatus } from "react-dom";
 import { Field, inputClass } from "@/components/form/field";
+import { FormPendingOverlay } from "@/components/form-pending-overlay";
 import { signInAction, type SignInState } from "./actions";
 
 const initialState: SignInState = { error: null };
@@ -40,6 +41,14 @@ export function LoginForm() {
         </p>
       ) : null}
       <SubmitButton />
+      <FormPendingOverlay
+        title="Signing you in"
+        messages={[
+          "Verifying your credentials…",
+          "Loading your workspace…",
+          "Almost there — just a moment…",
+        ]}
+      />
     </form>
   );
 }

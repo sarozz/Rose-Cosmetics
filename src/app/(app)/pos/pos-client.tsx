@@ -5,6 +5,7 @@ import { useFormState } from "react-dom";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Field, inputClass } from "@/components/form/field";
 import { FormError } from "@/components/form/form-error";
+import { FormPendingOverlay } from "@/components/form-pending-overlay";
 import { SubmitButton } from "@/components/form/submit-button";
 import { checkoutAction, scanBarcodeAction } from "./actions";
 import { emptyCheckoutState } from "./state";
@@ -498,6 +499,15 @@ export function PosClient() {
             Enter cash tendered of at least {total.toFixed(2)} to charge.
           </p>
         ) : null}
+        <FormPendingOverlay
+          title="Recording the sale"
+          messages={[
+            "Saving the cart…",
+            "Updating stock levels…",
+            "Sending the receipt…",
+            "Almost done — wrapping up…",
+          ]}
+        />
       </form>
     </div>
   );
