@@ -1,18 +1,27 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
 
 /**
- * Full-screen overlay shown while the parent <form> is submitting. Reads
- * pending state via useFormStatus, so it must be a *child* of the form
- * (and itself a Client Component).
+ * Full-screen overlay shown while the parent <form> is submitting and kept
+ * on screen until the task actually finishes — useful when the action
+ * navigates away. `useFormStatus` flips back to false the moment the
+ * server returns; if a `redirect()` follows we used to flash the original
+ * page for a beat before the new route took over. We add a linger window
+ * so the overlay stays visible until either:
+ *
+ *   - the form's parent component unmounts (navigation completes), or
+ *   - `LINGER_MS` elapses after pending goes false (covers an error
+ *     return that keeps us on the same page).
  *
  * Two cues to convince the user the wait is intentional:
  *   - A concentric "radar" pulse using the brand rose tone.
  *   - A rotating sequence of progress messages so the screen never feels
- *     stuck. The cycle resets whenever the form leaves the pending state.
+ *     stuck. The cycle resets whenever the overlay unmounts.
  */
+const LINGER_MS = 1200;
+
 export function FormPendingOverlay({
   title,
   messages,
@@ -23,10 +32,36 @@ export function FormPendingOverlay({
   rotateMs?: number;
 }) {
   const { pending } = useFormStatus();
+  const [visible, setVisible] = useState(false);
   const [idx, setIdx] = useState(0);
+  const lingerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Open immediately on pending; on pending->false, hold open for LINGER_MS.
+  useEffect(() => {
+    if (pending) {
+      if (lingerRef.current) {
+        clearTimeout(lingerRef.current);
+        lingerRef.current = null;
+      }
+      setVisible(true);
+      return;
+    }
+    if (visible) {
+      lingerRef.current = setTimeout(() => {
+        setVisible(false);
+        lingerRef.current = null;
+      }, LINGER_MS);
+    }
+    return () => {
+      if (lingerRef.current) {
+        clearTimeout(lingerRef.current);
+        lingerRef.current = null;
+      }
+    };
+  }, [pending, visible]);
 
   useEffect(() => {
-    if (!pending) {
+    if (!visible) {
       setIdx(0);
       return;
     }
@@ -35,9 +70,9 @@ export function FormPendingOverlay({
       rotateMs,
     );
     return () => clearInterval(t);
-  }, [pending, messages.length, rotateMs]);
+  }, [visible, messages.length, rotateMs]);
 
-  if (!pending) return null;
+  if (!visible) return null;
 
   return (
     <div
@@ -84,8 +119,6 @@ export function FormPendingOverlay({
 }
 
 function RoseRadar() {
-  // Three concentric rings ping outward with staggered delays so the loop
-  // reads as a continuous wave rather than three discrete pulses.
   return (
     <div className="relative h-16 w-16">
       <span
@@ -102,7 +135,6 @@ function RoseRadar() {
         style={{ animationDelay: "800ms" }}
         aria-hidden
       />
-      {/* Solid centre dot — always visible so the user has a fixed anchor. */}
       <span
         aria-hidden
         className="absolute left-1/2 top-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full bg-rose-400 shadow-[0_0_18px_rgba(233,80,125,0.6)]"

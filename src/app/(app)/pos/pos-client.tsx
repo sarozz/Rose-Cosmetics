@@ -43,6 +43,8 @@ type DisplayMessage =
       discount: string;
       total: string;
       paymentMethod: "CASH" | "DIGITAL" | null;
+      cashTendered: string | null;
+      change: string | null;
     }
   | { type: "thank-you"; total: string; saleRef: string }
   | { type: "idle" };
@@ -116,8 +118,9 @@ export function PosClient() {
   }, [state.saleRef, router]);
 
   // Mirror the full cart to the customer display on any change — add,
-  // qty edit, discount edit, remove, payment-method toggle — so the
-  // shopper always sees exactly what they're being charged.
+  // qty edit, discount edit, remove, payment-method toggle, cash entry —
+  // so the shopper always sees exactly what they're being charged and,
+  // for cash, what they'll get back.
   useEffect(() => {
     if (lines.length === 0) {
       broadcastToDisplay({
@@ -127,6 +130,8 @@ export function PosClient() {
         discount: "0.00",
         total: "0.00",
         paymentMethod: null,
+        cashTendered: null,
+        change: null,
       });
       return;
     }
@@ -151,6 +156,11 @@ export function PosClient() {
     );
     const saleDiscountNum = Number(saleDiscount) || 0;
     const totalDiscount = lineDiscountTotal + saleDiscountNum;
+    // Tendered + change only have meaning when paying with cash. Digital
+    // pays exactly the total via wallet, so we leave both nulls.
+    const tenderedRaw = Number(cashTendered);
+    const tenderedValid = cashTendered !== "" && Number.isFinite(tenderedRaw);
+    const isCash = paymentMethod === "CASH";
     broadcastToDisplay({
       type: "cart",
       lines: cartLines,
@@ -158,8 +168,13 @@ export function PosClient() {
       discount: totalDiscount.toFixed(2),
       total: total.toFixed(2),
       paymentMethod,
+      cashTendered: isCash && tenderedValid ? tenderedRaw.toFixed(2) : null,
+      change:
+        isCash && tenderedValid && tenderedRaw >= total
+          ? (tenderedRaw - total).toFixed(2)
+          : null,
     });
-  }, [lines, subtotal, total, saleDiscount, paymentMethod]);
+  }, [lines, subtotal, total, saleDiscount, paymentMethod, cashTendered]);
 
   const processScan = useCallback(
     (rawCode: string) => {
