@@ -1,6 +1,8 @@
 import { hasRole, INVENTORY_WRITE_ROLES, requireUser } from "@/lib/auth";
 import { listPurchases } from "@/lib/services/purchase";
 import { PageHeader } from "@/components/page-header";
+import { DeleteEntityButton } from "@/components/delete-entity-button";
+import { deletePurchaseAction } from "./actions";
 
 export const metadata = { title: "Receiving — Rose Cosmetics POS" };
 
@@ -34,13 +36,14 @@ export default async function ReceivingPage() {
               <th className="px-4 py-3 text-right">Lines</th>
               <th className="px-4 py-3 text-right">Total cost</th>
               <th className="px-4 py-3">Recorded by</th>
+              <th className="px-4 py-3" aria-label="Actions" />
             </tr>
           </thead>
           <tbody className="divide-y divide-white/5">
             {purchases.length === 0 ? (
               <tr>
                 <td
-                  colSpan={6}
+                  colSpan={7}
                   className="px-4 py-10 text-center text-ink-muted"
                 >
                   No receipts yet.
@@ -64,6 +67,16 @@ export default async function ReceivingPage() {
                   </td>
                   <td className="px-4 py-3 text-ink-soft">
                     {p.createdBy.displayName}
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    {canWrite ? (
+                      <DeleteEntityButton
+                        id={p.id}
+                        name={p.purchaseRef}
+                        action={deletePurchaseAction}
+                        confirmLabel={`Delete receipt ${p.purchaseRef}? This will roll back the stock it added.`}
+                      />
+                    ) : null}
                   </td>
                 </tr>
               ))

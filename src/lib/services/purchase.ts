@@ -113,3 +113,91 @@ export async function createPurchase(
   revalidateTag(CATALOG_TAGS.STOCK);
   return result;
 }
+
+export class PurchaseDeleteError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "PurchaseDeleteError";
+  }
+}
+
+/**
+ * Delete a receiving record. The Inventory ledger is the source of truth —
+ * we can't just drop the purchase row or its movements would dangle. Two
+ * paths covered here:
+ *
+ *  - Safe to undo: every product still has enough on-hand to roll back the
+ *    receipt without going negative. We decrement product.currentStock by
+ *    the received qty, delete the inventory movements that this purchase
+ *    wrote, and cascade-delete the purchase + its line items.
+ *  - Unsafe: at least one product would go negative because some of the
+ *    received units have already been sold. We refuse and tell the operator
+ *    to reverse via a return / stock adjustment instead.
+ */
+export async function deletePurchase(actorUserId: string, id: string) {
+  const purchase = await prisma.purchase.findUnique({
+    where: { id },
+    include: {
+      items: {
+        include: {
+          product: { select: { id: true, name: true, currentStock: true } },
+        },
+      },
+    },
+  });
+  if (!purchase) throw new PurchaseDeleteError("Purchase not found");
+
+  // Aggregate received qty per product so duplicate lines for the same SKU
+  // don't double-count when we check / decrement stock.
+  const reverseByProduct = new Map<string, { qty: number; name: string; current: number }>();
+  for (const item of purchase.items) {
+    const cur = reverseByProduct.get(item.productId);
+    if (cur) {
+      cur.qty += item.qty;
+    } else {
+      reverseByProduct.set(item.productId, {
+        qty: item.qty,
+        name: item.product.name,
+        current: item.product.currentStock,
+      });
+    }
+  }
+
+  for (const [, agg] of reverseByProduct) {
+    if (agg.current - agg.qty < 0) {
+      throw new PurchaseDeleteError(
+        `Can't undo this receipt — ${agg.name} would go to ${
+          agg.current - agg.qty
+        } on hand (some of those units have already been sold). Record a stock adjustment instead.`,
+      );
+    }
+  }
+
+  await prisma.$transaction(async (tx) => {
+    for (const [productId, agg] of reverseByProduct) {
+      await tx.product.update({
+        where: { id: productId },
+        data: { currentStock: { decrement: agg.qty } },
+      });
+    }
+    // Drop the ledger rows this receipt wrote so the audit log stops
+    // referencing a purchase that no longer exists. Sale-out / adjustment
+    // movements stay untouched.
+    await tx.inventoryMovement.deleteMany({
+      where: { sourceTable: "purchases", sourceId: id },
+    });
+    await writeAuditLog(tx, {
+      actorUserId,
+      entityType: "purchase",
+      entityId: id,
+      action: "DELETE",
+      before: purchase,
+    });
+    // PurchaseItem has onDelete: Cascade, so deleting the purchase removes
+    // the line rows in one shot.
+    await tx.purchase.delete({ where: { id } });
+  });
+
+  revalidateTag(REPORT_TAGS.stock);
+  revalidateTag(CATALOG_TAGS.STOCK);
+}

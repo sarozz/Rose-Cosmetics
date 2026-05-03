@@ -4,8 +4,13 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { INVENTORY_WRITE_ROLES, requireRole } from "@/lib/auth";
 import { purchaseSchema } from "@/lib/validation/purchase";
-import { createPurchase } from "@/lib/services/purchase";
+import {
+  createPurchase,
+  deletePurchase,
+  PurchaseDeleteError,
+} from "@/lib/services/purchase";
 import type { ReceivingFormState } from "./state";
+import type { DeleteEntityResult } from "@/components/delete-entity-button";
 
 export async function createPurchaseAction(
   _prev: ReceivingFormState,
@@ -77,4 +82,22 @@ function friendlyError(err: unknown): string {
     return "Duplicate purchase reference — retry to regenerate.";
   }
   return "Something went wrong. Try again.";
+}
+
+export async function deletePurchaseAction(
+  formData: FormData,
+): Promise<DeleteEntityResult> {
+  const actor = await requireRole(INVENTORY_WRITE_ROLES);
+  const id = String(formData.get("id") ?? "");
+  if (!id) return { ok: false, message: "Missing purchase id" };
+  try {
+    await deletePurchase(actor.id, id);
+  } catch (err) {
+    if (err instanceof PurchaseDeleteError) {
+      return { ok: false, message: err.message };
+    }
+    return { ok: false, message: friendlyError(err) };
+  }
+  revalidatePath("/receiving");
+  return { ok: true };
 }

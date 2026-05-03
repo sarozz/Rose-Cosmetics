@@ -6,6 +6,8 @@ import {
 } from "@/lib/auth";
 import { listSuppliers } from "@/lib/services/supplier";
 import { PageHeader } from "@/components/page-header";
+import { DeleteEntityButton } from "@/components/delete-entity-button";
+import { deleteSupplierAction } from "./actions";
 
 export const metadata = { title: "Suppliers — Rose Cosmetics POS" };
 
@@ -107,12 +109,19 @@ export default async function SuppliersPage({
                   </td>
                   <td className="px-4 py-3 text-right">
                     {canWrite ? (
-                      <a
-                        href={`/suppliers/${s.id}/edit`}
-                        className="text-rose-300 hover:underline"
-                      >
-                        Edit
-                      </a>
+                      <div className="inline-flex items-start gap-4">
+                        <a
+                          href={`/suppliers/${s.id}/edit`}
+                          className="text-rose-300 hover:underline"
+                        >
+                          Edit
+                        </a>
+                        <DeleteEntityButton
+                          id={s.id}
+                          name={s.name}
+                          action={deleteSupplierAction}
+                        />
+                      </div>
                     ) : null}
                   </td>
                 </tr>

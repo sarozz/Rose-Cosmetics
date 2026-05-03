@@ -4,8 +4,14 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { CATALOG_WRITE_ROLES, requireRole } from "@/lib/auth";
 import { supplierSchema } from "@/lib/validation/supplier";
-import { createSupplier, updateSupplier } from "@/lib/services/supplier";
+import {
+  createSupplier,
+  deleteSupplier,
+  SupplierDeleteError,
+  updateSupplier,
+} from "@/lib/services/supplier";
 import type { SupplierFormState } from "./state";
+import type { DeleteEntityResult } from "@/components/delete-entity-button";
 
 function parse(formData: FormData) {
   return supplierSchema.safeParse({
@@ -61,4 +67,22 @@ function toFieldErrors(
     if (msgs && msgs.length > 0) out[key] = msgs[0];
   }
   return out;
+}
+
+export async function deleteSupplierAction(
+  formData: FormData,
+): Promise<DeleteEntityResult> {
+  const actor = await requireRole(CATALOG_WRITE_ROLES);
+  const id = String(formData.get("id") ?? "");
+  if (!id) return { ok: false, message: "Missing supplier id" };
+  try {
+    await deleteSupplier(actor.id, id);
+  } catch (err) {
+    if (err instanceof SupplierDeleteError) {
+      return { ok: false, message: err.message };
+    }
+    return { ok: false, message: "Something went wrong. Try again." };
+  }
+  revalidatePath("/suppliers");
+  return { ok: true };
 }

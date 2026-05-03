@@ -4,7 +4,13 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { CATALOG_WRITE_ROLES, requireRole } from "@/lib/auth";
 import { productSchema } from "@/lib/validation/product";
-import { createProduct, updateProduct } from "@/lib/services/product";
+import {
+  createProduct,
+  deleteProduct,
+  ProductDeleteError,
+  updateProduct,
+} from "@/lib/services/product";
+import type { DeleteEntityResult } from "@/components/delete-entity-button";
 import {
   lookupBeautyByBarcode,
   type LookupResult,
@@ -105,4 +111,22 @@ function friendlyError(err: unknown): string {
     return "A product with these identifiers already exists.";
   }
   return "Something went wrong. Try again.";
+}
+
+export async function deleteProductAction(
+  formData: FormData,
+): Promise<DeleteEntityResult> {
+  const actor = await requireRole(CATALOG_WRITE_ROLES);
+  const id = String(formData.get("id") ?? "");
+  if (!id) return { ok: false, message: "Missing product id" };
+  try {
+    await deleteProduct(actor.id, id);
+  } catch (err) {
+    if (err instanceof ProductDeleteError) {
+      return { ok: false, message: err.message };
+    }
+    return { ok: false, message: friendlyError(err) };
+  }
+  revalidatePath("/products");
+  return { ok: true };
 }

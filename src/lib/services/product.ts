@@ -88,3 +88,47 @@ export async function updateProduct(
   revalidateTag(CATALOG_TAGS.STOCK);
   return after;
 }
+
+export class ProductDeleteError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ProductDeleteError";
+  }
+}
+
+/**
+ * Hard-delete a product. Refuses when the product has any sale, purchase,
+ * or inventory-movement history attached — wiping it would orphan the
+ * ledger and break sale/refund traceability. The operator is told to
+ * deactivate via Edit instead.
+ */
+export async function deleteProduct(actorUserId: string, id: string) {
+  const product = await prisma.product.findUnique({ where: { id } });
+  if (!product) throw new ProductDeleteError("Product not found");
+
+  const [saleItems, purchaseItems, movements] = await Promise.all([
+    prisma.saleItem.count({ where: { productId: id } }),
+    prisma.purchaseItem.count({ where: { productId: id } }),
+    prisma.inventoryMovement.count({ where: { productId: id } }),
+  ]);
+  if (saleItems + purchaseItems + movements > 0) {
+    throw new ProductDeleteError(
+      "This product has sales, receipts, or movement history. Deactivate it via Edit instead so the audit trail stays intact.",
+    );
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await writeAuditLog(tx, {
+      actorUserId,
+      entityType: "product",
+      entityId: id,
+      action: "DELETE",
+      before: product,
+    });
+    await tx.product.delete({ where: { id } });
+  });
+
+  revalidateTag(REPORT_TAGS.stock);
+  revalidateTag(CATALOG_TAGS.PRODUCTS);
+  revalidateTag(CATALOG_TAGS.STOCK);
+}

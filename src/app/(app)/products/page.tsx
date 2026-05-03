@@ -1,6 +1,8 @@
 import { CATALOG_WRITE_ROLES, hasRole, requireUser } from "@/lib/auth";
 import { listProducts } from "@/lib/services/product";
 import { PageHeader } from "@/components/page-header";
+import { DeleteEntityButton } from "@/components/delete-entity-button";
+import { deleteProductAction } from "./actions";
 
 export const metadata = { title: "Products — Rose Cosmetics POS" };
 
@@ -136,12 +138,19 @@ export default async function ProductsPage({
                     </td>
                     <td className="px-4 py-3 text-right">
                       {canWrite ? (
-                        <a
-                          href={`/products/${p.id}/edit`}
-                          className="text-rose-300 hover:underline"
-                        >
-                          Edit
-                        </a>
+                        <div className="inline-flex items-start gap-4">
+                          <a
+                            href={`/products/${p.id}/edit`}
+                            className="text-rose-300 hover:underline"
+                          >
+                            Edit
+                          </a>
+                          <DeleteEntityButton
+                            id={p.id}
+                            name={p.name}
+                            action={deleteProductAction}
+                          />
+                        </div>
                       ) : null}
                     </td>
                   </tr>
