@@ -29,6 +29,8 @@ export type DisplayMessage =
       discount: string;
       total: string;
       paymentMethod: "CASH" | "DIGITAL" | null;
+      cashTendered: string | null;
+      change: string | null;
     }
   | { type: "thank-you"; total: string; saleRef: string }
   | { type: "idle" };
@@ -51,12 +53,16 @@ export function DisplayClient() {
     discount: string;
     total: string;
     paymentMethod: "CASH" | "DIGITAL" | null;
+    cashTendered: string | null;
+    change: string | null;
   }>({
     lines: [],
     subtotal: "0.00",
     discount: "0.00",
     total: "0.00",
     paymentMethod: null,
+    cashTendered: null,
+    change: null,
   });
   const [highlight, setHighlight] = useState<HighlightState>(null);
   const [thankYou, setThankYou] = useState<
@@ -75,6 +81,8 @@ export function DisplayClient() {
           discount: msg.discount,
           total: msg.total,
           paymentMethod: msg.paymentMethod,
+          cashTendered: msg.cashTendered,
+          change: msg.change,
         });
       } else if (msg.type === "scan") {
         seqRef.current += 1;
@@ -89,6 +97,8 @@ export function DisplayClient() {
           discount: "0.00",
           total: "0.00",
           paymentMethod: null,
+          cashTendered: null,
+          change: null,
         });
         setHighlight(null);
       } else if (msg.type === "idle") {
@@ -194,6 +204,8 @@ function CartScreen({
     discount: string;
     total: string;
     paymentMethod: "CASH" | "DIGITAL" | null;
+    cashTendered: string | null;
+    change: string | null;
   };
   highlight: HighlightState;
 }) {
@@ -239,19 +251,27 @@ function CartScreen({
             <PaymentMethodBadge method={cart.paymentMethod} />
           ) : null}
         </div>
-        <div className="text-right">
-          <div className="text-xs uppercase tracking-[0.3em] text-ink-muted">
-            Amount
+        <div className="flex flex-col items-end gap-3 text-right">
+          <div>
+            <div className="text-xs uppercase tracking-[0.3em] text-ink-muted">
+              Amount
+            </div>
+            <div
+              key={cart.total}
+              className="mt-1 flex items-baseline justify-end gap-2 animate-total"
+            >
+              <span className="text-2xl text-ink-muted">Rs</span>
+              <span className="text-7xl font-bold tabular-nums text-rose-300">
+                {cart.total}
+              </span>
+            </div>
           </div>
-          <div
-            key={cart.total}
-            className="mt-1 flex items-baseline justify-end gap-2 animate-total"
-          >
-            <span className="text-2xl text-ink-muted">Rs</span>
-            <span className="text-7xl font-bold tabular-nums text-rose-300">
-              {cart.total}
-            </span>
-          </div>
+          {cart.paymentMethod === "CASH" && cart.cashTendered ? (
+            <CashSummary
+              tendered={cart.cashTendered}
+              change={cart.change}
+            />
+          ) : null}
         </div>
       </footer>
 
@@ -285,6 +305,53 @@ function PinkCart() {
         <circle cx="17" cy="20" r="1.6" fill="currentColor" />
       </svg>
     </span>
+  );
+}
+
+function CashSummary({
+  tendered,
+  change,
+}: {
+  tendered: string;
+  change: string | null;
+}) {
+  // Two-column receipt-style strip: tendered on the left, change on the
+  // right when the customer is owed any. Animates whenever the values
+  // change so the customer sees the response in real time as the cashier
+  // counts cash.
+  return (
+    <div className="flex items-stretch gap-3 text-left">
+      <div
+        key={`tendered-${tendered}`}
+        className="rounded-xl border border-white/10 bg-card/80 px-4 py-3 backdrop-blur-sm animate-strip"
+      >
+        <div className="text-[10px] uppercase tracking-[0.3em] text-ink-muted">
+          Tendered
+        </div>
+        <div className="mt-0.5 text-2xl font-semibold tabular-nums text-ink">
+          Rs {tendered}
+        </div>
+      </div>
+      <div
+        key={`change-${change ?? "none"}`}
+        className={`rounded-xl border px-4 py-3 backdrop-blur-sm animate-strip ${
+          change !== null
+            ? "border-emerald-400/30 bg-emerald-500/10"
+            : "border-white/10 bg-card/60 opacity-60"
+        }`}
+      >
+        <div className="text-[10px] uppercase tracking-[0.3em] text-ink-muted">
+          Change due
+        </div>
+        <div
+          className={`mt-0.5 text-2xl font-semibold tabular-nums ${
+            change !== null ? "text-emerald-200" : "text-ink-muted"
+          }`}
+        >
+          Rs {change ?? "—"}
+        </div>
+      </div>
+    </div>
   );
 }
 
