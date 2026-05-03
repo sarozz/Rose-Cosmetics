@@ -14,7 +14,9 @@ type NavItem = {
   roles?: UserRole[];
 };
 
-const STORAGE_KEY = "rose-sidebar-collapsed";
+const COOKIE_KEY = "rose-sidebar-collapsed";
+// One year — collapse preference is sticky.
+const COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
 
 const NAV: NavItem[] = [
   { label: "Dashboard", href: "/dashboard", icon: <DashboardIcon /> },
@@ -67,22 +69,31 @@ const NAV: NavItem[] = [
   { label: "Audit", href: "/audit", icon: <ShieldIcon />, roles: ["OWNER"] },
 ];
 
-export function Sidebar({ role }: { role: UserRole }) {
+export function Sidebar({
+  role,
+  initialCollapsed = false,
+}: {
+  role: UserRole;
+  initialCollapsed?: boolean;
+}) {
   const pathname = usePathname();
-  const [collapsed, setCollapsed] = useState(false);
+  // Seeded from the server-read cookie so first paint matches the user's
+  // last choice — no hydration flash.
+  const [collapsed, setCollapsed] = useState(initialCollapsed);
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
-    // Read once on mount; default expanded if nothing is stored.
-    const stored = window.localStorage.getItem(STORAGE_KEY);
-    if (stored === "1") setCollapsed(true);
     setHydrated(true);
   }, []);
 
   function toggle() {
     setCollapsed((prev) => {
       const next = !prev;
-      window.localStorage.setItem(STORAGE_KEY, next ? "1" : "0");
+      // Persist via cookie so the server can read it on the next nav and
+      // render the correct width up front.
+      document.cookie = `${COOKIE_KEY}=${
+        next ? "1" : "0"
+      }; path=/; max-age=${COOKIE_MAX_AGE}; SameSite=Lax`;
       return next;
     });
   }

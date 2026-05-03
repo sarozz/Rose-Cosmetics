@@ -1,5 +1,7 @@
+import { unstable_cache } from "next/cache";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { CATALOG_TAGS } from "./cache-tags";
 
 export type InventoryProduct = {
   id: string;
@@ -132,9 +134,8 @@ export async function searchInventorySuggestions(
  * with retired SKUs. The `/products` page is still the place for catalog
  * hygiene.
  */
-export async function inventorySnapshot(
-  params: { query?: string } = {},
-): Promise<InventorySnapshot> {
+export const inventorySnapshot = unstable_cache(
+  async (params: { query?: string } = {}): Promise<InventorySnapshot> => {
   const query = (params.query ?? "").trim();
 
   const where: Prisma.ProductWhereInput = {
@@ -233,16 +234,22 @@ export async function inventorySnapshot(
       products: b.products,
     }));
 
-  return {
-    query,
-    totals: {
-      skuCount: products.length,
-      units: unitsTotal,
-      retailValue: retailTotal.toFixed(2),
-      costValue: costTotal.toFixed(2),
-      outCount,
-      lowCount,
-    },
-    categories,
-  };
-}
+    return {
+      query,
+      totals: {
+        skuCount: products.length,
+        units: unitsTotal,
+        retailValue: retailTotal.toFixed(2),
+        costValue: costTotal.toFixed(2),
+        outCount,
+        lowCount,
+      },
+      categories,
+    };
+  },
+  ["catalog:inventorySnapshot"],
+  // STOCK is invalidated by sales, receiving, returns, adjustments — all the
+  // flows that move on-hand. PRODUCTS covers product-level edits (name,
+  // category, reorder level, isActive).
+  { tags: [CATALOG_TAGS.STOCK, CATALOG_TAGS.PRODUCTS] },
+);

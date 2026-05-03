@@ -5,6 +5,7 @@ import { writeAuditLog } from "./audit";
 import type { PurchaseData } from "@/lib/validation/purchase";
 import { generatePurchaseRef } from "./purchase-ref";
 import { REPORT_TAGS } from "./report";
+import { CATALOG_TAGS } from "./cache-tags";
 
 export async function listPurchases(params?: { limit?: number }) {
   return prisma.purchase.findMany({
@@ -109,5 +110,6 @@ export async function createPurchase(
   // Receipts only move stock numbers — the low-stock list, ledger, and
   // reorder dashboard. Sales totals are unaffected.
   revalidateTag(REPORT_TAGS.stock);
+  revalidateTag(CATALOG_TAGS.STOCK);
   return result;
 }

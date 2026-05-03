@@ -5,6 +5,7 @@ import { writeAuditLog } from "./audit";
 import type { CheckoutData } from "@/lib/validation/sale";
 import { generateSaleRef } from "./sale-ref";
 import { REPORT_TAGS } from "./report";
+import { CATALOG_TAGS } from "./cache-tags";
 import {
   notifyLowStock,
   notifySaleCompleted,
@@ -319,6 +320,7 @@ export async function completeSale(
   // next request rather than waiting out the 30s TTL.
   revalidateTag(REPORT_TAGS.sales);
   revalidateTag(REPORT_TAGS.stock);
+  revalidateTag(CATALOG_TAGS.STOCK);
 
   // Fire Telegram alerts after the tx commits. Errors are swallowed so a
   // Telegram outage cannot fail the sale. We await (rather than

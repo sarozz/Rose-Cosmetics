@@ -1,13 +1,19 @@
+import { revalidateTag, unstable_cache } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { writeAuditLog } from "./audit";
 import type { CategoryData } from "@/lib/validation/category";
+import { CATALOG_TAGS } from "./cache-tags";
 
-export async function listCategories() {
-  return prisma.category.findMany({
-    orderBy: [{ isActive: "desc" }, { name: "asc" }],
-    include: { parent: { select: { id: true, name: true } } },
-  });
-}
+export const listCategories = unstable_cache(
+  async () => {
+    return prisma.category.findMany({
+      orderBy: [{ isActive: "desc" }, { name: "asc" }],
+      include: { parent: { select: { id: true, name: true } } },
+    });
+  },
+  ["catalog:listCategories"],
+  { tags: [CATALOG_TAGS.CATEGORIES] },
+);
 
 export async function getCategory(id: string) {
   return prisma.category.findUnique({ where: { id } });
@@ -19,53 +25,59 @@ export async function getCategory(id: string) {
  * cycle). We compute descendants with a small in-memory traversal — the tree
  * is shallow in practice for a cosmetics catalog.
  */
-export async function listParentCandidates(excludeId?: string) {
-  const all = await prisma.category.findMany({
-    where: { isActive: true },
-    select: { id: true, name: true, parentId: true },
-    orderBy: { name: "asc" },
-  });
-  if (!excludeId) return all.map(({ id, name }) => ({ id, name }));
+export const listParentCandidates = unstable_cache(
+  async (excludeId?: string) => {
+    const all = await prisma.category.findMany({
+      where: { isActive: true },
+      select: { id: true, name: true, parentId: true },
+      orderBy: { name: "asc" },
+    });
+    if (!excludeId) return all.map(({ id, name }) => ({ id, name }));
 
-  const children = new Map<string, string[]>();
-  for (const c of all) {
-    if (c.parentId) {
-      const list = children.get(c.parentId) ?? [];
-      list.push(c.id);
-      children.set(c.parentId, list);
-    }
-  }
-  const banned = new Set<string>([excludeId]);
-  const stack = [excludeId];
-  while (stack.length) {
-    const id = stack.pop()!;
-    for (const child of children.get(id) ?? []) {
-      if (!banned.has(child)) {
-        banned.add(child);
-        stack.push(child);
+    const children = new Map<string, string[]>();
+    for (const c of all) {
+      if (c.parentId) {
+        const list = children.get(c.parentId) ?? [];
+        list.push(c.id);
+        children.set(c.parentId, list);
       }
     }
-  }
-  return all
-    .filter((c) => !banned.has(c.id))
-    .map(({ id, name }) => ({ id, name }));
-}
+    const banned = new Set<string>([excludeId]);
+    const stack = [excludeId];
+    while (stack.length) {
+      const id = stack.pop()!;
+      for (const child of children.get(id) ?? []) {
+        if (!banned.has(child)) {
+          banned.add(child);
+          stack.push(child);
+        }
+      }
+    }
+    return all
+      .filter((c) => !banned.has(c.id))
+      .map(({ id, name }) => ({ id, name }));
+  },
+  ["catalog:listParentCandidates"],
+  { tags: [CATALOG_TAGS.CATEGORIES] },
+);
 
 export async function createCategory(
   actorUserId: string,
   data: CategoryData,
 ) {
-  return prisma.$transaction(async (tx) => {
-    const category = await tx.category.create({ data });
+  const category = await prisma.$transaction(async (tx) => {
+    const created = await tx.category.create({ data });
     await writeAuditLog(tx, {
       actorUserId,
       entityType: "category",
-      entityId: category.id,
+      entityId: created.id,
       action: "CREATE",
-      after: category,
+      after: created,
     });
-    return category;
+    return created;
   });
+  revalidateTag(CATALOG_TAGS.CATEGORIES);
+  return category;
 }
 
 export async function updateCategory(
@@ -73,18 +85,23 @@ export async function updateCategory(
   id: string,
   data: CategoryData,
 ) {
-  return prisma.$transaction(async (tx) => {
+  const after = await prisma.$transaction(async (tx) => {
     const before = await tx.category.findUnique({ where: { id } });
     if (!before) throw new Error("Category not found");
-    const after = await tx.category.update({ where: { id }, data });
+    const updated = await tx.category.update({ where: { id }, data });
     await writeAuditLog(tx, {
       actorUserId,
       entityType: "category",
       entityId: id,
-      action: before.isActive === after.isActive ? "UPDATE" : after.isActive ? "ACTIVATE" : "DEACTIVATE",
+      action: before.isActive === updated.isActive ? "UPDATE" : updated.isActive ? "ACTIVATE" : "DEACTIVATE",
       before,
-      after,
+      after: updated,
     });
-    return after;
+    return updated;
   });
+  revalidateTag(CATALOG_TAGS.CATEGORIES);
+  // Listed alongside categories on /products → cached value shows category
+  // names that may have been renamed.
+  revalidateTag(CATALOG_TAGS.PRODUCTS);
+  return after;
 }
