@@ -5,6 +5,7 @@ import { writeAuditLog } from "./audit";
 import type { ReturnData } from "@/lib/validation/return";
 import { generateReturnRef } from "./return-ref";
 import { REPORT_TAGS } from "./report";
+import { CATALOG_TAGS } from "./cache-tags";
 
 export async function listReturns(params?: { limit?: number }) {
   return prisma.return.findMany({
@@ -224,5 +225,6 @@ export async function createReturn(actorUserId: string, data: ReturnData) {
   // second code path.
   revalidateTag(REPORT_TAGS.sales);
   revalidateTag(REPORT_TAGS.stock);
+  revalidateTag(CATALOG_TAGS.STOCK);
   return result;
 }

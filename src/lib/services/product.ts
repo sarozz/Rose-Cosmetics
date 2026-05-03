@@ -1,27 +1,39 @@
-import { revalidateTag } from "next/cache";
+import { revalidateTag, unstable_cache } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { writeAuditLog } from "./audit";
 import type { ProductData } from "@/lib/validation/product";
 import { REPORT_TAGS } from "./report";
+import { CATALOG_TAGS } from "./cache-tags";
 
-export async function listProducts(params?: { query?: string }) {
-  const query = params?.query?.trim();
-  return prisma.product.findMany({
-    where: query
-      ? {
-          OR: [
-            { name: { contains: query, mode: "insensitive" } },
-            { brand: { contains: query, mode: "insensitive" } },
-            { barcode: { contains: query } },
-            { sku: { contains: query, mode: "insensitive" } },
-          ],
-        }
-      : undefined,
-    include: { category: { select: { id: true, name: true } } },
-    orderBy: [{ isActive: "desc" }, { name: "asc" }],
-    take: 200,
-  });
-}
+/**
+ * Catalog list — wrapped in `unstable_cache` so the page render is served
+ * from the data cache after the first hit. Mutations below call
+ * `revalidateTag(CATALOG_TAGS.PRODUCTS)` and stock-changing flows
+ * (sale, receiving, return) call `CATALOG_TAGS.STOCK` so the on-hand
+ * column doesn't go stale.
+ */
+export const listProducts = unstable_cache(
+  async (params?: { query?: string }) => {
+    const query = params?.query?.trim();
+    return prisma.product.findMany({
+      where: query
+        ? {
+            OR: [
+              { name: { contains: query, mode: "insensitive" } },
+              { brand: { contains: query, mode: "insensitive" } },
+              { barcode: { contains: query } },
+              { sku: { contains: query, mode: "insensitive" } },
+            ],
+          }
+        : undefined,
+      include: { category: { select: { id: true, name: true } } },
+      orderBy: [{ isActive: "desc" }, { name: "asc" }],
+      take: 200,
+    });
+  },
+  ["catalog:listProducts"],
+  { tags: [CATALOG_TAGS.PRODUCTS, CATALOG_TAGS.STOCK] },
+);
 
 export async function getProduct(id: string) {
   return prisma.product.findUnique({ where: { id } });
@@ -45,6 +57,8 @@ export async function createProduct(
   // New product may have a reorderLevel and currentStock, so it can appear in
   // the low-stock list immediately.
   revalidateTag(REPORT_TAGS.stock);
+  revalidateTag(CATALOG_TAGS.PRODUCTS);
+  revalidateTag(CATALOG_TAGS.STOCK);
   return product;
 }
 
@@ -70,5 +84,7 @@ export async function updateProduct(
   // reorderLevel / isActive / currentStock edits all change what the
   // low-stock report shows.
   revalidateTag(REPORT_TAGS.stock);
+  revalidateTag(CATALOG_TAGS.PRODUCTS);
+  revalidateTag(CATALOG_TAGS.STOCK);
   return after;
 }
