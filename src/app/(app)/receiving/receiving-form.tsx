@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useRef, useState, useTransition } from "react";
 import { useFormState } from "react-dom";
 import { Field, inputClass } from "@/components/form/field";
@@ -423,9 +424,9 @@ export function ReceivingForm({
 
       <div className="flex gap-3 pt-2">
         <SubmitButton pendingLabel="Recording…">Record receipt</SubmitButton>
-        <a href="/receiving" className="btn-secondary">
+        <Link href="/receiving" className="btn-secondary">
           Cancel
-        </a>
+        </Link>
       </div>
 
       {dialog.open ? (

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { requireRole, REPORT_VIEW_ROLES } from "@/lib/auth";
 import { PageHeader } from "@/components/page-header";
 import {
@@ -46,9 +47,9 @@ export default async function ProfitReportPage() {
         title="Profit & inventory"
         description="Gross profit over the last 30 days and the value tied up in on-hand stock. Cost of goods uses the current product cost — drift is usually small for a single-shop catalog."
         actions={
-          <a href="/reports" className="btn-secondary">
+          <Link href="/reports" className="btn-secondary">
             Daily overview
-          </a>
+          </Link>
         }
       />
 

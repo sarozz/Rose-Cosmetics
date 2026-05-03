@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { hasRole, INVENTORY_WRITE_ROLES, requireUser } from "@/lib/auth";
 import { listPurchases } from "@/lib/services/purchase";
 import { PageHeader } from "@/components/page-header";
@@ -19,9 +20,9 @@ export default async function ReceivingPage() {
         description="Record stock received from suppliers. Every line writes an inventory ledger row."
         actions={
           canWrite ? (
-            <a href="/receiving/new" className="btn-primary">
+            <Link href="/receiving/new" className="btn-primary">
               Record receipt
-            </a>
+            </Link>
           ) : null
         }
       />

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import Image from "next/image";
 import { useState, useTransition } from "react";
 import { useFormState } from "react-dom";
@@ -250,9 +251,9 @@ export function ProductForm({
 
       <div className="flex gap-3 pt-2">
         <SubmitButton pendingLabel="Saving…">{submitLabel}</SubmitButton>
-        <a href="/products" className="btn-secondary">
+        <Link href="/products" className="btn-secondary">
           Cancel
-        </a>
+        </Link>
       </div>
     </form>
   );

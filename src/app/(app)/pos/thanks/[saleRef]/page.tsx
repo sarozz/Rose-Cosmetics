@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireRole, SALES_ROLES } from "@/lib/auth";
 import { PageHeader } from "@/components/page-header";
@@ -52,9 +53,9 @@ export default async function SaleThanksPage({
             actions={
               <div className="flex gap-2">
                 <PrintButton />
-                <a href="/pos" className="btn-primary">
+                <Link href="/pos" className="btn-primary">
                   New sale
-                </a>
+                </Link>
               </div>
             }
           />
