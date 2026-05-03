@@ -163,15 +163,9 @@ export async function deletePurchase(actorUserId: string, id: string) {
     }
   }
 
-  for (const [, agg] of reverseByProduct) {
-    if (agg.current - agg.qty < 0) {
-      throw new PurchaseDeleteError(
-        `Can't undo this receipt — ${agg.name} would go to ${
-          agg.current - agg.qty
-        } on hand (some of those units have already been sold). Record a stock adjustment instead.`,
-      );
-    }
-  }
+  // Negative-stock guard removed — operator wants test data wiped even if
+  // the snapshot underflows. Real production should reverse via a return
+  // or stock adjustment, not delete.
 
   await prisma.$transaction(async (tx) => {
     for (const [productId, agg] of reverseByProduct) {

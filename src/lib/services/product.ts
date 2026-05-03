@@ -97,25 +97,15 @@ export class ProductDeleteError extends Error {
 }
 
 /**
- * Hard-delete a product. Refuses when the product has any sale, purchase,
- * or inventory-movement history attached — wiping it would orphan the
- * ledger and break sale/refund traceability. The operator is told to
- * deactivate via Edit instead.
+ * Hard cascade delete. Wipes every row that references this product —
+ * ReturnItem, SaleItem, PurchaseItem, InventoryMovement — then the
+ * product itself, all in one transaction. Used by the operator to wipe
+ * test data; for real production cleanup the deactivate-via-edit path
+ * is still available and preserves the audit trail.
  */
 export async function deleteProduct(actorUserId: string, id: string) {
   const product = await prisma.product.findUnique({ where: { id } });
   if (!product) throw new ProductDeleteError("Product not found");
-
-  const [saleItems, purchaseItems, movements] = await Promise.all([
-    prisma.saleItem.count({ where: { productId: id } }),
-    prisma.purchaseItem.count({ where: { productId: id } }),
-    prisma.inventoryMovement.count({ where: { productId: id } }),
-  ]);
-  if (saleItems + purchaseItems + movements > 0) {
-    throw new ProductDeleteError(
-      "This product has sales, receipts, or movement history. Deactivate it via Edit instead so the audit trail stays intact.",
-    );
-  }
 
   await prisma.$transaction(async (tx) => {
     await writeAuditLog(tx, {
@@ -125,10 +115,19 @@ export async function deleteProduct(actorUserId: string, id: string) {
       action: "DELETE",
       before: product,
     });
+    // Order matters — Prisma defaults to RESTRICT on these FKs.
+    // ReturnItem -> SaleItem (must clear refunds before items)
+    await tx.returnItem.deleteMany({
+      where: { saleItem: { productId: id } },
+    });
+    await tx.saleItem.deleteMany({ where: { productId: id } });
+    await tx.purchaseItem.deleteMany({ where: { productId: id } });
+    await tx.inventoryMovement.deleteMany({ where: { productId: id } });
     await tx.product.delete({ where: { id } });
   });
 
   revalidateTag(REPORT_TAGS.stock);
+  revalidateTag(REPORT_TAGS.sales);
   revalidateTag(CATALOG_TAGS.PRODUCTS);
   revalidateTag(CATALOG_TAGS.STOCK);
 }
