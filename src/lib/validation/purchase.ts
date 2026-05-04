@@ -26,6 +26,13 @@ export const purchaseSchema = z.object({
   supplierId: z.string().cuid("Select a supplier"),
   purchaseDate: z.coerce.date().optional(),
   notes: empty.pipe(z.string().max(2000).nullable()),
+  // Settlement: debited = paid up-front, credit = still owed to the
+  // supplier. Both required (zero is a valid value). VAT + discount
+  // optional; default 0.
+  debited: price,
+  credit: price,
+  vat: price.optional().default(0),
+  discount: price.optional().default(0),
   items: z
     .array(purchaseItemSchema)
     .min(1, "Add at least one line")

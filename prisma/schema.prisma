@@ -191,6 +191,14 @@ model Purchase {
   status       PurchaseStatus @default(DRAFT)
   purchaseDate DateTime       @default(now())
   totalCost    Decimal        @default(0) @db.Decimal(12, 2)
+  // Settlement fields. `debited` is paid up-front (cash out). `credit`
+  // is what the shop still owes the supplier — the running balance per
+  // supplier is sum(credit) − sum(debited-credits-paid). VAT and discount
+  // are line-summary modifiers the supplier invoice carried.
+  debited      Decimal        @default(0) @db.Decimal(12, 2)
+  credit       Decimal        @default(0) @db.Decimal(12, 2)
+  vat          Decimal        @default(0) @db.Decimal(12, 2)
+  discount     Decimal        @default(0) @db.Decimal(12, 2)
   notes        String?
   createdById  String
   createdAt    DateTime       @default(now())

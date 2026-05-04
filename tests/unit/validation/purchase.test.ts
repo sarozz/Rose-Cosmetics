@@ -15,6 +15,8 @@ const base = {
   supplierId: cuid(9),
   purchaseDate: undefined,
   notes: "",
+  debited: "0",
+  credit: "0",
   items: [baseItem],
 };
 
@@ -63,5 +65,32 @@ describe("purchaseSchema", () => {
       items: [{ ...baseItem, costPrice: "-1" }],
     });
     expect(result.success).toBe(false);
+  });
+
+  it("requires debited and credit", () => {
+    const a = purchaseSchema.safeParse({ ...base, debited: undefined });
+    const b = purchaseSchema.safeParse({ ...base, credit: undefined });
+    expect(a.success).toBe(false);
+    expect(b.success).toBe(false);
+  });
+
+  it("defaults vat and discount to 0 when omitted", () => {
+    const parsed = purchaseSchema.parse(base);
+    expect(parsed.vat).toBe(0);
+    expect(parsed.discount).toBe(0);
+  });
+
+  it("accepts populated vat and discount", () => {
+    const parsed = purchaseSchema.parse({
+      ...base,
+      debited: "100",
+      credit: "50",
+      vat: "13",
+      discount: "5",
+    });
+    expect(parsed.debited).toBe(100);
+    expect(parsed.credit).toBe(50);
+    expect(parsed.vat).toBe(13);
+    expect(parsed.discount).toBe(5);
   });
 });

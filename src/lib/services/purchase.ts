@@ -62,6 +62,10 @@ export async function createPurchase(
         notes: data.notes,
         createdById: actorUserId,
         totalCost,
+        debited: data.debited,
+        credit: data.credit,
+        vat: data.vat,
+        discount: data.discount,
         items: {
           create: data.items.map((item) => ({
             productId: item.productId,
