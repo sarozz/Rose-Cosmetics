@@ -140,7 +140,7 @@ async function OwnerKpiRow() {
         title="Ledger"
         value="Audit"
         subtitle="Every stock change, who, when"
-        href="/reports/ledger"
+        href="/reports?section=ledger"
       />
     </section>
   );
