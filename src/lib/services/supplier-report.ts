@@ -103,3 +103,111 @@ export async function supplierFinancialRollup(params?: {
     // for the owner ("who do we owe the most?").
     .sort((a, b) => Number(b.credit) - Number(a.credit) || Number(b.totalCost) - Number(a.totalCost));
 }
+
+export type SupplierHistoryEntry = {
+  id: string;
+  purchaseRef: string;
+  purchaseDate: string;
+  lines: number;
+  totalCost: string;
+  debited: string;
+  credit: string;
+  vat: string;
+  discount: string;
+  recordedBy: string;
+};
+
+export type SupplierHistoryResult = {
+  supplier: {
+    id: string;
+    name: string;
+    phone: string | null;
+    email: string | null;
+    defaultTerms: string | null;
+  } | null;
+  totals: {
+    receipts: number;
+    totalCost: string;
+    debited: string;
+    credit: string;
+    vat: string;
+    discount: string;
+  };
+  receipts: SupplierHistoryEntry[];
+};
+
+/**
+ * Per-supplier full receipt history. Used by the supplier drill view
+ * (/reports?section=suppliers&supplier=ID) — every Purchase that hit
+ * this supplier, newest first, with its line count, totals, and the
+ * full settlement breakdown.
+ */
+export async function supplierHistory(
+  supplierId: string,
+): Promise<SupplierHistoryResult> {
+  const [supplier, purchases] = await Promise.all([
+    prisma.supplier.findUnique({
+      where: { id: supplierId },
+      select: {
+        id: true,
+        name: true,
+        phone: true,
+        email: true,
+        defaultTerms: true,
+      },
+    }),
+    prisma.purchase.findMany({
+      where: { supplierId, status: "COMPLETED" },
+      orderBy: { purchaseDate: "desc" },
+      select: {
+        id: true,
+        purchaseRef: true,
+        purchaseDate: true,
+        totalCost: true,
+        debited: true,
+        credit: true,
+        vat: true,
+        discount: true,
+        createdBy: { select: { displayName: true } },
+        _count: { select: { items: true } },
+      },
+    }),
+  ]);
+
+  let totalCost = new Prisma.Decimal(0);
+  let debited = new Prisma.Decimal(0);
+  let credit = new Prisma.Decimal(0);
+  let vat = new Prisma.Decimal(0);
+  let discount = new Prisma.Decimal(0);
+  for (const p of purchases) {
+    totalCost = totalCost.add(p.totalCost);
+    debited = debited.add(p.debited);
+    credit = credit.add(p.credit);
+    vat = vat.add(p.vat);
+    discount = discount.add(p.discount);
+  }
+
+  return {
+    supplier,
+    totals: {
+      receipts: purchases.length,
+      totalCost: totalCost.toFixed(2),
+      debited: debited.toFixed(2),
+      credit: credit.toFixed(2),
+      vat: vat.toFixed(2),
+      discount: discount.toFixed(2),
+    },
+    receipts: purchases.map((p) => ({
+      id: p.id,
+      purchaseRef: p.purchaseRef,
+      purchaseDate: p.purchaseDate.toISOString(),
+      lines: p._count.items,
+      totalCost: p.totalCost.toString(),
+      debited: p.debited.toString(),
+      credit: p.credit.toString(),
+      vat: p.vat.toString(),
+      discount: p.discount.toString(),
+      recordedBy: p.createdBy.displayName,
+    })),
+  };
+}
