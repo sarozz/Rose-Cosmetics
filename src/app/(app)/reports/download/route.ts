@@ -13,6 +13,7 @@ import {
   parseMonthValue,
   staffPerformanceForMonth,
 } from "@/lib/services/staff-performance";
+import { supplierFinancialRollup } from "@/lib/services/supplier-report";
 
 /**
  * CSV exporter for the reports page. One endpoint, `kind` picks the
@@ -29,6 +30,7 @@ const KINDS = [
   "payments",
   "low-stock",
   "staff",
+  "suppliers",
 ] as const;
 type Kind = (typeof KINDS)[number];
 
@@ -138,6 +140,31 @@ export async function GET(request: Request) {
       ]),
     ]);
     filename = `rose-staff-performance-${value}.csv`;
+  } else if (kind === "suppliers") {
+    const rows = await supplierFinancialRollup();
+    body = toCsv([
+      [
+        "Supplier",
+        "Receipts",
+        "Purchased",
+        "Debited",
+        "Credit",
+        "VAT",
+        "Discount",
+        "Last receipt",
+      ],
+      ...rows.map((r) => [
+        r.supplierName,
+        r.receipts,
+        r.totalCost,
+        r.debited,
+        r.credit,
+        r.vat,
+        r.discount,
+        r.lastPurchaseAt?.slice(0, 10) ?? "",
+      ]),
+    ]);
+    filename = `rose-supplier-ledger-${todayStamp()}.csv`;
   } else {
     const rows = await lowStock(200);
     body = toCsv([

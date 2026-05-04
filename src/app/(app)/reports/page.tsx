@@ -98,21 +98,10 @@ export default async function ReportsPage({
         eyebrow="Reports"
         title="Sales analytics"
         description="Track revenue, best-sellers, and stock health. Switch period up top — every table exports to CSV."
-        actions={
-          <div className="flex flex-wrap gap-2">
-            <PrintButton label="Print report" />
-            <Link href="/reports/profit" className="btn-secondary">
-              Profit & inventory
-            </Link>
-            <Link href="/reports/staff" className="btn-secondary">
-              Staff performance
-            </Link>
-            <Link href="/reports/ledger" className="btn-secondary">
-              Inventory ledger
-            </Link>
-          </div>
-        }
+        actions={<PrintButton label="Print report" />}
       />
+
+      <ReportSectionNav active="sales" />
 
       <RangeToggle current={range} />
 
@@ -530,4 +519,93 @@ function paymentMethodLabel(method: string): string {
   if (method === "CARD") return "Card";
   if (method === "OTHER") return "Digital";
   return method;
+}
+
+/**
+ * Section nav at the top of every reports page. Surfaces all five
+ * surfaces (Sales / Profit & inventory / Staff / Suppliers / Ledger)
+ * so the reports hub reads as a single shelf instead of a button row.
+ * The `active` slug renders that tile in rose so the user can see
+ * where they are.
+ */
+function ReportSectionNav({
+  active,
+}: {
+  active:
+    | "sales"
+    | "profit"
+    | "staff"
+    | "suppliers"
+    | "ledger";
+}) {
+  const items: Array<{
+    slug: typeof active;
+    label: string;
+    description: string;
+    href: string;
+  }> = [
+    {
+      slug: "sales",
+      label: "Sales",
+      description: "Daily / weekly / monthly trends",
+      href: "/reports",
+    },
+    {
+      slug: "profit",
+      label: "Profit & inventory",
+      description: "Margins, top SKUs, on-hand value",
+      href: "/reports/profit",
+    },
+    {
+      slug: "staff",
+      label: "Staff",
+      description: "Per-cashier monthly performance",
+      href: "/reports/staff",
+    },
+    {
+      slug: "suppliers",
+      label: "Suppliers",
+      description: "Debited, credit, VAT, discount per supplier",
+      href: "/reports/suppliers",
+    },
+    {
+      slug: "ledger",
+      label: "Inventory ledger",
+      description: "Every stock movement, who and when",
+      href: "/reports/ledger",
+    },
+  ];
+  return (
+    <nav
+      aria-label="Reports sections"
+      className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5"
+    >
+      {items.map((it) => {
+        const isActive = it.slug === active;
+        return (
+          <Link
+            key={it.slug}
+            href={it.href as never}
+            aria-current={isActive ? "page" : undefined}
+            className={`group rounded-xl border p-4 transition-colors ${
+              isActive
+                ? "border-rose-400/40 bg-rose-500/10"
+                : "border-white/10 bg-card hover:border-rose-400/30 hover:bg-card/80"
+            }`}
+          >
+            <div
+              className={`text-sm font-semibold ${
+                isActive ? "text-rose-200" : "text-ink"
+              }`}
+            >
+              {it.label}
+            </div>
+            <div className="mt-1 text-xs text-ink-muted">
+              {it.description}
+            </div>
+          </Link>
+        );
+      })}
+    </nav>
+  );
 }

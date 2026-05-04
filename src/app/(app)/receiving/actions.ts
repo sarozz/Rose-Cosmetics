@@ -22,6 +22,10 @@ export async function createPurchaseAction(
     supplierId: formData.get("supplierId") ?? "",
     purchaseDate: formData.get("purchaseDate") || undefined,
     notes: formData.get("notes") ?? "",
+    debited: formData.get("debited") ?? "0",
+    credit: formData.get("credit") ?? "0",
+    vat: formData.get("vat") ?? "0",
+    discount: formData.get("discount") ?? "0",
     items: parseItems(formData),
   });
 

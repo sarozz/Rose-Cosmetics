@@ -36,6 +36,8 @@ export default async function ReceivingPage() {
               <th className="px-4 py-3">Supplier</th>
               <th className="px-4 py-3 text-right">Lines</th>
               <th className="px-4 py-3 text-right">Total cost</th>
+              <th className="px-4 py-3 text-right">Debited</th>
+              <th className="px-4 py-3 text-right">Credit</th>
               <th className="px-4 py-3">Recorded by</th>
               <th className="px-4 py-3" aria-label="Actions" />
             </tr>
@@ -44,43 +46,56 @@ export default async function ReceivingPage() {
             {purchases.length === 0 ? (
               <tr>
                 <td
-                  colSpan={7}
+                  colSpan={9}
                   className="px-4 py-10 text-center text-ink-muted"
                 >
                   No receipts yet.
                 </td>
               </tr>
             ) : (
-              purchases.map((p) => (
-                <tr key={p.id}>
-                  <td className="px-4 py-3 font-mono text-xs text-ink">
-                    {p.purchaseRef}
-                  </td>
-                  <td className="px-4 py-3 text-ink-soft">
-                    {formatDate(p.purchaseDate)}
-                  </td>
-                  <td className="px-4 py-3 text-ink">{p.supplier.name}</td>
-                  <td className="px-4 py-3 text-right tabular-nums text-ink-soft">
-                    {p._count.items}
-                  </td>
-                  <td className="px-4 py-3 text-right tabular-nums font-medium text-ink">
-                    {p.totalCost.toString()}
-                  </td>
-                  <td className="px-4 py-3 text-ink-soft">
-                    {p.createdBy.displayName}
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    {canWrite ? (
-                      <DeleteEntityButton
-                        id={p.id}
-                        name={p.purchaseRef}
-                        action={deletePurchaseAction}
-                        confirmLabel={`Delete receipt ${p.purchaseRef}? This will roll back the stock it added.`}
-                      />
-                    ) : null}
-                  </td>
-                </tr>
-              ))
+              purchases.map((p) => {
+                const credit = Number(p.credit);
+                const creditClass =
+                  credit > 0 ? "text-amber-300" : "text-ink-muted";
+                return (
+                  <tr key={p.id}>
+                    <td className="px-4 py-3 font-mono text-xs text-ink">
+                      {p.purchaseRef}
+                    </td>
+                    <td className="px-4 py-3 text-ink-soft">
+                      {formatDate(p.purchaseDate)}
+                    </td>
+                    <td className="px-4 py-3 text-ink">{p.supplier.name}</td>
+                    <td className="px-4 py-3 text-right tabular-nums text-ink-soft">
+                      {p._count.items}
+                    </td>
+                    <td className="px-4 py-3 text-right tabular-nums font-medium text-ink">
+                      {p.totalCost.toString()}
+                    </td>
+                    <td className="px-4 py-3 text-right tabular-nums text-emerald-300">
+                      {p.debited.toString()}
+                    </td>
+                    <td
+                      className={`px-4 py-3 text-right tabular-nums ${creditClass}`}
+                    >
+                      {p.credit.toString()}
+                    </td>
+                    <td className="px-4 py-3 text-ink-soft">
+                      {p.createdBy.displayName}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      {canWrite ? (
+                        <DeleteEntityButton
+                          id={p.id}
+                          name={p.purchaseRef}
+                          action={deletePurchaseAction}
+                          confirmLabel={`Delete receipt ${p.purchaseRef}? This will roll back the stock it added.`}
+                        />
+                      ) : null}
+                    </td>
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>

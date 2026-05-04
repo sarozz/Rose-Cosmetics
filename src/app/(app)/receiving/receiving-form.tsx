@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useMemo, useRef, useState, useTransition } from "react";
 import { useFormState } from "react-dom";
-import { Field, inputClass } from "@/components/form/field";
+import { Field, FieldGroup, inputClass } from "@/components/form/field";
 import { FormError } from "@/components/form/form-error";
 import { SubmitButton } from "@/components/form/submit-button";
 import { emptyReceivingState, type ReceivingFormState } from "./state";
@@ -410,6 +410,86 @@ export function ReceivingForm({
           </span>
         </div>
       </div>
+
+      <FieldGroup
+        title="Settlement"
+        description="What you paid the supplier today and what's left owing. VAT and discount are optional."
+      >
+        <div className="grid gap-5 sm:grid-cols-2">
+          <Field
+            label="Debited"
+            htmlFor="debited"
+            required
+            hint="Amount paid up-front (cash out)"
+            error={state.fieldErrors.debited}
+            adornment="Rs"
+          >
+            <input
+              id="debited"
+              name="debited"
+              type="number"
+              step="0.01"
+              min="0"
+              required
+              defaultValue="0"
+              className={inputClass()}
+            />
+          </Field>
+          <Field
+            label="Credit"
+            htmlFor="credit"
+            required
+            hint="Amount still owed to the supplier"
+            error={state.fieldErrors.credit}
+            adornment="Rs"
+          >
+            <input
+              id="credit"
+              name="credit"
+              type="number"
+              step="0.01"
+              min="0"
+              required
+              defaultValue="0"
+              className={inputClass()}
+            />
+          </Field>
+        </div>
+        <div className="grid gap-5 sm:grid-cols-2">
+          <Field
+            label="VAT (optional)"
+            htmlFor="vat"
+            error={state.fieldErrors.vat}
+            adornment="Rs"
+          >
+            <input
+              id="vat"
+              name="vat"
+              type="number"
+              step="0.01"
+              min="0"
+              defaultValue="0"
+              className={inputClass()}
+            />
+          </Field>
+          <Field
+            label="Discount (optional)"
+            htmlFor="discount"
+            error={state.fieldErrors.discount}
+            adornment="Rs"
+          >
+            <input
+              id="discount"
+              name="discount"
+              type="number"
+              step="0.01"
+              min="0"
+              defaultValue="0"
+              className={inputClass()}
+            />
+          </Field>
+        </div>
+      </FieldGroup>
 
       <Field label="Notes" htmlFor="notes" error={state.fieldErrors.notes}>
         <textarea
