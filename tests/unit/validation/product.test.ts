@@ -71,4 +71,23 @@ describe("productSchema", () => {
     });
     expect(result.success).toBe(false);
   });
+
+  it("treats blank cost price as zero (fills in on first receipt)", () => {
+    const parsed = productSchema.parse({
+      ...base,
+      costPrice: "",
+    });
+    expect(parsed.costPrice).toBe(0);
+    expect(parsed.sellPrice).toBe(20);
+  });
+
+  it("skips sell-vs-cost check when cost is blank", () => {
+    const parsed = productSchema.parse({
+      ...base,
+      costPrice: "",
+      sellPrice: "5.00",
+    });
+    expect(parsed.costPrice).toBe(0);
+    expect(parsed.sellPrice).toBe(5);
+  });
 });

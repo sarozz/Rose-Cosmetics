@@ -184,7 +184,7 @@ export function ProductForm({
           <Field
             label="Cost price"
             htmlFor="costPrice"
-            required
+            hint="Optional — fills in on first receipt"
             error={state.fieldErrors.costPrice}
             adornment="Rs"
           >
@@ -194,7 +194,6 @@ export function ProductForm({
               type="number"
               step="0.01"
               min="0"
-              required
               defaultValue={numberDefault(defaults?.costPrice)}
               className={inputClass()}
             />
