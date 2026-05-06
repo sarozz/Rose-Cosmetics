@@ -11,6 +11,13 @@ const price = z.coerce
   .nonnegative("Must be zero or more")
   .multipleOf(0.01, "At most two decimals");
 
+// Cost price can be left blank — it fills in on first receipt. Empty input
+// (or undefined) coerces to 0, treated as "unknown" downstream.
+const optionalPrice = z.preprocess(
+  (v) => (v === "" || v == null ? 0 : v),
+  price,
+);
+
 const integerNonNeg = z.coerce
   .number({ invalid_type_error: "Enter a number" })
   .int("Must be a whole number")
@@ -30,12 +37,12 @@ export const productSchema = z
     ),
     sku: empty.pipe(z.string().max(40).nullable()),
     categoryId: empty.pipe(z.string().cuid().nullable()),
-    costPrice: price,
+    costPrice: optionalPrice,
     sellPrice: price,
     reorderLevel: integerNonNeg.default(0),
     isActive: z.boolean().default(true),
   })
-  .refine((v) => v.sellPrice >= v.costPrice, {
+  .refine((v) => v.costPrice === 0 || v.sellPrice >= v.costPrice, {
     path: ["sellPrice"],
     message: "Sell price cannot be below cost price",
   });
