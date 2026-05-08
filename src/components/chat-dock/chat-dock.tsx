@@ -332,12 +332,19 @@ export function ChatDock({
 
   return (
     <div className="no-print pointer-events-none fixed bottom-4 right-4 z-50 flex flex-col items-end gap-3">
-      {open ? (
-        <div
-          className="pointer-events-auto flex h-[28rem] w-[22rem] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-2xl border border-white/10 bg-card shadow-2xl"
-          role="dialog"
-          aria-label="Team chat"
-        >
+      {/* Panel is always mounted so the open/close transition has something
+          to animate. Visibility + interactivity flip via classes; hidden
+          state is fully transparent and pointer-events-none. */}
+      <div
+        role="dialog"
+        aria-label="Team chat"
+        aria-hidden={!open}
+        className={`flex h-[28rem] w-[22rem] max-w-[calc(100vw-2rem)] origin-bottom-right flex-col overflow-hidden rounded-2xl border border-white/10 bg-card shadow-2xl transition-all duration-200 ease-out motion-reduce:transition-none ${
+          open
+            ? "pointer-events-auto translate-y-0 scale-100 opacity-100"
+            : "pointer-events-none translate-y-2 scale-95 opacity-0"
+        }`}
+      >
           <header className="flex items-center justify-between border-b border-white/10 bg-surface px-4 py-3">
             <div>
               <p className="text-sm font-semibold text-ink">Team chat</p>
@@ -424,14 +431,17 @@ export function ChatDock({
             </div>
           </form>
         </div>
-      ) : null}
 
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-label={open ? "Hide team chat" : "Open team chat"}
         aria-expanded={open}
-        className="pointer-events-auto relative inline-flex h-14 w-14 items-center justify-center rounded-full bg-rose-500 text-white shadow-xl transition-transform hover:scale-105 hover:bg-rose-400 focus:outline-none focus:ring-4 focus:ring-rose-400/40"
+        className={`pointer-events-auto relative inline-flex h-14 w-14 items-center justify-center rounded-full bg-rose-500 text-white shadow-xl transition-all duration-200 ease-out hover:scale-105 hover:bg-rose-400 focus:outline-none focus:ring-4 focus:ring-rose-400/40 motion-reduce:transition-none ${
+          open ? "rotate-12 scale-95" : "rotate-0"
+        } ${
+          !open && unreadCount > 0 ? "animate-chat-pulse" : ""
+        }`}
       >
         <ChatBubbleIcon />
         {!open && unreadCount > 0 ? (
@@ -460,13 +470,9 @@ function MessageList({
   // tighter Messenger-like read.
   const groups = useMemo(() => groupMessages(messages), [messages]);
 
-  // For "seen by", show readers under the LAST message overall (typical
-  // chat semantics — older messages are implicitly seen if a newer one is).
-  const lastIndex = messages.length - 1;
-
   return (
     <>
-      {groups.map((g, gi) => {
+      {groups.map((g) => {
         const mine = g.authorId === currentUserId;
         return (
           <div
@@ -478,31 +484,31 @@ function MessageList({
                 {g.authorName}
               </span>
             ) : null}
-            {g.messages.map((m, mi) => {
-              const isLast = gi === groups.length - 1 && mi === g.messages.length - 1;
-              const overallIndex = m.indexInList;
-              return (
+            {g.messages.map((m) => (
+              <div
+                key={m.id}
+                className={`flex flex-col gap-0.5 ${
+                  mine ? "items-end" : "items-start"
+                }`}
+              >
                 <div
-                  key={m.id}
-                  className={`max-w-[85%] rounded-2xl px-3 py-1.5 text-sm leading-snug ${
+                  className={`max-w-[85%] animate-chat-bubble-in rounded-2xl px-3 py-1.5 text-sm leading-snug ${
                     mine
                       ? "bg-rose-500/90 text-white"
                       : "bg-white/5 text-ink"
                   }`}
                 >
                   <p className="whitespace-pre-wrap break-words">{m.body}</p>
-                  {isLast ? (
-                    <SeenBy
-                      message={m}
-                      members={members}
-                      currentUserId={currentUserId}
-                      mine={mine}
-                    />
-                  ) : null}
-                  {overallIndex === lastIndex && !isLast ? null : null}
                 </div>
-              );
-            })}
+                {mine ? (
+                  <ReadStatus
+                    message={m}
+                    members={members}
+                    currentUserId={currentUserId}
+                  />
+                ) : null}
+              </div>
+            ))}
           </div>
         );
       })}
@@ -510,28 +516,47 @@ function MessageList({
   );
 }
 
-function SeenBy({
+/**
+ * Per-message delivery status for the sender's own bubbles. Three states:
+ *   - "Sending" if the row is still optimistic (temp id).
+ *   - "Sent" once the row has been written but no teammate has read it.
+ *   - "Seen by X, Y" once at least one teammate's ChatRead row has arrived.
+ *     Truncates to "Seen by X, Y +N" when more than two users have read.
+ */
+function ReadStatus({
   message,
   members,
   currentUserId,
-  mine,
 }: {
   message: ChatMessageRow;
   members: Map<string, Member>;
   currentUserId: string;
-  mine: boolean;
 }) {
-  // For your own message, show who else has seen it. For incoming, no need.
-  if (!mine) return null;
-  const seers = message.readBy
+  if (message.id.startsWith("temp-")) {
+    return (
+      <span className="px-1 text-[10px] italic text-ink-muted">Sending…</span>
+    );
+  }
+  const seerNames = message.readBy
     .filter((uid) => uid !== currentUserId)
-    .map((uid) => members.get(uid)?.displayName)
+    .map((uid) => members.get(uid)?.displayName?.split(" ")[0])
     .filter((n): n is string => Boolean(n));
-  if (seers.length === 0) return null;
+  if (seerNames.length === 0) {
+    return (
+      <span className="px-1 text-[10px] text-ink-muted">Sent</span>
+    );
+  }
+  let label: string;
+  if (seerNames.length <= 2) {
+    label = `Seen by ${seerNames.join(", ")}`;
+  } else {
+    const head = seerNames.slice(0, 2).join(", ");
+    label = `Seen by ${head} +${seerNames.length - 2}`;
+  }
   return (
-    <p className="mt-1 text-right text-[10px] font-medium text-white/70">
-      Seen by {seers.join(", ")}
-    </p>
+    <span className="px-1 text-[10px] font-medium text-rose-300/90">
+      {label}
+    </span>
   );
 }
 
@@ -539,12 +564,12 @@ type Group = {
   firstId: string;
   authorId: string;
   authorName: string;
-  messages: (ChatMessageRow & { indexInList: number })[];
+  messages: ChatMessageRow[];
 };
 
 function groupMessages(messages: ChatMessageRow[]): Group[] {
   const groups: Group[] = [];
-  messages.forEach((m, i) => {
+  for (const m of messages) {
     const last = groups[groups.length - 1];
     const sameAuthor = last?.authorId === m.authorId;
     const closeInTime =
@@ -553,16 +578,16 @@ function groupMessages(messages: ChatMessageRow[]): Group[] {
         new Date(last.messages[last.messages.length - 1].createdAt).getTime() <
         5 * 60 * 1000;
     if (last && sameAuthor && closeInTime) {
-      last.messages.push({ ...m, indexInList: i });
+      last.messages.push(m);
     } else {
       groups.push({
         firstId: m.id,
         authorId: m.authorId,
         authorName: m.authorName,
-        messages: [{ ...m, indexInList: i }],
+        messages: [m],
       });
     }
-  });
+  }
   return groups;
 }
 
