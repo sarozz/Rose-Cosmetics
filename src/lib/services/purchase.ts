@@ -125,6 +125,127 @@ export class PurchaseDeleteError extends Error {
   }
 }
 
+export class PurchaseUpdateError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "PurchaseUpdateError";
+  }
+}
+
+/**
+ * Edit a previously-recorded receipt. Edits are non-trivial because every
+ * line wrote stock + an inventory movement when first received. The shape
+ * of an edit transaction:
+ *
+ *   1. Decrement product.currentStock by every old line's qty (rolling
+ *      back the original receipt's effect on stock).
+ *   2. Delete the inventory_movements + purchase_items the original
+ *      receipt wrote.
+ *   3. Insert the new line items, increment stock, write new movements,
+ *      and refresh product cost/sell from the new lines (mirrors create).
+ *   4. Update the purchase header (supplier, date, notes, settlement).
+ *   5. Audit log with before+after.
+ *
+ * Negative stock is allowed (matches `deletePurchase`) — we trust the
+ * operator to fix stock out-of-band if they're editing an old receipt
+ * whose units have already been sold. The DB schema doesn't constrain
+ * currentStock to ≥0 so the underflow is recoverable.
+ */
+export async function updatePurchase(
+  actorUserId: string,
+  id: string,
+  data: PurchaseData,
+) {
+  const before = await prisma.purchase.findUnique({
+    where: { id },
+    include: { items: true },
+  });
+  if (!before) throw new PurchaseUpdateError("Receipt not found");
+
+  const totalCost = data.items.reduce(
+    (sum, item) =>
+      sum.add(new Prisma.Decimal(item.costPrice).mul(item.qty)),
+    new Prisma.Decimal(0),
+  );
+
+  const result = await prisma.$transaction(async (tx) => {
+    // 1. Reverse the original receipt's stock effect.
+    for (const item of before.items) {
+      await tx.product.update({
+        where: { id: item.productId },
+        data: { currentStock: { decrement: item.qty } },
+      });
+    }
+    // 2. Drop the old movements + line items.
+    await tx.inventoryMovement.deleteMany({
+      where: { sourceTable: "purchases", sourceId: id },
+    });
+    await tx.purchaseItem.deleteMany({ where: { purchaseId: id } });
+
+    // 3. Update the header.
+    const purchase = await tx.purchase.update({
+      where: { id },
+      data: {
+        supplierId: data.supplierId,
+        purchaseDate: data.purchaseDate ?? before.purchaseDate,
+        notes: data.notes,
+        totalCost,
+        debited: data.debited,
+        credit: data.credit,
+        vat: data.vat,
+        discount: data.discount,
+        items: {
+          create: data.items.map((item) => ({
+            productId: item.productId,
+            qty: item.qty,
+            costPrice: item.costPrice,
+            sellPrice: item.sellPrice,
+          })),
+        },
+      },
+      include: { items: true },
+    });
+
+    // 4. Apply the new lines: increment stock, write movements,
+    // refresh product pricing from the latest figures.
+    for (const item of data.items) {
+      await tx.product.update({
+        where: { id: item.productId },
+        data: {
+          currentStock: { increment: item.qty },
+          costPrice: item.costPrice,
+          sellPrice: item.sellPrice,
+        },
+      });
+      await tx.inventoryMovement.create({
+        data: {
+          productId: item.productId,
+          movementType: "PURCHASE_IN",
+          qtyDelta: item.qty,
+          sourceTable: "purchases",
+          sourceId: purchase.id,
+          createdById: actorUserId,
+        },
+      });
+    }
+
+    await writeAuditLog(tx, {
+      actorUserId,
+      entityType: "purchase",
+      entityId: id,
+      action: "UPDATE",
+      before,
+      after: purchase,
+    });
+
+    return purchase;
+  });
+
+  revalidateTag(REPORT_TAGS.stock);
+  revalidateTag(CATALOG_TAGS.STOCK);
+  return result;
+}
+
 /**
  * Delete a receiving record. The Inventory ledger is the source of truth —
  * we can't just drop the purchase row or its movements would dangle. Two

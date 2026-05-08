@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Route } from "next";
 import { hasRole, INVENTORY_WRITE_ROLES, requireUser } from "@/lib/auth";
 import { listPurchases } from "@/lib/services/purchase";
 import { PageHeader } from "@/components/page-header";
@@ -85,12 +86,20 @@ export default async function ReceivingPage() {
                     </td>
                     <td className="px-4 py-3 text-right">
                       {canWrite ? (
-                        <DeleteEntityButton
-                          id={p.id}
-                          name={p.purchaseRef}
-                          action={deletePurchaseAction}
-                          confirmLabel={`Delete receipt ${p.purchaseRef}? This will roll back the stock it added.`}
-                        />
+                        <div className="inline-flex items-start gap-4">
+                          <Link
+                            href={`/receiving/${p.id}/edit` as Route}
+                            className="text-rose-300 hover:underline"
+                          >
+                            Edit
+                          </Link>
+                          <DeleteEntityButton
+                            id={p.id}
+                            name={p.purchaseRef}
+                            action={deletePurchaseAction}
+                            confirmLabel={`Delete receipt ${p.purchaseRef}? This will roll back the stock it added.`}
+                          />
+                        </div>
                       ) : null}
                     </td>
                   </tr>

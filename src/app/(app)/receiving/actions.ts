@@ -8,6 +8,8 @@ import {
   createPurchase,
   deletePurchase,
   PurchaseDeleteError,
+  PurchaseUpdateError,
+  updatePurchase,
 } from "@/lib/services/purchase";
 import type { ReceivingFormState } from "./state";
 import type { DeleteEntityResult } from "@/components/delete-entity-button";
@@ -86,6 +88,44 @@ function friendlyError(err: unknown): string {
     return "Duplicate purchase reference — retry to regenerate.";
   }
   return "Something went wrong. Try again.";
+}
+
+export async function updatePurchaseAction(
+  id: string,
+  _prev: ReceivingFormState,
+  formData: FormData,
+): Promise<ReceivingFormState> {
+  const actor = await requireRole(INVENTORY_WRITE_ROLES);
+
+  const parsed = purchaseSchema.safeParse({
+    supplierId: formData.get("supplierId") ?? "",
+    purchaseDate: formData.get("purchaseDate") || undefined,
+    notes: formData.get("notes") ?? "",
+    debited: formData.get("debited") ?? "0",
+    credit: formData.get("credit") ?? "0",
+    vat: formData.get("vat") ?? "0",
+    discount: formData.get("discount") ?? "0",
+    items: parseItems(formData),
+  });
+
+  if (!parsed.success) {
+    return {
+      fieldErrors: toFieldErrors(parsed.error.flatten().fieldErrors),
+      formError: parsed.error.flatten().formErrors[0] ?? null,
+    };
+  }
+
+  try {
+    await updatePurchase(actor.id, id, parsed.data);
+  } catch (err) {
+    if (err instanceof PurchaseUpdateError) {
+      return { fieldErrors: {}, formError: err.message };
+    }
+    return { fieldErrors: {}, formError: friendlyError(err) };
+  }
+
+  revalidatePath("/receiving");
+  redirect("/receiving");
 }
 
 export async function deletePurchaseAction(

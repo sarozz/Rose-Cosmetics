@@ -37,11 +37,25 @@ type DialogState =
       rowKey: number | null;
     };
 
+export type ReceivingFormDefaults = {
+  supplierId: string;
+  purchaseDate: string;
+  notes: string;
+  debited: string;
+  credit: string;
+  vat: string;
+  discount: string;
+  items: { productId: string; qty: string; costPrice: string; sellPrice: string }[];
+};
+
 export function ReceivingForm({
   action,
   suppliers,
   products: initialProducts,
   canCreateProducts,
+  defaults,
+  submitLabel = "Record receipt",
+  pendingLabel = "Recording…",
 }: {
   action: (
     state: ReceivingFormState,
@@ -50,13 +64,23 @@ export function ReceivingForm({
   suppliers: SupplierOption[];
   products: ProductOption[];
   canCreateProducts: boolean;
+  defaults?: ReceivingFormDefaults;
+  submitLabel?: string;
+  pendingLabel?: string;
 }) {
   const [state, formAction] = useFormState(action, emptyReceivingState);
   const [products, setProducts] = useState<ProductOption[]>(initialProducts);
-  const [rows, setRows] = useState<Row[]>([
-    { key: 1, productId: "", qty: "", costPrice: "", sellPrice: "" },
-  ]);
-  const [nextKey, setNextKey] = useState(2);
+  const initialRows: Row[] = defaults && defaults.items.length > 0
+    ? defaults.items.map((it, i) => ({
+        key: i + 1,
+        productId: it.productId,
+        qty: it.qty,
+        costPrice: it.costPrice,
+        sellPrice: it.sellPrice,
+      }))
+    : [{ key: 1, productId: "", qty: "", costPrice: "", sellPrice: "" }];
+  const [rows, setRows] = useState<Row[]>(initialRows);
+  const [nextKey, setNextKey] = useState(initialRows.length + 1);
   const [scanInput, setScanInput] = useState("");
   const [scanNotice, setScanNotice] = useState<string | null>(null);
   const [scanError, setScanError] = useState<string | null>(null);
@@ -191,6 +215,8 @@ export function ReceivingForm({
   }
 
   const today = new Date().toISOString().slice(0, 10);
+  const defaultDate = defaults?.purchaseDate ?? today;
+  const defaultSupplier = defaults?.supplierId ?? "";
 
   return (
     <form action={formAction} className="space-y-6">
@@ -205,6 +231,7 @@ export function ReceivingForm({
             id="supplierId"
             name="supplierId"
             required
+            defaultValue={defaultSupplier}
             className={inputClass()}
           >
             <option value="">Select a supplier</option>
@@ -225,7 +252,7 @@ export function ReceivingForm({
             id="purchaseDate"
             name="purchaseDate"
             type="date"
-            defaultValue={today}
+            defaultValue={defaultDate}
             className={inputClass()}
           />
         </Field>
@@ -431,7 +458,7 @@ export function ReceivingForm({
               step="0.01"
               min="0"
               required
-              defaultValue="0"
+              defaultValue={defaults?.debited ?? "0"}
               className={inputClass()}
             />
           </Field>
@@ -450,7 +477,7 @@ export function ReceivingForm({
               step="0.01"
               min="0"
               required
-              defaultValue="0"
+              defaultValue={defaults?.credit ?? "0"}
               className={inputClass()}
             />
           </Field>
@@ -468,7 +495,7 @@ export function ReceivingForm({
               type="number"
               step="0.01"
               min="0"
-              defaultValue="0"
+              defaultValue={defaults?.vat ?? "0"}
               className={inputClass()}
             />
           </Field>
@@ -484,7 +511,7 @@ export function ReceivingForm({
               type="number"
               step="0.01"
               min="0"
-              defaultValue="0"
+              defaultValue={defaults?.discount ?? "0"}
               className={inputClass()}
             />
           </Field>
@@ -496,6 +523,7 @@ export function ReceivingForm({
           id="notes"
           name="notes"
           rows={2}
+          defaultValue={defaults?.notes ?? ""}
           className={inputClass()}
         />
       </Field>
@@ -503,7 +531,7 @@ export function ReceivingForm({
       <FormError message={state.formError} />
 
       <div className="flex gap-3 pt-2">
-        <SubmitButton pendingLabel="Recording…">Record receipt</SubmitButton>
+        <SubmitButton pendingLabel={pendingLabel}>{submitLabel}</SubmitButton>
         <Link href="/receiving" className="btn-secondary">
           Cancel
         </Link>
