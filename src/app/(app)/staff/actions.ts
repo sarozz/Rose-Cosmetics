@@ -55,6 +55,7 @@ export async function updateStaffAction(
     displayName: formData.get("displayName") ?? "",
     role: formData.get("role") ?? "",
     isActive: formData.get("isActive") ?? "",
+    telegramChatId: formData.get("telegramChatId") ?? "",
   });
   if (!parsed.success) {
     const flat = parsed.error.flatten();

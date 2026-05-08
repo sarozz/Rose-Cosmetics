@@ -10,6 +10,7 @@ function user(role: User["role"]): User {
     displayName: "Staff",
     role,
     isActive: true,
+    telegramChatId: null,
     createdAt: new Date(),
     updatedAt: new Date(),
   } satisfies User;

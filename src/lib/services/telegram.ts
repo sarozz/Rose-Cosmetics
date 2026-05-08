@@ -111,13 +111,29 @@ async function fanout(
  * Forward a team-chat message to every recipient with `notifyChat=true`.
  * Fire-and-forget from the chat send action — a slow Telegram must not
  * block the cashier seeing their own message echo back.
+ *
+ * `excludeChatId` skips one recipient — used when the message was sent
+ * *from* Telegram (a senior staff replying to the bot), so we don't echo
+ * their own message straight back to them.
  */
 export async function broadcastChatMessage(
   authorDisplayName: string,
   body: string,
+  options?: { excludeChatId?: string },
 ): Promise<SendResult[]> {
   const text = renderChatMessage(authorDisplayName, body);
-  return fanout(text, "notifyChat");
+  const recipients = await prisma.telegramRecipient.findMany({
+    where: {
+      enabled: true,
+      notifyChat: true,
+      ...(options?.excludeChatId
+        ? { chatId: { not: options.excludeChatId } }
+        : {}),
+    },
+    select: { chatId: true },
+  });
+  if (recipients.length === 0) return [];
+  return Promise.all(recipients.map((r) => sendTelegramMessage(r.chatId, text)));
 }
 
 export function renderChatMessage(

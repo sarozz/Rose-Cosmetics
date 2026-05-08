@@ -27,10 +27,22 @@ export const userCreateSchema = z.object({
     .max(72, "Password is too long"),
 });
 
+// Optional Telegram chat id. Empty string clears it; otherwise must be a
+// numeric (positive) user id or "-100…" group id.
+const optionalTelegramChatId = z
+  .string()
+  .trim()
+  .transform((v) => (v === "" ? null : v))
+  .refine(
+    (v) => v === null || /^-?\d+$/.test(v),
+    "Chat id must be a number (e.g. 123456789)",
+  );
+
 export const userUpdateSchema = z.object({
   displayName: z.string().trim().min(1, "Name is required").max(120),
   role: roleEnum,
   isActive: checkbox,
+  telegramChatId: optionalTelegramChatId.optional().default(""),
 });
 
 export type UserCreateInput = z.input<typeof userCreateSchema>;

@@ -106,6 +106,10 @@ model User {
   displayName String
   role        UserRole @default(CASHIER)
   isActive    Boolean  @default(true)
+  // Telegram chat ID for senior staff who reply to team chat directly from
+  // Telegram. Set this on the staff edit form for users who should be able
+  // to send into the chat from their phone. Optional and unique.
+  telegramChatId String? @unique @map("telegram_chat_id")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

@@ -15,6 +15,7 @@ type Defaults = {
   displayName?: string;
   role?: UserRole;
   isActive?: boolean;
+  telegramChatId?: string | null;
 };
 
 /**
@@ -137,16 +138,34 @@ export function StaffForm({
       </Field>
 
       {mode === "update" ? (
-        <label className="flex items-center gap-2 text-sm text-ink">
-          <input
-            type="checkbox"
-            name="isActive"
-            defaultChecked={isActive}
-            disabled={selfEdit}
-            className="h-4 w-4 rounded border-white/10 text-rose-400 focus:ring-rose-400 disabled:opacity-50"
-          />
-          Active{selfEdit ? " (you cannot deactivate yourself)" : ""}
-        </label>
+        <>
+          <Field
+            label="Telegram chat id"
+            htmlFor="telegramChatId"
+            hint="Optional. When set, this person can reply to team chat from their Telegram. Leave blank to disable."
+            error={state.fieldErrors.telegramChatId}
+            adornment="#"
+          >
+            <input
+              id="telegramChatId"
+              name="telegramChatId"
+              defaultValue={defaults?.telegramChatId ?? ""}
+              inputMode="numeric"
+              autoComplete="off"
+              className={inputClass()}
+            />
+          </Field>
+          <label className="flex items-center gap-2 text-sm text-ink">
+            <input
+              type="checkbox"
+              name="isActive"
+              defaultChecked={isActive}
+              disabled={selfEdit}
+              className="h-4 w-4 rounded border-white/10 text-rose-400 focus:ring-rose-400 disabled:opacity-50"
+            />
+            Active{selfEdit ? " (you cannot deactivate yourself)" : ""}
+          </label>
+        </>
       ) : null}
 
       <div className="flex gap-3 pt-2">

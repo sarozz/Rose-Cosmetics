@@ -34,6 +34,7 @@ export default async function EditStaffPage({
           displayName: staff.displayName,
           role: staff.role,
           isActive: staff.isActive,
+          telegramChatId: staff.telegramChatId,
         }}
         submitLabel="Save changes"
         selfEdit={selfEdit}
