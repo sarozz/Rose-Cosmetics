@@ -28,19 +28,19 @@ const STORAGE_NOTIF_PROMPTED_KEY = "rose-chat-notif-prompted";
 const TYPING_TTL_MS = 4000;
 // Minimum time between successive typing broadcasts from this client.
 const TYPING_THROTTLE_MS = 2000;
+// Polling fallback interval. Realtime is the primary delivery mechanism;
+// polling exists so messages still arrive when the Supabase publication
+// or RLS policies aren't quite right.
+const POLL_INTERVAL_MS = 10_000;
 
-export function ChatDock({
-  currentUserId,
-  bootstrap,
-}: {
-  currentUserId: string;
-  bootstrap: ChatBootstrap;
-}) {
+type BootstrapPayload = ChatBootstrap & { currentUserId: string };
+
+export function ChatDock() {
   const supabase = useMemo(() => getSupabaseBrowserClient(), []);
-  const [members, setMembers] = useState<Map<string, Member>>(
-    () => new Map(bootstrap.members.map((m) => [m.id, m])),
-  );
-  const [messages, setMessages] = useState<ChatMessageRow[]>(bootstrap.messages);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [members, setMembers] = useState<Map<string, Member>>(() => new Map());
+  const [messages, setMessages] = useState<ChatMessageRow[]>([]);
+  const [loaded, setLoaded] = useState(false);
   const [open, setOpen] = useState(() => {
     if (typeof window === "undefined") return false;
     return localStorage.getItem(STORAGE_OPEN_KEY) === "1";
@@ -76,8 +76,11 @@ export function ChatDock({
   }, [open]);
 
   // Realtime: subscribe to INSERTs on chat_messages + chat_reads, plus a
-  // broadcast channel for ephemeral "X is typing…" pings.
+  // broadcast channel for ephemeral "X is typing…" pings. Wait for the
+  // bootstrap to land so we know who we are before chime/notification
+  // logic decides "this isn't from me".
   useEffect(() => {
+    if (!currentUserId) return;
     const channel = supabase
       .channel("rose-chat", {
         config: { broadcast: { self: false } },
@@ -183,22 +186,19 @@ export function ChatDock({
   }, [open, messages.length]);
 
   // Mark unread incoming messages as read whenever the dock is open.
-  const lastReadAtRef = useRef<string | null>(bootstrap.lastReadAt);
+  const lastReadAtRef = useRef<string | null>(null);
   useEffect(() => {
-    if (!open) return;
+    if (!open || !currentUserId) return;
+    const me = currentUserId;
     const unreadIds = messages
-      .filter(
-        (m) =>
-          m.authorId !== currentUserId &&
-          !m.readBy.includes(currentUserId),
-      )
+      .filter((m) => m.authorId !== me && !m.readBy.includes(me))
       .map((m) => m.id);
     if (unreadIds.length === 0) return;
     // Optimistically update local state so the badge clears immediately.
     setMessages((prev) =>
       prev.map((m) =>
-        unreadIds.includes(m.id) && !m.readBy.includes(currentUserId)
-          ? { ...m, readBy: [...m.readBy, currentUserId] }
+        unreadIds.includes(m.id) && !m.readBy.includes(me)
+          ? { ...m, readBy: [...m.readBy, me] }
           : m,
       ),
     );
@@ -211,6 +211,8 @@ export function ChatDock({
   }, [open, messages, currentUserId]);
 
   const send = useCallback(() => {
+    if (!currentUserId) return;
+    const me = currentUserId;
     const body = draft.trim();
     if (!body) return;
     setError(null);
@@ -218,11 +220,11 @@ export function ChatDock({
     const tempId = `temp-${Date.now()}`;
     const optimistic: ChatMessageRow = {
       id: tempId,
-      authorId: currentUserId,
+      authorId: me,
       body,
       createdAt: new Date().toISOString(),
-      authorName: members.get(currentUserId)?.displayName ?? "You",
-      authorRole: members.get(currentUserId)?.role ?? "CASHIER",
+      authorName: members.get(me)?.displayName ?? "You",
+      authorRole: members.get(me)?.role ?? "CASHIER",
       readBy: [],
     };
     setMessages((prev) => [...prev, optimistic]);
@@ -261,7 +263,7 @@ export function ChatDock({
   const onDraftChange = (value: string) => {
     setDraft(value);
     const channel = channelRef.current;
-    if (!channel) return;
+    if (!channel || !currentUserId) return;
     if (value.trim().length === 0) return;
     const now = Date.now();
     if (now - lastTypingSendRef.current < TYPING_THROTTLE_MS) return;
@@ -278,13 +280,13 @@ export function ChatDock({
       });
   };
 
-  const unreadCount = useMemo(
-    () =>
-      messages.filter(
-        (m) => m.authorId !== currentUserId && !m.readBy.includes(currentUserId),
-      ).length,
-    [messages, currentUserId],
-  );
+  const unreadCount = useMemo(() => {
+    if (!currentUserId) return 0;
+    const me = currentUserId;
+    return messages.filter(
+      (m) => m.authorId !== me && !m.readBy.includes(me),
+    ).length;
+  }, [messages, currentUserId]);
 
   // Build "members minus me" map once for seen-by display.
   const otherMembers = useMemo(() => {
@@ -295,10 +297,106 @@ export function ChatDock({
     return out;
   }, [members, currentUserId]);
 
-  // Track members changes via prop (in case bootstrap re-renders).
+  // Bootstrap once on mount. Hits the API route so the (app) layout
+  // doesn't block on chat queries during navigation. If it fails, the
+  // dock stays in its unloaded state; polling will keep retrying.
   useEffect(() => {
-    setMembers(new Map(bootstrap.members.map((m) => [m.id, m])));
-  }, [bootstrap.members]);
+    let cancelled = false;
+    void (async () => {
+      try {
+        const res = await fetch("/api/chat/bootstrap", { cache: "no-store" });
+        if (!res.ok) return;
+        const data = (await res.json()) as BootstrapPayload;
+        if (cancelled) return;
+        setCurrentUserId(data.currentUserId);
+        setMembers(new Map(data.members.map((m) => [m.id, m])));
+        setMessages(data.messages);
+        lastReadAtRef.current = data.lastReadAt;
+        setLoaded(true);
+      } catch {
+        // Silent — polling effect retries.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Polling fallback: every POLL_INTERVAL_MS pull any messages newer than
+  // our latest, plus updated read state for the messages we already have.
+  // Keeps the dock correct when Realtime is misconfigured (RLS / missing
+  // publication). Pauses while the tab is hidden — no point burning
+  // requests when nobody's watching.
+  useEffect(() => {
+    if (!loaded || !currentUserId) return;
+    let stop = false;
+
+    const tick = async () => {
+      if (stop) return;
+      if (typeof document !== "undefined" && document.visibilityState === "hidden") {
+        return;
+      }
+      const latestCreatedAt =
+        messagesRef.current[messagesRef.current.length - 1]?.createdAt ??
+        new Date(0).toISOString();
+      const ids = messagesRef.current
+        .slice(-30)
+        .map((m) => m.id)
+        .join(",");
+      try {
+        const res = await fetch(
+          `/api/chat/since?since=${encodeURIComponent(latestCreatedAt)}&ids=${encodeURIComponent(ids)}`,
+          { cache: "no-store" },
+        );
+        if (!res.ok) return;
+        const data = (await res.json()) as {
+          messages: ChatMessageRow[];
+          reads: { messageId: string; userId: string }[];
+        };
+        if (stop) return;
+        if (data.messages.length > 0) {
+          setMessages((prev) => {
+            const seen = new Set(prev.map((m) => m.id));
+            const additions = data.messages.filter((m) => !seen.has(m.id));
+            if (additions.length === 0) return prev;
+            // Chime + browser notification for incoming we hadn't seen.
+            for (const m of additions) {
+              if (m.authorId !== currentUserId && !mutedRef.current) {
+                playChime();
+                maybeShowBrowserNotification(m.authorName, m.body);
+              }
+            }
+            return [...prev, ...additions];
+          });
+        }
+        if (data.reads.length > 0) {
+          setMessages((prev) =>
+            prev.map((m) => {
+              const newReaders = data.reads
+                .filter((r) => r.messageId === m.id)
+                .map((r) => r.userId);
+              if (newReaders.length === 0) return m;
+              const merged = Array.from(new Set([...m.readBy, ...newReaders]));
+              if (merged.length === m.readBy.length) return m;
+              return { ...m, readBy: merged };
+            }),
+          );
+        }
+      } catch {
+        // Silent retry on next tick.
+      }
+    };
+
+    const id = window.setInterval(tick, POLL_INTERVAL_MS);
+    // Run an immediate refresh too so the user doesn't wait the first
+    // interval after page load.
+    void tick();
+
+    return () => {
+      stop = true;
+      window.clearInterval(id);
+    };
+  }, [loaded, currentUserId]);
 
   // Page-title unread badge: prepend "(N) " to document.title while there's
   // unread, restore on clear / unmount. Captures the original title once so
@@ -381,17 +479,21 @@ export function ChatDock({
             ref={listRef}
             className="flex-1 space-y-3 overflow-y-auto bg-page/40 px-3 py-3"
           >
-            {messages.length === 0 ? (
+            {!loaded ? (
+              <p className="px-2 py-8 text-center text-xs text-ink-muted">
+                Loading messages…
+              </p>
+            ) : messages.length === 0 ? (
               <p className="px-2 py-8 text-center text-xs text-ink-muted">
                 No messages yet — say hi.
               </p>
-            ) : (
+            ) : currentUserId ? (
               <MessageList
                 messages={messages}
                 currentUserId={currentUserId}
                 members={members}
               />
-            )}
+            ) : null}
           </div>
 
           <TypingIndicator typing={typing} members={members} />
