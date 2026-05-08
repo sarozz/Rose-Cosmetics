@@ -1,9 +1,11 @@
+import { Suspense } from "react";
 import { requireUser } from "@/lib/auth";
 import { RoseLogo } from "@/components/rose-logo";
 import { Sidebar } from "./sidebar";
 import { UserMenu } from "./user-menu";
 import { HeaderBreadcrumb } from "./header-breadcrumb";
 import { GlobalScanListener } from "@/components/global-scan-listener";
+import { ChatDock } from "@/components/chat-dock";
 
 export default async function AppLayout({
   children,
@@ -30,6 +32,9 @@ export default async function AppLayout({
           {children}
         </main>
       </div>
+      <Suspense fallback={null}>
+        <ChatDock />
+      </Suspense>
     </div>
   );
 }

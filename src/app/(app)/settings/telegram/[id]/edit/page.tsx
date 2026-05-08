@@ -38,6 +38,7 @@ export default async function EditRecipientPage({
           enabled: recipient.enabled,
           notifySales: recipient.notifySales,
           notifyStockReceipts: recipient.notifyStockReceipts,
+          notifyChat: recipient.notifyChat,
         }}
       />
     </div>

@@ -97,7 +97,7 @@ export async function sendTelegramMessage(
  */
 async function fanout(
   text: string,
-  where: "notifySales" | "notifyStockReceipts",
+  where: "notifySales" | "notifyStockReceipts" | "notifyChat",
 ): Promise<SendResult[]> {
   const recipients = await prisma.telegramRecipient.findMany({
     where: { enabled: true, [where]: true },
@@ -105,6 +105,27 @@ async function fanout(
   });
   if (recipients.length === 0) return [];
   return Promise.all(recipients.map((r) => sendTelegramMessage(r.chatId, text)));
+}
+
+/**
+ * Forward a team-chat message to every recipient with `notifyChat=true`.
+ * Fire-and-forget from the chat send action — a slow Telegram must not
+ * block the cashier seeing their own message echo back.
+ */
+export async function broadcastChatMessage(
+  authorDisplayName: string,
+  body: string,
+): Promise<SendResult[]> {
+  const text = renderChatMessage(authorDisplayName, body);
+  return fanout(text, "notifyChat");
+}
+
+export function renderChatMessage(
+  authorDisplayName: string,
+  body: string,
+): string {
+  const safeBody = body.length > 1500 ? `${body.slice(0, 1500)}…` : body;
+  return `\u{1F4AC} <b>Team chat — ${escapeHtml(authorDisplayName)}</b>\n${escapeHtml(safeBody)}`;
 }
 
 /**
