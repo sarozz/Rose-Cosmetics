@@ -594,7 +594,7 @@ function MessageList({
                 }`}
               >
                 <div
-                  className={`max-w-[85%] animate-chat-bubble-in rounded-2xl px-3 py-1.5 text-sm leading-snug ${
+                  className={`w-fit max-w-[90%] animate-chat-bubble-in rounded-2xl px-3 py-1.5 text-sm leading-snug ${
                     mine
                       ? "bg-rose-500/90 text-white"
                       : "bg-white/5 text-ink"
