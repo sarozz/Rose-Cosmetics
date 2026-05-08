@@ -72,6 +72,41 @@ export async function getMessageWithAuthor(id: string): Promise<ChatMessageRow |
   return m ? toRow(m) : null;
 }
 
+/**
+ * Polling fallback: messages strictly newer than `sinceIso`, plus the latest
+ * read state for each. Capped at 100 rows so a long disconnected interval
+ * can't return an unbounded payload.
+ */
+export async function chatMessagesSince(sinceIso: string): Promise<ChatMessageRow[]> {
+  const cutoff = new Date(sinceIso);
+  if (Number.isNaN(cutoff.getTime())) return [];
+  const rows = await prisma.chatMessage.findMany({
+    where: { createdAt: { gt: cutoff } },
+    orderBy: { createdAt: "asc" },
+    take: 100,
+    include: {
+      author: { select: { id: true, displayName: true, role: true } },
+      reads: { select: { userId: true } },
+    },
+  });
+  return rows.map(toRow);
+}
+
+/**
+ * Polling fallback: read receipts for the given message ids — refreshes
+ * "Seen by …" lines for messages already in the client cache.
+ */
+export async function chatReadsForMessages(
+  messageIds: string[],
+): Promise<{ messageId: string; userId: string }[]> {
+  if (messageIds.length === 0) return [];
+  const rows = await prisma.chatRead.findMany({
+    where: { messageId: { in: messageIds } },
+    select: { messageId: true, userId: true },
+  });
+  return rows;
+}
+
 function toRow(m: {
   id: string;
   body: string;

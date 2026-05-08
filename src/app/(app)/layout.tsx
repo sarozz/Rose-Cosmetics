@@ -1,4 +1,3 @@
-import { Suspense } from "react";
 import { requireUser } from "@/lib/auth";
 import { RoseLogo } from "@/components/rose-logo";
 import { Sidebar } from "./sidebar";
@@ -32,9 +31,7 @@ export default async function AppLayout({
           {children}
         </main>
       </div>
-      <Suspense fallback={null}>
-        <ChatDock />
-      </Suspense>
+      <ChatDock />
     </div>
   );
 }
