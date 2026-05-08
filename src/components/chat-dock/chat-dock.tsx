@@ -8,6 +8,7 @@ import {
   useState,
   useTransition,
 } from "react";
+import type { RealtimeChannel } from "@supabase/supabase-js";
 import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
 import {
   sendChatMessageAction,
@@ -20,6 +21,13 @@ type Member = ChatBootstrap["members"][number];
 
 const STORAGE_OPEN_KEY = "rose-chat-open";
 const STORAGE_LAST_SEEN_KEY = "rose-chat-last-seen";
+const STORAGE_MUTED_KEY = "rose-chat-muted";
+const STORAGE_NOTIF_PROMPTED_KEY = "rose-chat-notif-prompted";
+
+// How long after a typing broadcast we still show "X is typing…".
+const TYPING_TTL_MS = 4000;
+// Minimum time between successive typing broadcasts from this client.
+const TYPING_THROTTLE_MS = 2000;
 
 export function ChatDock({
   currentUserId,
@@ -40,9 +48,26 @@ export function ChatDock({
   const [draft, setDraft] = useState("");
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [muted, setMuted] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem(STORAGE_MUTED_KEY) === "1";
+  });
+  // userId → timestamp of last typing broadcast. Pruned on a tick.
+  const [typing, setTyping] = useState<Map<string, number>>(() => new Map());
   const listRef = useRef<HTMLDivElement>(null);
   const messagesRef = useRef(messages);
   messagesRef.current = messages;
+  const mutedRef = useRef(muted);
+  mutedRef.current = muted;
+  const channelRef = useRef<RealtimeChannel | null>(null);
+  const lastTypingSendRef = useRef(0);
+  const originalTitleRef = useRef<string>("");
+
+  // Persist mute across reloads.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    localStorage.setItem(STORAGE_MUTED_KEY, muted ? "1" : "0");
+  }, [muted]);
 
   // Persist open/closed across reloads so the dock feels stateful.
   useEffect(() => {
@@ -50,10 +75,13 @@ export function ChatDock({
     localStorage.setItem(STORAGE_OPEN_KEY, open ? "1" : "0");
   }, [open]);
 
-  // Realtime: subscribe to INSERTs on chat_messages + chat_reads.
+  // Realtime: subscribe to INSERTs on chat_messages + chat_reads, plus a
+  // broadcast channel for ephemeral "X is typing…" pings.
   useEffect(() => {
     const channel = supabase
-      .channel("rose-chat")
+      .channel("rose-chat", {
+        config: { broadcast: { self: false } },
+      })
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "chat_messages" },
@@ -77,8 +105,19 @@ export function ChatDock({
             readBy: [],
           };
           setMessages((prev) => [...prev, next]);
-          if (r.author_id !== currentUserId) {
+          // Clear typing for the author who just sent — they're done.
+          setTyping((prev) => {
+            if (!prev.has(r.author_id)) return prev;
+            const out = new Map(prev);
+            out.delete(r.author_id);
+            return out;
+          });
+          if (r.author_id !== currentUserId && !mutedRef.current) {
             playChime();
+            maybeShowBrowserNotification(
+              author?.displayName ?? "Teammate",
+              r.body,
+            );
           }
         },
       )
@@ -96,12 +135,44 @@ export function ChatDock({
           );
         },
       )
+      .on("broadcast", { event: "typing" }, ({ payload }) => {
+        const userId = (payload as { userId?: string })?.userId;
+        if (!userId || userId === currentUserId) return;
+        setTyping((prev) => {
+          const out = new Map(prev);
+          out.set(userId, Date.now());
+          return out;
+        });
+      })
       .subscribe();
 
+    channelRef.current = channel;
+
     return () => {
+      channelRef.current = null;
       void supabase.removeChannel(channel);
     };
   }, [supabase, currentUserId, members]);
+
+  // Prune stale typing entries every second.
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      setTyping((prev) => {
+        if (prev.size === 0) return prev;
+        const now = Date.now();
+        let changed = false;
+        const out = new Map(prev);
+        for (const [uid, ts] of prev) {
+          if (now - ts > TYPING_TTL_MS) {
+            out.delete(uid);
+            changed = true;
+          }
+        }
+        return changed ? out : prev;
+      });
+    }, 1000);
+    return () => window.clearInterval(id);
+  }, []);
 
   // Auto-scroll to bottom whenever messages grow & dock is open.
   useEffect(() => {
@@ -184,6 +255,29 @@ export function ChatDock({
     }
   };
 
+  // Broadcast a "typing" ping while the user is actively composing. Throttled
+  // to one send every TYPING_THROTTLE_MS so a fast typer doesn't spam the
+  // channel; receivers' TTL of 4s keeps the indicator alive between sends.
+  const onDraftChange = (value: string) => {
+    setDraft(value);
+    const channel = channelRef.current;
+    if (!channel) return;
+    if (value.trim().length === 0) return;
+    const now = Date.now();
+    if (now - lastTypingSendRef.current < TYPING_THROTTLE_MS) return;
+    lastTypingSendRef.current = now;
+    void channel
+      .send({
+        type: "broadcast",
+        event: "typing",
+        payload: { userId: currentUserId },
+      })
+      .catch(() => {
+        // Best-effort — if the broadcast fails the worst case is the typing
+        // indicator doesn't show; messages still go through.
+      });
+  };
+
   const unreadCount = useMemo(
     () =>
       messages.filter(
@@ -206,6 +300,36 @@ export function ChatDock({
     setMembers(new Map(bootstrap.members.map((m) => [m.id, m])));
   }, [bootstrap.members]);
 
+  // Page-title unread badge: prepend "(N) " to document.title while there's
+  // unread, restore on clear / unmount. Captures the original title once so
+  // we never strip an unrelated prefix that came from the page itself.
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    if (!originalTitleRef.current) {
+      originalTitleRef.current = document.title.replace(/^\(\d+\)\s+/, "");
+    }
+    const base = originalTitleRef.current;
+    document.title = unreadCount > 0 ? `(${unreadCount}) ${base}` : base;
+    return () => {
+      if (typeof document !== "undefined" && originalTitleRef.current) {
+        document.title = originalTitleRef.current;
+      }
+    };
+  }, [unreadCount]);
+
+  // First-open: ask for browser-notification permission once. We never
+  // re-prompt — if the user dismissed it, they can re-enable in browser
+  // settings. Skipped in unsupported browsers and when the user is muted.
+  useEffect(() => {
+    if (!open) return;
+    if (typeof window === "undefined" || typeof Notification === "undefined") return;
+    if (Notification.permission !== "default") return;
+    if (localStorage.getItem(STORAGE_NOTIF_PROMPTED_KEY) === "1") return;
+    if (mutedRef.current) return;
+    localStorage.setItem(STORAGE_NOTIF_PROMPTED_KEY, "1");
+    void Notification.requestPermission().catch(() => {});
+  }, [open]);
+
   return (
     <div className="no-print pointer-events-none fixed bottom-4 right-4 z-50 flex flex-col items-end gap-3">
       {open ? (
@@ -222,14 +346,28 @@ export function ChatDock({
                 {otherMembers.length === 1 ? "" : "s"} · realtime
               </p>
             </div>
-            <button
-              type="button"
-              onClick={() => setOpen(false)}
-              aria-label="Close chat"
-              className="rounded-md p-1 text-ink-muted transition-colors hover:bg-white/5 hover:text-ink"
-            >
-              <CloseIcon />
-            </button>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => setMuted((v) => !v)}
+                aria-label={muted ? "Unmute chat sounds" : "Mute chat sounds"}
+                aria-pressed={muted}
+                title={muted ? "Muted — click to unmute" : "Mute notifications"}
+                className={`rounded-md p-1 transition-colors hover:bg-white/5 ${
+                  muted ? "text-amber-300" : "text-ink-muted hover:text-ink"
+                }`}
+              >
+                {muted ? <BellOffIcon /> : <BellIcon />}
+              </button>
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                aria-label="Close chat"
+                className="rounded-md p-1 text-ink-muted transition-colors hover:bg-white/5 hover:text-ink"
+              >
+                <CloseIcon />
+              </button>
+            </div>
           </header>
 
           <div
@@ -249,6 +387,8 @@ export function ChatDock({
             )}
           </div>
 
+          <TypingIndicator typing={typing} members={members} />
+
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -267,7 +407,7 @@ export function ChatDock({
             <div className="flex items-end gap-2">
               <textarea
                 value={draft}
-                onChange={(e) => setDraft(e.target.value)}
+                onChange={(e) => onDraftChange(e.target.value)}
                 onKeyDown={onKeyDown}
                 placeholder="Message your team — Enter to send"
                 rows={1}
@@ -473,4 +613,122 @@ function SendIcon() {
       />
     </svg>
   );
+}
+
+function BellIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4" aria-hidden>
+      <path
+        d="M6 16V11a6 6 0 1 1 12 0v5l1.5 2H4.5L6 16Z"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M10 20a2 2 0 0 0 4 0"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function BellOffIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4" aria-hidden>
+      <path
+        d="M6 16V11a6 6 0 0 1 9.5-4.9M18 16v-3M6 16l-1.5 2h15L18 16M10 20a2 2 0 0 0 4 0M3 3l18 18"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function TypingIndicator({
+  typing,
+  members,
+}: {
+  typing: Map<string, number>;
+  members: Map<string, Member>;
+}) {
+  const names = useMemo(() => {
+    const out: string[] = [];
+    typing.forEach((_ts, uid) => {
+      const m = members.get(uid);
+      if (m) out.push(m.displayName.split(" ")[0] ?? m.displayName);
+    });
+    return out;
+  }, [typing, members]);
+
+  if (names.length === 0) return null;
+
+  const label =
+    names.length === 1
+      ? `${names[0]} is typing`
+      : names.length === 2
+        ? `${names[0]} and ${names[1]} are typing`
+        : `${names.length} people are typing`;
+
+  return (
+    <div
+      className="flex items-center gap-2 border-t border-white/5 bg-surface/60 px-3 py-1.5 text-[11px] text-ink-muted"
+      aria-live="polite"
+    >
+      <TypingDots />
+      <span>{label}…</span>
+    </div>
+  );
+}
+
+function TypingDots() {
+  return (
+    <span className="inline-flex items-end gap-0.5" aria-hidden>
+      <span className="inline-block h-1 w-1 animate-bounce rounded-full bg-ink-muted [animation-delay:-0.2s]" />
+      <span className="inline-block h-1 w-1 animate-bounce rounded-full bg-ink-muted [animation-delay:-0.1s]" />
+      <span className="inline-block h-1 w-1 animate-bounce rounded-full bg-ink-muted" />
+    </span>
+  );
+}
+
+/**
+ * Show a desktop notification when a message arrives but the dock is closed
+ * or the tab is in the background. No-op if the user is muted, the browser
+ * doesn't support Notifications, or permission hasn't been granted.
+ */
+function maybeShowBrowserNotification(authorName: string, body: string) {
+  if (typeof window === "undefined" || typeof Notification === "undefined") return;
+  if (Notification.permission !== "granted") return;
+  // Only nudge when the user isn't actively looking. Suppressing while the
+  // tab is focused avoids a notification AND a chime AND the dock all firing
+  // for the same message.
+  if (typeof document !== "undefined" && document.visibilityState === "visible") {
+    return;
+  }
+  try {
+    const trimmed = body.length > 200 ? `${body.slice(0, 200)}…` : body;
+    const n = new Notification(authorName, {
+      body: trimmed,
+      tag: "rose-chat",
+      // Renotify so a fast burst of messages still buzzes — but the tag
+      // collapses them in the OS tray to one stack.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ...({ renotify: true } as any),
+      silent: false,
+    });
+    // Click brings the tab back to focus.
+    n.onclick = () => {
+      window.focus();
+      n.close();
+    };
+    // Auto-close after 6s so the tray doesn't fill up.
+    window.setTimeout(() => n.close(), 6000);
+  } catch {
+    // Some browsers throw if a service worker is required; we already
+    // gracefully degrade to chime-only.
+  }
 }
