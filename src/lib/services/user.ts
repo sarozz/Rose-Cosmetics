@@ -139,6 +139,7 @@ export async function updateStaff(
         displayName: data.displayName,
         role: data.role,
         isActive: data.isActive,
+        telegramChatId: data.telegramChatId,
       },
     });
 

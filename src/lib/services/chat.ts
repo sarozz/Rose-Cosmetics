@@ -141,6 +141,21 @@ export async function insertChatMessage(
 }
 
 /**
+ * Resolve a Telegram chat id back to a User. Returns null when the chat id
+ * isn't linked to a user — in which case the webhook silently ignores the
+ * message rather than echoing untrusted strangers into the team chat.
+ */
+export async function findUserByTelegramChatId(
+  telegramChatId: string,
+): Promise<{ id: string; displayName: string } | null> {
+  const user = await prisma.user.findFirst({
+    where: { telegramChatId, isActive: true },
+    select: { id: true, displayName: true },
+  });
+  return user;
+}
+
+/**
  * Mark messages as read by the given user. Idempotent — uses upsert per
  * pair so re-reads are no-ops. Skips messages authored by the user (an
  * author has implicitly "read" their own message).
