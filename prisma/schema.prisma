@@ -115,6 +115,8 @@ model User {
   movementsCreated     InventoryMovement[]  @relation("MovementCreatedBy")
   shiftClosesPerformed ShiftClose[]         @relation("ShiftCloseClosedBy")
   auditLogs            AuditLog[]
+  chatMessages         ChatMessage[]        @relation("ChatAuthor")
+  chatReads            ChatRead[]
 
   @@index([role, isActive])
   @@map("users")
@@ -411,6 +413,7 @@ model TelegramRecipient {
   enabled              Boolean  @default(true)
   notifySales          Boolean  @default(true)
   notifyStockReceipts  Boolean  @default(true)
+  notifyChat           Boolean  @default(true)
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
 
@@ -438,4 +441,38 @@ model NotificationJob {
   @@index([status, createdAt])
   @@index([aggregateType, aggregateId])
   @@map("notification_jobs")
+}
+
+// ---------- Team chat ----------
+//
+// Single shared room for the whole shop. Real-time updates are wired
+// through Supabase Realtime: the browser subscribes to INSERTs on
+// `chat_messages` and `chat_reads`. Telegram fan-out (broadcasting each
+// message to every recipient with `notifyChat=true`) happens server-side
+// in the send action so it survives the client closing the dock.
+
+model ChatMessage {
+  id        String   @id @default(cuid())
+  authorId  String   @map("author_id")
+  body      String   @db.Text
+  createdAt DateTime @default(now()) @map("created_at")
+
+  author User       @relation("ChatAuthor", fields: [authorId], references: [id])
+  reads  ChatRead[]
+
+  @@index([createdAt])
+  @@map("chat_messages")
+}
+
+model ChatRead {
+  messageId String   @map("message_id")
+  userId    String   @map("user_id")
+  readAt    DateTime @default(now()) @map("read_at")
+
+  message ChatMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user    User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([messageId, userId])
+  @@index([userId, readAt])
+  @@map("chat_reads")
 }

@@ -65,6 +65,7 @@ export default async function TelegramSettingsPage() {
                 const flags: string[] = [];
                 if (r.notifySales) flags.push("Sales");
                 if (r.notifyStockReceipts) flags.push("Stock");
+                if (r.notifyChat) flags.push("Chat");
                 return (
                   <tr key={r.id}>
                     <td className="px-4 py-3 font-medium text-ink">{r.name}</td>

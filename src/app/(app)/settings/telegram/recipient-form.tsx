@@ -13,6 +13,7 @@ type Defaults = {
   enabled?: boolean;
   notifySales?: boolean;
   notifyStockReceipts?: boolean;
+  notifyChat?: boolean;
 };
 
 export function RecipientForm({
@@ -87,6 +88,12 @@ export function RecipientForm({
           label="Low-stock alerts"
           hint="Ping when a sale drops a product to or below its reorder level."
           defaultChecked={defaults?.notifyStockReceipts ?? true}
+        />
+        <Toggle
+          name="notifyChat"
+          label="Team chat"
+          hint="Forward team chat messages to this Telegram chat."
+          defaultChecked={defaults?.notifyChat ?? true}
         />
       </FieldGroup>
 

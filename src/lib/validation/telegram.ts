@@ -15,6 +15,7 @@ export const telegramRecipientSchema = z.object({
   enabled: z.boolean().default(true),
   notifySales: z.boolean().default(true),
   notifyStockReceipts: z.boolean().default(true),
+  notifyChat: z.boolean().default(true),
 });
 
 export type TelegramRecipientInput = z.input<typeof telegramRecipientSchema>;

@@ -18,6 +18,7 @@ function parse(formData: FormData) {
     enabled: formData.get("enabled") === "on",
     notifySales: formData.get("notifySales") === "on",
     notifyStockReceipts: formData.get("notifyStockReceipts") === "on",
+    notifyChat: formData.get("notifyChat") === "on",
   });
 }
 
