@@ -6,21 +6,51 @@ import {
   useMemo,
   useRef,
   useState,
-  useTransition,
 } from "react";
 import { useRouter } from "next/navigation";
 import type { Route } from "next";
-import type { InventorySuggestion } from "@/lib/services/inventory";
-import { searchInventoryAction } from "./actions";
+import type { CatalogEntry, InventorySuggestion } from "@/lib/services/inventory";
 
-const DEBOUNCE_MS = 180;
+const MAX_RESULTS = 8;
+// Refresh the cached catalog at most once per 60s in the foreground tab.
+// Anything more aggressive is wasted work for a small shop where the
+// catalog barely moves.
+const REFRESH_INTERVAL_MS = 60_000;
+
+let cache: { items: CatalogEntry[]; loadedAt: number } | null = null;
+let inflight: Promise<CatalogEntry[]> | null = null;
+
+async function loadCatalog(force = false): Promise<CatalogEntry[]> {
+  const now = Date.now();
+  if (!force && cache && now - cache.loadedAt < REFRESH_INTERVAL_MS) {
+    return cache.items;
+  }
+  if (inflight) return inflight;
+  inflight = (async () => {
+    try {
+      const res = await fetch("/api/inventory/catalog", {
+        cache: "no-store",
+      });
+      if (!res.ok) return cache?.items ?? [];
+      const body = (await res.json()) as { items: CatalogEntry[] };
+      cache = { items: body.items, loadedAt: Date.now() };
+      return body.items;
+    } finally {
+      inflight = null;
+    }
+  })();
+  return inflight;
+}
 
 /**
  * Inventory search box with Google-style autocomplete.
  *
- * - Debounces 180ms so each keystroke doesn't hammer the server.
- * - Tracks a request sequence so the latest query always wins —
- *   a slow earlier response can't overwrite a newer suggestion list.
+ * The cashier's browser fetches the slim catalog from /api/inventory/catalog
+ * once, caches it, and filters in memory on every keystroke. That makes the
+ * dropdown effectively instant (no per-keystroke round-trip, no debounce).
+ *
+ * - Latest-wins: cache state stays stable; a slow refresh can't overwrite
+ *   typing.
  * - Combobox a11y: input owns the listbox via aria-controls / -activedescendant,
  *   options carry role="option" and aria-selected.
  * - Plain Enter submits the form (full /inventory?q= filter); Enter on a
@@ -35,38 +65,70 @@ export function InventorySearch({ defaultQuery }: { defaultQuery: string }) {
   const [value, setValue] = useState(defaultQuery);
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(-1);
-  const [results, setResults] = useState<InventorySuggestion[]>([]);
-  const [pending, startSearch] = useTransition();
-  const seqRef = useRef(0);
+  const [items, setItems] = useState<CatalogEntry[]>(() => cache?.items ?? []);
+  const [loading, setLoading] = useState(() => !cache);
 
-  // Debounced fetch.
+  // Initial fetch + periodic refresh while mounted. We refresh in the
+  // background so a stale catalog never blocks the dropdown.
   useEffect(() => {
-    const q = value.trim();
-    if (q.length === 0) {
-      setResults([]);
-      setOpen(false);
-      return;
+    let cancelled = false;
+    const refresh = async (force = false) => {
+      const next = await loadCatalog(force);
+      if (cancelled) return;
+      setItems(next);
+      setLoading(false);
+    };
+    void refresh();
+    const id = window.setInterval(() => void refresh(true), REFRESH_INTERVAL_MS);
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
+  }, []);
+
+  // Filter + rank in memory. Same scoring as the previous server path:
+  // exact name prefix > brand prefix > name contains > rest, alpha tiebreak.
+  const results = useMemo<InventorySuggestion[]>(() => {
+    const q = value.trim().toLowerCase();
+    if (q.length === 0) return [];
+    const scored: { item: CatalogEntry; score: number }[] = [];
+    for (const item of items) {
+      if (!item.search.includes(q)) continue;
+      const name = item.name.toLowerCase();
+      const brand = (item.brand ?? "").toLowerCase();
+      const score = name.startsWith(q)
+        ? 0
+        : brand.startsWith(q)
+          ? 1
+          : name.includes(q)
+            ? 2
+            : 3;
+      scored.push({ item, score });
+      // Soft cap: collect 4× the visible window so the sort has room to
+      // pick the best matches without scanning the entire catalog twice.
+      if (scored.length >= MAX_RESULTS * 8) break;
     }
-    const seq = ++seqRef.current;
-    const timer = setTimeout(() => {
-      startSearch(async () => {
-        const rows = await searchInventoryAction(q);
-        // A later keystroke already started — drop this stale response.
-        if (seq !== seqRef.current) return;
-        setResults(rows);
-        setOpen(true);
-        setActive((prev) => (prev >= rows.length ? -1 : prev));
-      });
-    }, DEBOUNCE_MS);
-    return () => clearTimeout(timer);
-  }, [value]);
+    scored.sort(
+      (a, b) =>
+        a.score - b.score || a.item.name.localeCompare(b.item.name),
+    );
+    return scored
+      .slice(0, MAX_RESULTS)
+      .map(({ item }) => ({
+        id: item.id,
+        name: item.name,
+        brand: item.brand,
+        category: item.category,
+        sellPrice: item.sellPrice,
+        currentStock: item.currentStock,
+        status: item.status,
+      }));
+  }, [items, value]);
 
   function selectSuggestion(s: InventorySuggestion) {
     setValue(s.name);
     setOpen(false);
     setActive(-1);
-    // Fire the same form submission as Enter would, so the page picks up
-    // the new ?q= and the inventory snapshot re-runs server-side.
     router.push(`/inventory?q=${encodeURIComponent(s.name)}` as Route);
   }
 
@@ -96,11 +158,8 @@ export function InventorySearch({ defaultQuery }: { defaultQuery: string }) {
     }
   }
 
-  const showDropdown = useMemo(
-    () =>
-      open && (results.length > 0 || (pending && value.trim().length > 0)),
-    [open, results.length, pending, value],
-  );
+  const showDropdown =
+    open && value.trim().length > 0 && (results.length > 0 || loading);
 
   return (
     <form
@@ -135,9 +194,10 @@ export function InventorySearch({ defaultQuery }: { defaultQuery: string }) {
         onChange={(e) => {
           setValue(e.target.value);
           setActive(-1);
+          setOpen(true);
         }}
         onFocus={() => {
-          if (results.length > 0) setOpen(true);
+          if (value.trim().length > 0) setOpen(true);
         }}
         onBlur={() => {
           // Delay so a click on an option still registers before close.
@@ -161,7 +221,6 @@ export function InventorySearch({ defaultQuery }: { defaultQuery: string }) {
           aria-label="Clear search"
           onClick={() => {
             setValue("");
-            setResults([]);
             setOpen(false);
             setActive(-1);
             router.push("/inventory");
@@ -185,16 +244,16 @@ export function InventorySearch({ defaultQuery }: { defaultQuery: string }) {
           role="listbox"
           className="absolute left-0 right-0 z-30 mt-1 max-h-[60vh] overflow-y-auto rounded-lg border border-white/10 bg-card shadow-xl backdrop-blur-sm"
         >
-          {results.length === 0 && pending ? (
+          {results.length === 0 && loading ? (
             <li
               role="option"
               aria-selected="false"
               className="px-4 py-3 text-sm text-ink-muted"
             >
-              Searching…
+              Loading catalog…
             </li>
           ) : null}
-          {results.length === 0 && !pending ? (
+          {results.length === 0 && !loading ? (
             <li
               role="option"
               aria-selected="false"
