@@ -47,25 +47,21 @@ const userByAuthIdCached = unstable_cache(
  * (case-insensitive). Users must be pre-provisioned by an OWNER — we never
  * auto-create rows from a Supabase sign-in.
  *
- * Uses `getSession()` rather than `getUser()` because the middleware has
- * already validated the JWT over the wire for this request. `getSession()`
- * reads the signed cookie locally — zero network — saving ~100–400ms of
- * Supabase round-trip on every page.
- *
- * Wrapped in React `cache()` so multiple server components in the same render
- * (layout + page + nested components calling `requireUser` / `requireRole`)
- * share one Supabase auth lookup and one Prisma user fetch instead of N.
+ * Uses `getUser()` so the user identity is verified against the Supabase Auth
+ * server rather than trusting the cookie-stored claim. Wrapped in React
+ * `cache()` so a single render of the layout + page + nested components
+ * shares one auth call instead of N.
  */
 export const getCurrentUser = cache(
   async (): Promise<AuthenticatedUser | null> => {
     const supabase = await createSupabaseServerClient();
     const {
-      data: { session },
-    } = await supabase.auth.getSession();
-    if (!session?.user) return null;
+      data: { user: authUser },
+    } = await supabase.auth.getUser();
+    if (!authUser) return null;
 
-    const authId = session.user.id;
-    const email = session.user.email?.toLowerCase();
+    const authId = authUser.id;
+    const email = authUser.email?.toLowerCase();
 
     const byAuthId = await userByAuthIdCached(authId);
     if (byAuthId) return byAuthId.isActive ? byAuthId : null;
