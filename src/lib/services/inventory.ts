@@ -51,6 +51,63 @@ export type InventorySuggestion = {
   status: "OUT" | "LOW" | "OK";
 };
 
+export type CatalogEntry = InventorySuggestion & {
+  /** Lowercase haystacks pre-baked once on the server so client filtering
+   *  doesn't redo the work on every keystroke. */
+  search: string;
+};
+
+/**
+ * Slim full-catalog snapshot used by the autocomplete client cache. The
+ * cashier's browser fetches this once, then filters in memory on every
+ * keystroke — zero round-trips per character. The lowercased haystack
+ * is computed here so 1000-product catalogs stay snappy in the browser.
+ */
+export async function listCatalogForSearch(): Promise<CatalogEntry[]> {
+  const products = await prisma.product.findMany({
+    where: { isActive: true },
+    select: {
+      id: true,
+      name: true,
+      brand: true,
+      sku: true,
+      barcode: true,
+      sellPrice: true,
+      currentStock: true,
+      reorderLevel: true,
+      category: { select: { name: true } },
+    },
+    orderBy: [{ name: "asc" }],
+  });
+
+  return products.map((p) => {
+    const tracked = p.reorderLevel > 0;
+    const status: InventorySuggestion["status"] =
+      p.currentStock <= 0
+        ? "OUT"
+        : tracked && p.currentStock <= p.reorderLevel
+          ? "LOW"
+          : "OK";
+    const haystackBits = [
+      p.name,
+      p.brand ?? "",
+      p.sku ?? "",
+      p.barcode ?? "",
+      p.category?.name ?? "",
+    ];
+    return {
+      id: p.id,
+      name: p.name,
+      brand: p.brand,
+      category: p.category?.name ?? null,
+      sellPrice: p.sellPrice.toFixed(2),
+      currentStock: p.currentStock,
+      status,
+      search: haystackBits.join("  ").toLowerCase(),
+    };
+  });
+}
+
 /**
  * Compact, paginated search used by the Inventory autocomplete. Same
  * search predicate as the snapshot view (name / brand / sku / barcode /
