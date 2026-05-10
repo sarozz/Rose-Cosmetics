@@ -10,37 +10,13 @@ import {
 import { useRouter } from "next/navigation";
 import type { Route } from "next";
 import type { CatalogEntry, InventorySuggestion } from "@/lib/services/inventory";
+import { loadCatalog, peekCatalog } from "@/lib/catalog-cache";
 
 const MAX_RESULTS = 8;
 // Refresh the cached catalog at most once per 60s in the foreground tab.
 // Anything more aggressive is wasted work for a small shop where the
 // catalog barely moves.
 const REFRESH_INTERVAL_MS = 60_000;
-
-let cache: { items: CatalogEntry[]; loadedAt: number } | null = null;
-let inflight: Promise<CatalogEntry[]> | null = null;
-
-async function loadCatalog(force = false): Promise<CatalogEntry[]> {
-  const now = Date.now();
-  if (!force && cache && now - cache.loadedAt < REFRESH_INTERVAL_MS) {
-    return cache.items;
-  }
-  if (inflight) return inflight;
-  inflight = (async () => {
-    try {
-      const res = await fetch("/api/inventory/catalog", {
-        cache: "no-store",
-      });
-      if (!res.ok) return cache?.items ?? [];
-      const body = (await res.json()) as { items: CatalogEntry[] };
-      cache = { items: body.items, loadedAt: Date.now() };
-      return body.items;
-    } finally {
-      inflight = null;
-    }
-  })();
-  return inflight;
-}
 
 /**
  * Inventory search box with Google-style autocomplete.
@@ -65,8 +41,8 @@ export function InventorySearch({ defaultQuery }: { defaultQuery: string }) {
   const [value, setValue] = useState(defaultQuery);
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(-1);
-  const [items, setItems] = useState<CatalogEntry[]>(() => cache?.items ?? []);
-  const [loading, setLoading] = useState(() => !cache);
+  const [items, setItems] = useState<CatalogEntry[]>(() => peekCatalog() ?? []);
+  const [loading, setLoading] = useState(() => peekCatalog() === null);
 
   // Initial fetch + periodic refresh while mounted. We refresh in the
   // background so a stale catalog never blocks the dropdown.

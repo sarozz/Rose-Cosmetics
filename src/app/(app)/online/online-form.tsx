@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import type { Route } from "next";
-import { useMemo, useRef, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { findByCode, loadCatalog } from "@/lib/catalog-cache";
 import { useFormState } from "react-dom";
 import { Field, FieldGroup, inputClass } from "@/components/form/field";
 import { FormError } from "@/components/form/form-error";
@@ -89,12 +90,35 @@ export function OnlineOrderForm() {
     setRows((prev) => prev.filter((r) => r.key !== key));
   }
 
+  // Warm the catalog cache so the first scan is also fast.
+  useEffect(() => {
+    void loadCatalog();
+  }, []);
+
   function handleScan(e: React.FormEvent) {
     e.preventDefault();
     const raw = scanInput.trim();
     if (!raw) return;
     setScanNotice(null);
     setScanError(null);
+
+    // Cache fast path: known barcode resolves to a product instantly.
+    const cached = findByCode(raw);
+    if (cached) {
+      addOrIncrement({
+        id: cached.id,
+        name: cached.name,
+        brand: cached.brand,
+        sellPrice: cached.sellPrice,
+      });
+      setScanNotice(
+        `Added ${cached.name}${cached.brand ? " · " + cached.brand : ""}`,
+      );
+      setScanInput("");
+      scanRef.current?.focus();
+      return;
+    }
+
     startScan(async () => {
       const result = await scanOnlineBarcodeAction(raw);
       if (!result.ok) {

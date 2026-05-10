@@ -12,6 +12,17 @@ import {
 import { SubmitButton } from "@/components/form/submit-button";
 import { checkoutAction, scanBarcodeAction } from "./actions";
 import { emptyCheckoutState } from "./state";
+import { findByCode, loadCatalog } from "@/lib/catalog-cache";
+
+type ScannedProduct = {
+  id: string;
+  name: string;
+  brand: string | null;
+  barcode: string | null;
+  sku: string | null;
+  sellPrice: string;
+  currentStock: number;
+};
 
 /**
  * Post to the customer-facing display window via BroadcastChannel. The
@@ -189,59 +200,85 @@ export function PosClient() {
     });
   }, [lines, subtotal, total, saleDiscount, paymentMethod, cashTendered]);
 
+  // Warm the catalog cache once on mount so the very first scan is also
+  // fast. Subsequent scans hit the in-memory map.
+  useEffect(() => {
+    void loadCatalog();
+  }, []);
+
   const processScan = useCallback(
     (rawCode: string) => {
       const code = rawCode.trim();
       if (!code) return;
       setScanError(null);
       startScan(async () => {
-        const result = await scanBarcodeAction(code);
-        if (!result.ok) {
-          setScanError(result.error);
-          return;
+        // Cache fast path: ~0.1ms, no network round-trip. Falls back to
+        // the server only when the code isn't in the cache (new products
+        // less than 60s old, or a stale cache after 60s).
+        let product: ScannedProduct | null = null;
+        const cached = findByCode(code);
+        if (cached) {
+          product = {
+            id: cached.id,
+            name: cached.name,
+            brand: cached.brand,
+            barcode: cached.barcode,
+            sku: cached.sku,
+            sellPrice: cached.sellPrice,
+            currentStock: cached.currentStock,
+          };
+        } else {
+          const result = await scanBarcodeAction(code);
+          if (!result.ok) {
+            setScanError(result.error);
+            return;
+          }
+          product = result.product;
         }
-        const product = result.product;
+        // Both branches assign; this is just to narrow for the closures below.
+        if (!product) return;
+        const scanned = product;
         let addedQty: number | null = null;
         setLines((prev) => {
-          const existing = prev.find((l) => l.productId === product.id);
+          const existing = prev.find((l) => l.productId === scanned.id);
           if (existing) {
-            if (existing.qty + 1 > product.currentStock) {
-              setScanError(`Only ${product.currentStock} in stock for ${product.name}`);
+            if (existing.qty + 1 > scanned.currentStock) {
+              setScanError(`Only ${scanned.currentStock} in stock for ${scanned.name}`);
               return prev;
             }
             addedQty = existing.qty + 1;
             return prev.map((l) =>
-              l.productId === product.id ? { ...l, qty: l.qty + 1 } : l,
+              l.productId === scanned.id ? { ...l, qty: l.qty + 1 } : l,
             );
           }
-          if (product.currentStock < 1) {
-            setScanError(`${product.name} is out of stock`);
+          if (scanned.currentStock < 1) {
+            setScanError(`${scanned.name} is out of stock`);
             return prev;
           }
           addedQty = 1;
           return [
             ...prev,
             {
-              productId: product.id,
-              name: product.name,
-              brand: product.brand,
-              code: product.barcode ?? product.sku ?? "",
-              unitPrice: product.sellPrice,
+              productId: scanned.id,
+              name: scanned.name,
+              brand: scanned.brand,
+              code: scanned.barcode ?? scanned.sku ?? "",
+              unitPrice: scanned.sellPrice,
               qty: 1,
               discount: "0",
-              currentStock: product.currentStock,
+              currentStock: scanned.currentStock,
             },
           ];
         });
         if (addedQty !== null) {
-          const unit = Number(product.sellPrice) || 0;
+          const unit = Number(scanned.sellPrice) || 0;
           const lineTotal = (unit * addedQty).toFixed(2);
           broadcastToDisplay({
             type: "scan",
             product: {
-              name: product.name,
-              brand: product.brand,
-              sellPrice: product.sellPrice,
+              name: scanned.name,
+              brand: scanned.brand,
+              sellPrice: scanned.sellPrice,
               qty: addedQty,
               lineTotal,
             },

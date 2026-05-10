@@ -55,6 +55,10 @@ export type CatalogEntry = InventorySuggestion & {
   /** Lowercase haystacks pre-baked once on the server so client filtering
    *  doesn't redo the work on every keystroke. */
   search: string;
+  /** Raw lookup keys for the barcode-scan fast path. */
+  barcode: string | null;
+  sku: string | null;
+  costPrice: string;
 };
 
 /**
@@ -73,6 +77,7 @@ export async function listCatalogForSearch(): Promise<CatalogEntry[]> {
       sku: true,
       barcode: true,
       sellPrice: true,
+      costPrice: true,
       currentStock: true,
       reorderLevel: true,
       category: { select: { name: true } },
@@ -101,9 +106,12 @@ export async function listCatalogForSearch(): Promise<CatalogEntry[]> {
       brand: p.brand,
       category: p.category?.name ?? null,
       sellPrice: p.sellPrice.toFixed(2),
+      costPrice: p.costPrice.toFixed(2),
       currentStock: p.currentStock,
       status,
-      search: haystackBits.join("  ").toLowerCase(),
+      barcode: p.barcode,
+      sku: p.sku,
+      search: haystackBits.join("  ").toLowerCase(),
     };
   });
 }
