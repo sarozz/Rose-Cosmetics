@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireRole, SALES_ROLES } from "@/lib/auth";
+import { explainError } from "@/lib/errors";
 import { checkoutSchema } from "@/lib/validation/sale";
 import {
   completeSale,
@@ -108,5 +109,5 @@ function friendlyError(err: unknown): string {
   if (message.includes("P2002")) {
     return "Duplicate sale — refresh and try again.";
   }
-  return "Something went wrong. Try again.";
+  return explainError(err);
 }

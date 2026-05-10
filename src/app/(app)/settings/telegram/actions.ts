@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireRole, STAFF_WRITE_ROLES } from "@/lib/auth";
+import { explainError } from "@/lib/errors";
 import { prisma } from "@/lib/prisma";
 import { telegramRecipientSchema } from "@/lib/validation/telegram";
 import {
@@ -44,7 +45,7 @@ export async function createRecipientAction(
         formError: null,
       };
     }
-    return { fieldErrors: {}, formError: "Something went wrong. Try again." };
+    return { fieldErrors: {}, formError: explainError(err) };
   }
   revalidatePath("/settings/telegram");
   redirect("/settings/telegram");
@@ -73,7 +74,7 @@ export async function updateRecipientAction(
         formError: null,
       };
     }
-    return { fieldErrors: {}, formError: "Something went wrong. Try again." };
+    return { fieldErrors: {}, formError: explainError(err) };
   }
   revalidatePath("/settings/telegram");
   redirect("/settings/telegram");

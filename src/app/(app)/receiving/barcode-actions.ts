@@ -5,6 +5,7 @@ import {
   INVENTORY_WRITE_ROLES,
   requireRole,
 } from "@/lib/auth";
+import { explainError } from "@/lib/errors";
 import { prisma } from "@/lib/prisma";
 import { isValidBarcodeFormat } from "@/lib/validation/barcode";
 import { productSchema } from "@/lib/validation/product";
@@ -183,5 +184,5 @@ function friendlyError(err: unknown): string {
     }
     return "A product with those identifiers already exists.";
   }
-  return "Something went wrong. Try again.";
+  return explainError(err);
 }

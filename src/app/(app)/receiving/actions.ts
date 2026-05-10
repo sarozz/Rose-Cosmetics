@@ -11,6 +11,7 @@ import {
   PurchaseUpdateError,
   updatePurchase,
 } from "@/lib/services/purchase";
+import { explainError } from "@/lib/errors";
 import type { ReceivingFormState } from "./state";
 import type { DeleteEntityResult } from "@/components/delete-entity-button";
 
@@ -41,7 +42,10 @@ export async function createPurchaseAction(
   try {
     await createPurchase(actor.id, parsed.data);
   } catch (err) {
-    return { fieldErrors: {}, formError: friendlyError(err) };
+    return {
+      fieldErrors: {},
+      formError: explainError(err, { logPrefix: "createPurchaseAction" }),
+    };
   }
 
   revalidatePath("/receiving");
@@ -82,14 +86,6 @@ function toFieldErrors(
   return out;
 }
 
-function friendlyError(err: unknown): string {
-  const message = err instanceof Error ? err.message : String(err);
-  if (message.includes("P2002")) {
-    return "Duplicate purchase reference — retry to regenerate.";
-  }
-  return "Something went wrong. Try again.";
-}
-
 export async function updatePurchaseAction(
   id: string,
   _prev: ReceivingFormState,
@@ -121,7 +117,10 @@ export async function updatePurchaseAction(
     if (err instanceof PurchaseUpdateError) {
       return { fieldErrors: {}, formError: err.message };
     }
-    return { fieldErrors: {}, formError: friendlyError(err) };
+    return {
+      fieldErrors: {},
+      formError: explainError(err, { logPrefix: "updatePurchaseAction" }),
+    };
   }
 
   revalidatePath("/receiving");
@@ -140,7 +139,10 @@ export async function deletePurchaseAction(
     if (err instanceof PurchaseDeleteError) {
       return { ok: false, message: err.message };
     }
-    return { ok: false, message: friendlyError(err) };
+    return {
+      ok: false,
+      message: explainError(err, { logPrefix: "deletePurchaseAction" }),
+    };
   }
   revalidatePath("/receiving");
   return { ok: true };

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { CATALOG_WRITE_ROLES, requireRole } from "@/lib/auth";
+import { explainError } from "@/lib/errors";
 import { supplierSchema } from "@/lib/validation/supplier";
 import {
   createSupplier,
@@ -81,7 +82,7 @@ export async function deleteSupplierAction(
     if (err instanceof SupplierDeleteError) {
       return { ok: false, message: err.message };
     }
-    return { ok: false, message: "Something went wrong. Try again." };
+    return { ok: false, message: explainError(err) };
   }
   revalidatePath("/suppliers");
   return { ok: true };

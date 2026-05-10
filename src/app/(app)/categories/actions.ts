@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { CATALOG_WRITE_ROLES, requireRole } from "@/lib/auth";
+import { explainError } from "@/lib/errors";
 import { categorySchema } from "@/lib/validation/category";
 import {
   CategoryDeleteError,
@@ -87,7 +88,7 @@ function friendlyError(err: unknown, entity: string): string {
   if (message.includes("P2002")) {
     return `A ${entity} with that name already exists under the same parent.`;
   }
-  return "Something went wrong. Try again.";
+  return explainError(err);
 }
 
 export async function deleteCategoryAction(

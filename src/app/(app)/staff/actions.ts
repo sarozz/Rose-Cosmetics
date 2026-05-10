@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireRole, STAFF_WRITE_ROLES } from "@/lib/auth";
+import { explainError } from "@/lib/errors";
 import {
   userCreateSchema,
   userUpdateSchema,
@@ -91,7 +92,7 @@ function friendlyError(err: unknown): string {
   if (message.includes("P2002") && message.includes("email")) {
     return "A staff member with that email already exists.";
   }
-  return "Something went wrong. Try again.";
+  return explainError(err, { logPrefix: "staff action" });
 }
 
 export type DeleteStaffResult = { ok: true } | { ok: false; message: string };
