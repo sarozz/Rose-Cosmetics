@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useRef, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useFormState } from "react-dom";
 import { Field, FieldGroup, inputClass } from "@/components/form/field";
 import { FormError } from "@/components/form/form-error";
@@ -13,6 +13,7 @@ import {
   type ReceivingProductOption,
 } from "./barcode-actions";
 import { QuickCreateDialog } from "./quick-create-dialog";
+import { findByCode, loadCatalog } from "@/lib/catalog-cache";
 
 type ProductOption = ReceivingProductOption;
 
@@ -87,6 +88,11 @@ export function ReceivingForm({
   const [scanning, startScan] = useTransition();
   const [dialog, setDialog] = useState<DialogState>({ open: false });
   const scanRef = useRef<HTMLInputElement | null>(null);
+
+  // Warm the catalog cache so subsequent scans hit the fast path.
+  useEffect(() => {
+    void loadCatalog();
+  }, []);
 
   const productById = useMemo(
     () => new Map(products.map((p) => [p.id, p])),
@@ -169,6 +175,28 @@ export function ReceivingForm({
     if (!raw) return;
     setScanNotice(null);
     setScanError(null);
+
+    // Cache fast path: if we already know this barcode, skip the round-trip
+    // and add the line straight away. The server fallback still handles
+    // unknown barcodes (OBF prefill + quick-create dialog).
+    const cached = findByCode(raw);
+    if (cached) {
+      const product: ReceivingProductOption = {
+        id: cached.id,
+        name: cached.name,
+        brand: cached.brand,
+        costPrice: cached.costPrice,
+        sellPrice: cached.sellPrice,
+      };
+      addOrFillRowForProduct(product);
+      setScanNotice(
+        `Added ${product.name}${product.brand ? " · " + product.brand : ""}`,
+      );
+      setScanInput("");
+      scanRef.current?.focus();
+      return;
+    }
+
     startScan(async () => {
       const result: BarcodeLookupResult =
         await lookupReceivingBarcodeAction(raw);
