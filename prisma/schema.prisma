@@ -96,6 +96,21 @@ enum NotificationEventType {
   END_OF_DAY_SUMMARY
 }
 
+enum OnlineOrderStatus {
+  CONFIRMED
+  PACKAGING
+  OUT_FOR_DELIVERY
+  DELIVERED
+  CANCELLED
+}
+
+enum OnlineSalesChannel {
+  TIKTOK
+  INSTAGRAM
+  WHATSAPP
+  OTHER
+}
+
 // ---------- Users ----------
 
 model User {
@@ -121,6 +136,8 @@ model User {
   auditLogs            AuditLog[]
   chatMessages         ChatMessage[]        @relation("ChatAuthor")
   chatReads            ChatRead[]
+  onlineOrders         OnlineOrder[]        @relation("OnlineOrderCashier")
+  onlineOrderEvents    OnlineOrderEvent[]   @relation("OnlineOrderEventActor")
 
   @@index([role, isActive])
   @@map("users")
@@ -182,6 +199,7 @@ model Product {
   purchaseItems PurchaseItem[]
   saleItems   SaleItem[]
   movements   InventoryMovement[]
+  onlineOrderItems OnlineOrderItem[]
 
   @@index([name])
   @@index([isActive])
@@ -479,4 +497,68 @@ model ChatRead {
   @@id([messageId, userId])
   @@index([userId, readAt])
   @@map("chat_reads")
+}
+
+// ---------- Online orders ----------
+//
+// Customers DM us on TikTok / Instagram with what they want; we ring up
+// the cart on /online (POS-like flow), capture their address + a note,
+// then move the order through PACKAGING → OUT_FOR_DELIVERY → DELIVERED.
+// `publicToken` is a URL-safe random string we send the customer so they
+// can self-track at /track/<token> without authentication.
+
+model OnlineOrder {
+  id              String              @id @default(cuid())
+  orderRef        String              @unique
+  publicToken     String              @unique @map("public_token")
+  customerName    String              @map("customer_name")
+  customerPhone   String?             @map("customer_phone")
+  customerAddress String              @map("customer_address")
+  note            String?
+  channel         OnlineSalesChannel  @default(INSTAGRAM)
+  status          OnlineOrderStatus   @default(CONFIRMED)
+  subtotal        Decimal             @default(0) @db.Decimal(12, 2)
+  discount        Decimal             @default(0) @db.Decimal(12, 2)
+  total           Decimal             @default(0) @db.Decimal(12, 2)
+  cashierId       String              @map("cashier_id")
+  createdAt       DateTime            @default(now()) @map("created_at")
+  updatedAt       DateTime            @updatedAt @map("updated_at")
+
+  cashier User                @relation("OnlineOrderCashier", fields: [cashierId], references: [id])
+  items   OnlineOrderItem[]
+  events  OnlineOrderEvent[]
+
+  @@index([status, createdAt])
+  @@map("online_orders")
+}
+
+model OnlineOrderItem {
+  id        String  @id @default(cuid())
+  orderId   String  @map("order_id")
+  productId String  @map("product_id")
+  qty       Int
+  unitPrice Decimal @db.Decimal(12, 2) @map("unit_price")
+  lineTotal Decimal @db.Decimal(12, 2) @map("line_total")
+
+  order   OnlineOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product     @relation(fields: [productId], references: [id])
+
+  @@index([orderId])
+  @@index([productId])
+  @@map("online_order_items")
+}
+
+model OnlineOrderEvent {
+  id        String            @id @default(cuid())
+  orderId   String            @map("order_id")
+  status    OnlineOrderStatus
+  note      String?
+  actorId   String?           @map("actor_id")
+  createdAt DateTime          @default(now()) @map("created_at")
+
+  order OnlineOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  actor User?       @relation("OnlineOrderEventActor", fields: [actorId], references: [id])
+
+  @@index([orderId, createdAt])
+  @@map("online_order_events")
 }
