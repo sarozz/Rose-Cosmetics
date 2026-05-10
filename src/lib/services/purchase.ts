@@ -45,71 +45,85 @@ export async function createPurchase(
   actorUserId: string,
   data: PurchaseData,
 ) {
-  const result = await prisma.$transaction(async (tx) => {
-    const purchaseRef = await generatePurchaseRef(tx);
-    const totalCost = data.items.reduce(
-      (sum, item) =>
-        sum.add(new Prisma.Decimal(item.costPrice).mul(item.qty)),
-      new Prisma.Decimal(0),
-    );
+  const result = await prisma.$transaction(
+    async (tx) => {
+      const purchaseRef = await generatePurchaseRef(tx);
+      const totalCost = data.items.reduce(
+        (sum, item) =>
+          sum.add(new Prisma.Decimal(item.costPrice).mul(item.qty)),
+        new Prisma.Decimal(0),
+      );
 
-    const purchase = await tx.purchase.create({
-      data: {
-        supplierId: data.supplierId,
-        purchaseRef,
-        status: "COMPLETED",
-        purchaseDate: data.purchaseDate ?? new Date(),
-        notes: data.notes,
-        createdById: actorUserId,
-        totalCost,
-        debited: data.debited,
-        credit: data.credit,
-        vat: data.vat,
-        discount: data.discount,
-        items: {
-          create: data.items.map((item) => ({
-            productId: item.productId,
-            qty: item.qty,
-            costPrice: item.costPrice,
-            sellPrice: item.sellPrice,
-          })),
-        },
-      },
-      include: { items: true },
-    });
-
-    for (const item of data.items) {
-      // Update stock snapshot + refresh pricing from this receipt.
-      await tx.product.update({
-        where: { id: item.productId },
+      const purchase = await tx.purchase.create({
         data: {
-          currentStock: { increment: item.qty },
-          costPrice: item.costPrice,
-          sellPrice: item.sellPrice,
-        },
-      });
-      await tx.inventoryMovement.create({
-        data: {
-          productId: item.productId,
-          movementType: "PURCHASE_IN",
-          qtyDelta: item.qty,
-          sourceTable: "purchases",
-          sourceId: purchase.id,
+          supplierId: data.supplierId,
+          purchaseRef,
+          status: "COMPLETED",
+          purchaseDate: data.purchaseDate ?? new Date(),
+          notes: data.notes,
           createdById: actorUserId,
+          totalCost,
+          debited: data.debited,
+          credit: data.credit,
+          vat: data.vat,
+          discount: data.discount,
+          items: {
+            create: data.items.map((item) => ({
+              productId: item.productId,
+              qty: item.qty,
+              costPrice: item.costPrice,
+              sellPrice: item.sellPrice,
+            })),
+          },
         },
+        include: { items: true },
       });
-    }
 
-    await writeAuditLog(tx, {
-      actorUserId,
-      entityType: "purchase",
-      entityId: purchase.id,
-      action: "CREATE",
-      after: purchase,
-    });
+      // Per-line stock + ledger writes run in parallel. Each line targets a
+      // different product, so there's no within-transaction lock contention.
+      // This roughly halves the wall-clock cost vs. the previous serial loop,
+      // which mattered when Vercel↔Supabase RTT * 2 calls per line was
+      // pushing the default 5s transaction window.
+      await Promise.all(
+        data.items.flatMap((item) => [
+          tx.product.update({
+            where: { id: item.productId },
+            data: {
+              currentStock: { increment: item.qty },
+              costPrice: item.costPrice,
+              sellPrice: item.sellPrice,
+            },
+          }),
+          tx.inventoryMovement.create({
+            data: {
+              productId: item.productId,
+              movementType: "PURCHASE_IN",
+              qtyDelta: item.qty,
+              sourceTable: "purchases",
+              sourceId: purchase.id,
+              createdById: actorUserId,
+            },
+          }),
+        ]),
+      );
 
-    return purchase;
-  });
+      await writeAuditLog(tx, {
+        actorUserId,
+        entityType: "purchase",
+        entityId: purchase.id,
+        action: "CREATE",
+        after: purchase,
+      });
+
+      return purchase;
+    },
+    {
+      // Default is 5s — too tight for Vercel→Supabase round-trips when a
+      // receipt has more than a couple of lines.
+      timeout: 30_000,
+      maxWait: 10_000,
+    },
+  );
 
   // Receipts only move stock numbers — the low-stock list, ledger, and
   // reorder dashboard. Sales totals are unaffected.
@@ -168,78 +182,87 @@ export async function updatePurchase(
     new Prisma.Decimal(0),
   );
 
-  const result = await prisma.$transaction(async (tx) => {
-    // 1. Reverse the original receipt's stock effect.
-    for (const item of before.items) {
-      await tx.product.update({
-        where: { id: item.productId },
-        data: { currentStock: { decrement: item.qty } },
-      });
-    }
-    // 2. Drop the old movements + line items.
-    await tx.inventoryMovement.deleteMany({
-      where: { sourceTable: "purchases", sourceId: id },
-    });
-    await tx.purchaseItem.deleteMany({ where: { purchaseId: id } });
+  const result = await prisma.$transaction(
+    async (tx) => {
+      // 1. Reverse the original receipt's stock effect (parallel — different
+      // products, no contention).
+      await Promise.all(
+        before.items.map((item) =>
+          tx.product.update({
+            where: { id: item.productId },
+            data: { currentStock: { decrement: item.qty } },
+          }),
+        ),
+      );
+      // 2. Drop the old movements + line items.
+      await Promise.all([
+        tx.inventoryMovement.deleteMany({
+          where: { sourceTable: "purchases", sourceId: id },
+        }),
+        tx.purchaseItem.deleteMany({ where: { purchaseId: id } }),
+      ]);
 
-    // 3. Update the header.
-    const purchase = await tx.purchase.update({
-      where: { id },
-      data: {
-        supplierId: data.supplierId,
-        purchaseDate: data.purchaseDate ?? before.purchaseDate,
-        notes: data.notes,
-        totalCost,
-        debited: data.debited,
-        credit: data.credit,
-        vat: data.vat,
-        discount: data.discount,
-        items: {
-          create: data.items.map((item) => ({
-            productId: item.productId,
-            qty: item.qty,
-            costPrice: item.costPrice,
-            sellPrice: item.sellPrice,
-          })),
-        },
-      },
-      include: { items: true },
-    });
-
-    // 4. Apply the new lines: increment stock, write movements,
-    // refresh product pricing from the latest figures.
-    for (const item of data.items) {
-      await tx.product.update({
-        where: { id: item.productId },
+      // 3. Update the header.
+      const purchase = await tx.purchase.update({
+        where: { id },
         data: {
-          currentStock: { increment: item.qty },
-          costPrice: item.costPrice,
-          sellPrice: item.sellPrice,
+          supplierId: data.supplierId,
+          purchaseDate: data.purchaseDate ?? before.purchaseDate,
+          notes: data.notes,
+          totalCost,
+          debited: data.debited,
+          credit: data.credit,
+          vat: data.vat,
+          discount: data.discount,
+          items: {
+            create: data.items.map((item) => ({
+              productId: item.productId,
+              qty: item.qty,
+              costPrice: item.costPrice,
+              sellPrice: item.sellPrice,
+            })),
+          },
         },
+        include: { items: true },
       });
-      await tx.inventoryMovement.create({
-        data: {
-          productId: item.productId,
-          movementType: "PURCHASE_IN",
-          qtyDelta: item.qty,
-          sourceTable: "purchases",
-          sourceId: purchase.id,
-          createdById: actorUserId,
-        },
+
+      // 4. Apply the new lines (parallel).
+      await Promise.all(
+        data.items.flatMap((item) => [
+          tx.product.update({
+            where: { id: item.productId },
+            data: {
+              currentStock: { increment: item.qty },
+              costPrice: item.costPrice,
+              sellPrice: item.sellPrice,
+            },
+          }),
+          tx.inventoryMovement.create({
+            data: {
+              productId: item.productId,
+              movementType: "PURCHASE_IN",
+              qtyDelta: item.qty,
+              sourceTable: "purchases",
+              sourceId: purchase.id,
+              createdById: actorUserId,
+            },
+          }),
+        ]),
+      );
+
+      await writeAuditLog(tx, {
+        actorUserId,
+        entityType: "purchase",
+        entityId: id,
+        action: "UPDATE",
+        before,
+        after: purchase,
       });
-    }
 
-    await writeAuditLog(tx, {
-      actorUserId,
-      entityType: "purchase",
-      entityId: id,
-      action: "UPDATE",
-      before,
-      after: purchase,
-    });
-
-    return purchase;
-  });
+      return purchase;
+    },
+    { timeout: 30_000, maxWait: 10_000 },
+  );
 
   revalidateTag(REPORT_TAGS.stock);
   revalidateTag(CATALOG_TAGS.STOCK);
