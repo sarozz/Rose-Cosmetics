@@ -28,7 +28,11 @@ export const onlineOrderCreateSchema = z.object({
     .trim()
     .min(1, "Customer name is required")
     .max(120, "Name is too long"),
-  customerPhone: empty.pipe(z.string().max(40).nullable()),
+  customerPhone: z
+    .string()
+    .trim()
+    .min(7, "Phone is required (couriers need it to call the customer)")
+    .max(40, "Phone is too long"),
   customerAddress: z
     .string()
     .trim()
