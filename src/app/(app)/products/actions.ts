@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { CATALOG_WRITE_ROLES, requireRole } from "@/lib/auth";
+import { explainError } from "@/lib/errors";
 import { productSchema } from "@/lib/validation/product";
 import {
   createProduct,
@@ -110,7 +111,7 @@ function friendlyError(err: unknown): string {
     }
     return "A product with these identifiers already exists.";
   }
-  return "Something went wrong. Try again.";
+  return explainError(err);
 }
 
 export async function deleteProductAction(

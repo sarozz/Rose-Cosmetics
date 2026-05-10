@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireRole, RETURN_WRITE_ROLES } from "@/lib/auth";
+import { explainError } from "@/lib/errors";
 import { returnSchema } from "@/lib/validation/return";
 import { createReturn, ReturnValidationError } from "@/lib/services/return";
 import type { ReturnFormState } from "./state";
@@ -87,5 +88,5 @@ function friendlyError(err: unknown): string {
   if (message.includes("P2002")) {
     return "Duplicate return reference — retry to regenerate.";
   }
-  return "Something went wrong. Try again.";
+  return explainError(err);
 }

@@ -15,6 +15,7 @@ import {
   updateOnlineOrderStatus,
 } from "@/lib/services/online-order";
 import { lookupProductByBarcode } from "@/lib/services/sale";
+import { explainError } from "@/lib/errors";
 import type { OnlineFormState, OnlineScanResult } from "./state";
 
 const STATUS_UPDATE_ROLES = Array.from(
@@ -145,9 +146,5 @@ function toFieldErrors(
 }
 
 function friendlyError(err: unknown): string {
-  const msg = err instanceof Error ? err.message : String(err);
-  if (msg.includes("P2002")) {
-    return "Duplicate order — refresh and try again.";
-  }
-  return "Something went wrong. Try again.";
+  return explainError(err, { logPrefix: "online order action" });
 }
