@@ -114,7 +114,7 @@ export function OnlineOrderForm() {
     <form action={formAction} className="space-y-6">
       <FieldGroup
         title="Customer"
-        description="Where the order is going. Phone is optional but useful for the courier."
+        description="Where the order is going. Phone is required so the courier can call on arrival."
       >
         <div className="grid gap-5 sm:grid-cols-2">
           <Field
@@ -134,11 +134,14 @@ export function OnlineOrderForm() {
           <Field
             label="Phone"
             htmlFor="customerPhone"
+            required
             error={state.fieldErrors.customerPhone}
           >
             <input
               id="customerPhone"
               name="customerPhone"
+              type="tel"
+              required
               autoComplete="off"
               className={inputClass()}
             />
