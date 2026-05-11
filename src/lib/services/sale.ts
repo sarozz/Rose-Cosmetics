@@ -53,17 +53,27 @@ export async function myTodaySummary(cashierId: string) {
     soldAt: { gte: start },
     cashierId,
   };
-  const [sales, items] = await Promise.all([
+  const [sales, items, refunds] = await Promise.all([
     prisma.sale.findMany({ where, select: { total: true } }),
     prisma.saleItem.aggregate({
       where: { sale: where },
       _sum: { qty: true },
     }),
+    // Refunds processed today net out of today's total. Bucket by the
+    // refund's createdAt so the cashier's tile matches what's actually
+    // in the drawer.
+    prisma.return.findMany({
+      where: { status: "COMPLETED", createdAt: { gte: start }, createdById: cashierId },
+      select: { refundTotal: true },
+    }),
   ]);
-  const total = sales.reduce(
+  let total = sales.reduce(
     (sum, s) => sum.add(s.total),
     new Prisma.Decimal(0),
   );
+  for (const r of refunds) {
+    total = total.sub(r.refundTotal);
+  }
   return {
     count: sales.length,
     total: total.toFixed(2),

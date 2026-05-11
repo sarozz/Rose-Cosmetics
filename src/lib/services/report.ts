@@ -94,10 +94,21 @@ export const salesByDay = unstable_cache(
     const start = startOfUtcDay(new Date());
     start.setUTCDate(start.getUTCDate() - (days - 1));
 
-    const sales = await prisma.sale.findMany({
-      where: { status: "COMPLETED", soldAt: { gte: start } },
-      select: { soldAt: true, total: true },
-    });
+    const [sales, refunds] = await Promise.all([
+      prisma.sale.findMany({
+        where: { status: "COMPLETED", soldAt: { gte: start } },
+        select: { soldAt: true, total: true },
+      }),
+      // Refunds net out revenue. We bucket by the refund's createdAt
+      // (the day money went back out), not the originating sale date —
+      // matches the convention reports elsewhere in the app and
+      // ensures the day's net always matches what the cashier
+      // actually had in the drawer that day.
+      prisma.return.findMany({
+        where: { status: "COMPLETED", createdAt: { gte: start } },
+        select: { createdAt: true, refundTotal: true },
+      }),
+    ]);
 
     const buckets = new Map<string, { count: number; total: Prisma.Decimal }>();
     for (const s of sales) {
@@ -105,6 +116,12 @@ export const salesByDay = unstable_cache(
       const cur = buckets.get(key) ?? { count: 0, total: new Prisma.Decimal(0) };
       cur.count += 1;
       cur.total = cur.total.add(s.total);
+      buckets.set(key, cur);
+    }
+    for (const r of refunds) {
+      const key = formatYmd(startOfUtcDay(r.createdAt));
+      const cur = buckets.get(key) ?? { count: 0, total: new Prisma.Decimal(0) };
+      cur.total = cur.total.sub(r.refundTotal);
       buckets.set(key, cur);
     }
 
@@ -136,10 +153,16 @@ export const salesByWeek = unstable_cache(
     const thisWeekStart = startOfUtcWeek(new Date());
     const windowStart = addDaysUtc(thisWeekStart, -7 * (weeks - 1));
 
-    const sales = await prisma.sale.findMany({
-      where: { status: "COMPLETED", soldAt: { gte: windowStart } },
-      select: { soldAt: true, total: true },
-    });
+    const [sales, refunds] = await Promise.all([
+      prisma.sale.findMany({
+        where: { status: "COMPLETED", soldAt: { gte: windowStart } },
+        select: { soldAt: true, total: true },
+      }),
+      prisma.return.findMany({
+        where: { status: "COMPLETED", createdAt: { gte: windowStart } },
+        select: { createdAt: true, refundTotal: true },
+      }),
+    ]);
 
     const buckets = new Map<string, { count: number; total: Prisma.Decimal }>();
     for (const s of sales) {
@@ -147,6 +170,12 @@ export const salesByWeek = unstable_cache(
       const cur = buckets.get(key) ?? { count: 0, total: new Prisma.Decimal(0) };
       cur.count += 1;
       cur.total = cur.total.add(s.total);
+      buckets.set(key, cur);
+    }
+    for (const r of refunds) {
+      const key = isoWeekKey(startOfUtcWeek(r.createdAt));
+      const cur = buckets.get(key) ?? { count: 0, total: new Prisma.Decimal(0) };
+      cur.total = cur.total.sub(r.refundTotal);
       buckets.set(key, cur);
     }
 
@@ -177,10 +206,16 @@ export const salesByMonth = unstable_cache(
     const thisMonthStart = startOfUtcMonth(new Date());
     const windowStart = addMonthsUtc(thisMonthStart, -(months - 1));
 
-    const sales = await prisma.sale.findMany({
-      where: { status: "COMPLETED", soldAt: { gte: windowStart } },
-      select: { soldAt: true, total: true },
-    });
+    const [sales, refunds] = await Promise.all([
+      prisma.sale.findMany({
+        where: { status: "COMPLETED", soldAt: { gte: windowStart } },
+        select: { soldAt: true, total: true },
+      }),
+      prisma.return.findMany({
+        where: { status: "COMPLETED", createdAt: { gte: windowStart } },
+        select: { createdAt: true, refundTotal: true },
+      }),
+    ]);
 
     const buckets = new Map<string, { count: number; total: Prisma.Decimal }>();
     for (const s of sales) {
@@ -188,6 +223,12 @@ export const salesByMonth = unstable_cache(
       const cur = buckets.get(key) ?? { count: 0, total: new Prisma.Decimal(0) };
       cur.count += 1;
       cur.total = cur.total.add(s.total);
+      buckets.set(key, cur);
+    }
+    for (const r of refunds) {
+      const key = formatYmd(startOfUtcMonth(r.createdAt));
+      const cur = buckets.get(key) ?? { count: 0, total: new Prisma.Decimal(0) };
+      cur.total = cur.total.sub(r.refundTotal);
       buckets.set(key, cur);
     }
 
@@ -239,13 +280,22 @@ export const periodSummary = unstable_cache(
       previousEnd = currentStart;
     }
 
-    const sales = await prisma.sale.findMany({
-      where: {
-        status: "COMPLETED",
-        soldAt: { gte: previousStart },
-      },
-      select: { soldAt: true, total: true },
-    });
+    const [sales, refunds] = await Promise.all([
+      prisma.sale.findMany({
+        where: {
+          status: "COMPLETED",
+          soldAt: { gte: previousStart },
+        },
+        select: { soldAt: true, total: true },
+      }),
+      prisma.return.findMany({
+        where: {
+          status: "COMPLETED",
+          createdAt: { gte: previousStart },
+        },
+        select: { createdAt: true, refundTotal: true },
+      }),
+    ]);
 
     let currTotal = new Prisma.Decimal(0);
     let prevTotal = new Prisma.Decimal(0);
@@ -258,6 +308,13 @@ export const periodSummary = unstable_cache(
       } else if (s.soldAt >= previousStart && s.soldAt < previousEnd) {
         prevTotal = prevTotal.add(s.total);
         prevCount += 1;
+      }
+    }
+    for (const r of refunds) {
+      if (r.createdAt >= currentStart) {
+        currTotal = currTotal.sub(r.refundTotal);
+      } else if (r.createdAt >= previousStart && r.createdAt < previousEnd) {
+        prevTotal = prevTotal.sub(r.refundTotal);
       }
     }
 
