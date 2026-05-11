@@ -53,8 +53,14 @@ export async function lookupReceivingBarcodeAction(
   const trimmed = barcode.trim();
   if (!isValidBarcodeFormat(trimmed)) return { kind: "invalid" };
 
-  const existing = await prisma.product.findUnique({
-    where: { barcode: trimmed },
+  // Match either the primary barcode or an alternate (multi-flavour SKUs).
+  const existing = await prisma.product.findFirst({
+    where: {
+      OR: [
+        { barcode: trimmed },
+        { extraBarcodes: { some: { code: trimmed } } },
+      ],
+    },
     select: {
       id: true,
       name: true,

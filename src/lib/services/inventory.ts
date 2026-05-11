@@ -59,6 +59,8 @@ export type CatalogEntry = InventorySuggestion & {
   barcode: string | null;
   sku: string | null;
   costPrice: string;
+  /** Alternate barcodes (same product, different flavour/variant). */
+  extraBarcodes: string[];
 };
 
 /**
@@ -81,6 +83,7 @@ export async function listCatalogForSearch(): Promise<CatalogEntry[]> {
       currentStock: true,
       reorderLevel: true,
       category: { select: { name: true } },
+      extraBarcodes: { select: { code: true } },
     },
     orderBy: [{ name: "asc" }],
   });
@@ -93,11 +96,13 @@ export async function listCatalogForSearch(): Promise<CatalogEntry[]> {
         : tracked && p.currentStock <= p.reorderLevel
           ? "LOW"
           : "OK";
+    const extras = p.extraBarcodes.map((b) => b.code);
     const haystackBits = [
       p.name,
       p.brand ?? "",
       p.sku ?? "",
       p.barcode ?? "",
+      ...extras,
       p.category?.name ?? "",
     ];
     return {
@@ -111,6 +116,7 @@ export async function listCatalogForSearch(): Promise<CatalogEntry[]> {
       status,
       barcode: p.barcode,
       sku: p.sku,
+      extraBarcodes: extras,
       search: haystackBits.join("  ").toLowerCase(),
     };
   });
