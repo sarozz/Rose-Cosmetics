@@ -38,6 +38,12 @@ const NAV: NavItem[] = [
     roles: ["OWNER", "MANAGER", "CASHIER"],
   },
   {
+    label: "Sales",
+    href: "/sales",
+    icon: <ReceiptIcon />,
+    roles: ["OWNER", "MANAGER", "CASHIER"],
+  },
+  {
     label: "Online",
     href: "/online",
     icon: <PackageIcon />,
@@ -213,6 +219,19 @@ function PackageIcon() {
       <path d="M3 8v8l9 5 9-5V8" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
       <path d="M12 13v8" stroke="currentColor" strokeWidth="2" />
       <path d="M7.5 5.5l9 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
+function ReceiptIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4">
+      <path
+        d="M6 3h12v18l-3-2-3 2-3-2-3 2V3Z"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinejoin="round"
+      />
+      <path d="M9 8h6M9 12h6M9 16h4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
     </svg>
   );
 }
