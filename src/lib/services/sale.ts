@@ -13,14 +13,28 @@ import {
   type SaleCompletedItem,
 } from "./telegram";
 
-export async function listSales(params?: { limit?: number }) {
+export async function listSales(params?: { limit?: number; query?: string }) {
+  const query = params?.query?.trim();
   return prisma.sale.findMany({
+    where: query
+      ? {
+          OR: [
+            { saleRef: { contains: query, mode: "insensitive" } },
+            {
+              cashier: {
+                displayName: { contains: query, mode: "insensitive" },
+              },
+            },
+          ],
+        }
+      : undefined,
     orderBy: { soldAt: "desc" },
     include: {
       cashier: { select: { id: true, displayName: true } },
+      payments: { select: { method: true } },
       _count: { select: { items: true } },
     },
-    take: params?.limit ?? 50,
+    take: params?.limit ?? 100,
   });
 }
 
