@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { useFormState } from "react-dom";
 import { Field, FieldGroup, inputClass } from "@/components/form/field";
 import { FormError } from "@/components/form/form-error";
 import { SubmitButton } from "@/components/form/submit-button";
+import { isValidBarcodeFormat } from "@/lib/validation/barcode";
 import { lookupExternalProductAction } from "./actions";
 import { emptyProductState, type ProductFormState } from "./state";
 
@@ -71,6 +72,11 @@ export function ProductForm({
   const [lookup, setLookup] = useState<LookupState>({ kind: "idle" });
   const [pending, startLookup] = useTransition();
 
+  const [scanInput, setScanInput] = useState("");
+  const [scanError, setScanError] = useState<string | null>(null);
+  const [scanNotice, setScanNotice] = useState<string | null>(null);
+  const scanRef = useRef<HTMLInputElement | null>(null);
+
   function addExtra() {
     setExtras((prev) => [...prev, { key: extraKey, code: "", label: "" }]);
     setExtraKey((k) => k + 1);
@@ -80,6 +86,29 @@ export function ProductForm({
   }
   function removeExtra(key: number) {
     setExtras((prev) => prev.filter((r) => r.key !== key));
+  }
+
+  function handleScanAdd() {
+    const raw = scanInput.trim();
+    if (!raw) return;
+    if (!isValidBarcodeFormat(raw)) {
+      setScanError("Enter 8 to 14 digits.");
+      return;
+    }
+    if (raw === barcode.trim()) {
+      setScanError("This code is already the primary barcode.");
+      return;
+    }
+    if (extras.some((r) => r.code.trim() === raw)) {
+      setScanError("That code is already in the list.");
+      return;
+    }
+    setExtras((prev) => [...prev, { key: extraKey, code: raw, label: "" }]);
+    setExtraKey((k) => k + 1);
+    setScanInput("");
+    setScanError(null);
+    setScanNotice(`Added ${raw} — type a flavour name on the new row.`);
+    scanRef.current?.focus();
   }
 
   function runLookup() {
@@ -212,6 +241,70 @@ export function ProductForm({
             {state.fieldErrors.extraBarcodes}
           </p>
         ) : null}
+
+        {/* Scan-to-add: a USB barcode scanner emits the digits then presses
+            Enter. We intercept Enter so the whole form doesn't submit, then
+            push the scanned code as a new row. The label is left blank so
+            the operator can type a flavour name immediately after. */}
+        <div
+          onKeyDown={(e) => {
+            // Defensive: even if the input below loses focus mid-burst, the
+            // Enter shouldn't bubble out of this group and submit the form.
+            if (e.key === "Enter") e.stopPropagation();
+          }}
+        >
+          <label
+            htmlFor="extra-scan"
+            className="block text-xs font-medium text-ink-soft"
+          >
+            Scan to add
+          </label>
+          <div className="mt-1 flex gap-2">
+            <div className="relative flex-1">
+              <span
+                aria-hidden
+                className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-sm text-ink-muted"
+              >
+                #
+              </span>
+              <input
+                id="extra-scan"
+                ref={scanRef}
+                value={scanInput}
+                onChange={(e) => {
+                  setScanInput(e.target.value);
+                  setScanError(null);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleScanAdd();
+                  }
+                }}
+                placeholder="Scan or type, then press Enter"
+                inputMode="numeric"
+                autoComplete="off"
+                className={inputClass("pl-9")}
+              />
+            </div>
+            <button
+              type="button"
+              onClick={handleScanAdd}
+              disabled={scanInput.trim() === ""}
+              className="btn-secondary"
+            >
+              Add
+            </button>
+          </div>
+          {scanError ? (
+            <p role="alert" className="mt-1 text-xs text-rose-300">
+              {scanError}
+            </p>
+          ) : scanNotice ? (
+            <p className="mt-1 text-xs text-emerald-300">{scanNotice}</p>
+          ) : null}
+        </div>
+
         <div className="space-y-2">
           {extras.length === 0 ? (
             <p className="text-xs text-ink-muted">
