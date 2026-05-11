@@ -147,7 +147,8 @@ export async function completeSale(
   });
   if (existing) return existing;
 
-  const result = await prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(
+    async (tx) => {
     const productIds = data.items.map((i) => i.productId);
     const products = await tx.product.findMany({
       where: { id: { in: productIds } },
@@ -246,22 +247,26 @@ export async function completeSale(
       },
     });
 
-    for (const line of lines) {
-      await tx.product.update({
-        where: { id: line.productId },
-        data: { currentStock: { decrement: line.qty } },
-      });
-      await tx.inventoryMovement.create({
-        data: {
-          productId: line.productId,
-          movementType: "SALE_OUT",
-          qtyDelta: -line.qty,
-          sourceTable: "sales",
-          sourceId: sale.id,
-          createdById: actorUserId,
-        },
-      });
-    }
+    // Parallel — different products, no contention. Halves wall-clock vs
+    // a serial loop, which matters under Vercel→Supabase RTT.
+    await Promise.all(
+      lines.flatMap((line) => [
+        tx.product.update({
+          where: { id: line.productId },
+          data: { currentStock: { decrement: line.qty } },
+        }),
+        tx.inventoryMovement.create({
+          data: {
+            productId: line.productId,
+            movementType: "SALE_OUT",
+            qtyDelta: -line.qty,
+            sourceTable: "sales",
+            sourceId: sale.id,
+            createdById: actorUserId,
+          },
+        }),
+      ]),
+    );
 
     await writeAuditLog(tx, {
       actorUserId,
@@ -313,7 +318,9 @@ export async function completeSale(
         items: notificationItems,
       },
     };
-  });
+    },
+    { timeout: 30_000, maxWait: 10_000 },
+  );
 
   // Sales change today's totals, top products, and stock levels. Invalidate
   // both report caches so the dashboard/reports reflect the new sale on the

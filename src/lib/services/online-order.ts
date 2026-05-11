@@ -104,7 +104,8 @@ export async function createOnlineOrder(
   actorUserId: string,
   data: OnlineOrderCreateData,
 ) {
-  const result = await prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(
+    async (tx) => {
     const orderRef = await generateOnlineOrderRef(tx);
     const publicToken = randomToken();
 
@@ -179,22 +180,24 @@ export async function createOnlineOrder(
       },
     });
 
-    for (const line of lines) {
-      await tx.product.update({
-        where: { id: line.productId },
-        data: { currentStock: { decrement: line.qty } },
-      });
-      await tx.inventoryMovement.create({
-        data: {
-          productId: line.productId,
-          movementType: "SALE_OUT",
-          qtyDelta: -line.qty,
-          sourceTable: "online_orders",
-          sourceId: order.id,
-          createdById: actorUserId,
-        },
-      });
-    }
+    await Promise.all(
+      lines.flatMap((line) => [
+        tx.product.update({
+          where: { id: line.productId },
+          data: { currentStock: { decrement: line.qty } },
+        }),
+        tx.inventoryMovement.create({
+          data: {
+            productId: line.productId,
+            movementType: "SALE_OUT",
+            qtyDelta: -line.qty,
+            sourceTable: "online_orders",
+            sourceId: order.id,
+            createdById: actorUserId,
+          },
+        }),
+      ]),
+    );
 
     await writeAuditLog(tx, {
       actorUserId,
@@ -205,7 +208,9 @@ export async function createOnlineOrder(
     });
 
     return order;
-  });
+    },
+    { timeout: 30_000, maxWait: 10_000 },
+  );
 
   revalidateTag(REPORT_TAGS.stock);
   revalidateTag(CATALOG_TAGS.STOCK);
