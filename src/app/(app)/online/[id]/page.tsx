@@ -61,9 +61,18 @@ export default async function OnlineOrderDetailPage({
         title={order.orderRef}
         description={`${STATUS_LABEL[order.status]} · ${order.channel.toLowerCase()} · placed by ${order.cashier.displayName}`}
         actions={
-          <Link href={"/online" as Route} className="btn-secondary">
-            Back to orders
-          </Link>
+          <div className="flex flex-wrap gap-2">
+            <Link
+              href={`/online/${order.id}/label` as Route}
+              target="_blank"
+              className="btn-primary"
+            >
+              Print label
+            </Link>
+            <Link href={"/online" as Route} className="btn-secondary">
+              Back to orders
+            </Link>
+          </div>
         }
       />
 
