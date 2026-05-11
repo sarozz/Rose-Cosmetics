@@ -22,7 +22,10 @@ type Defaults = {
   sellPrice?: unknown;
   reorderLevel?: number;
   isActive?: boolean;
+  extraBarcodes?: { code: string; label: string | null }[];
 };
+
+type ExtraRow = { key: number; code: string; label: string };
 
 type LookupState =
   | { kind: "idle" }
@@ -55,8 +58,29 @@ export function ProductForm({
   const [name, setName] = useState(defaults?.name ?? "");
   const [brand, setBrand] = useState(defaults?.brand ?? "");
   const [barcode, setBarcode] = useState(defaults?.barcode ?? "");
+  const [extras, setExtras] = useState<ExtraRow[]>(() =>
+    (defaults?.extraBarcodes ?? []).map((b, i) => ({
+      key: i + 1,
+      code: b.code,
+      label: b.label ?? "",
+    })),
+  );
+  const [extraKey, setExtraKey] = useState(
+    (defaults?.extraBarcodes ?? []).length + 1,
+  );
   const [lookup, setLookup] = useState<LookupState>({ kind: "idle" });
   const [pending, startLookup] = useTransition();
+
+  function addExtra() {
+    setExtras((prev) => [...prev, { key: extraKey, code: "", label: "" }]);
+    setExtraKey((k) => k + 1);
+  }
+  function updateExtra(key: number, patch: Partial<ExtraRow>) {
+    setExtras((prev) => prev.map((r) => (r.key === key ? { ...r, ...patch } : r)));
+  }
+  function removeExtra(key: number) {
+    setExtras((prev) => prev.filter((r) => r.key !== key));
+  }
 
   function runLookup() {
     const code = barcode.trim();
@@ -177,6 +201,67 @@ export function ProductForm({
           pending={pending}
           onLookup={runLookup}
         />
+      </FieldGroup>
+
+      <FieldGroup
+        title="Additional barcodes"
+        description="Same product, same price, same stock — just different flavour. Each flavour gets its own barcode; any of them resolve to this product when scanned."
+      >
+        {state.fieldErrors.extraBarcodes ? (
+          <p role="alert" className="text-xs text-rose-300">
+            {state.fieldErrors.extraBarcodes}
+          </p>
+        ) : null}
+        <div className="space-y-2">
+          {extras.length === 0 ? (
+            <p className="text-xs text-ink-muted">
+              No alternate barcodes. Most products don&apos;t need any — only
+              add when the same lipstick comes in multiple flavours each
+              boxed with its own code.
+            </p>
+          ) : (
+            extras.map((row, index) => (
+              <div
+                key={row.key}
+                className="grid gap-2 sm:grid-cols-[2fr_3fr_auto] sm:items-center"
+              >
+                <input
+                  type="text"
+                  name={`extraBarcodes.${index}.label`}
+                  value={row.label}
+                  onChange={(e) => updateExtra(row.key, { label: e.target.value })}
+                  placeholder="Flavour / variant"
+                  className={inputClass()}
+                />
+                <input
+                  type="text"
+                  name={`extraBarcodes.${index}.code`}
+                  value={row.code}
+                  onChange={(e) => updateExtra(row.key, { code: e.target.value })}
+                  inputMode="numeric"
+                  pattern="\d*"
+                  placeholder="Barcode (8–14 digits)"
+                  className={inputClass()}
+                />
+                <button
+                  type="button"
+                  onClick={() => removeExtra(row.key)}
+                  className="text-sm text-ink-muted hover:text-rose-300"
+                  aria-label="Remove this barcode"
+                >
+                  Remove
+                </button>
+              </div>
+            ))
+          )}
+          <button
+            type="button"
+            onClick={addExtra}
+            className="text-sm font-medium text-rose-300 hover:underline"
+          >
+            + Add another barcode
+          </button>
+        </div>
       </FieldGroup>
 
       <FieldGroup title="Pricing" description="All amounts in shop currency">

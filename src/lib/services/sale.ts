@@ -105,7 +105,11 @@ export async function lookupProductByBarcode(barcode: string) {
   return prisma.product.findFirst({
     where: {
       isActive: true,
-      OR: [{ barcode: trimmed }, { sku: trimmed }],
+      OR: [
+        { barcode: trimmed },
+        { sku: trimmed },
+        { extraBarcodes: { some: { code: trimmed } } },
+      ],
     },
     select: {
       id: true,

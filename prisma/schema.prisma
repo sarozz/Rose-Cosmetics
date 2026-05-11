@@ -200,10 +200,29 @@ model Product {
   saleItems   SaleItem[]
   movements   InventoryMovement[]
   onlineOrderItems OnlineOrderItem[]
+  extraBarcodes ProductBarcode[]
 
   @@index([name])
   @@index([isActive])
   @@map("products")
+}
+
+/**
+ * Alternate barcodes for a product. Use when the same SKU (same price,
+ * same stock) ships in multiple flavours/scents and each has its own
+ * barcode. Scanning any of these resolves to the parent product.
+ */
+model ProductBarcode {
+  id        String   @id @default(cuid())
+  productId String   @map("product_id")
+  code      String   @unique
+  label     String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@map("product_barcodes")
 }
 
 // ---------- Purchases ----------

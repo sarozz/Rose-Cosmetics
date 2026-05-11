@@ -29,7 +29,23 @@ function parse(formData: FormData) {
     sellPrice: formData.get("sellPrice") ?? "",
     reorderLevel: formData.get("reorderLevel") ?? "0",
     isActive: formData.get("isActive") === "on",
+    extraBarcodes: parseExtras(formData),
   });
+}
+
+function parseExtras(formData: FormData) {
+  const rows = new Map<number, { code: string; label: string }>();
+  for (const [key, value] of formData.entries()) {
+    const match = /^extraBarcodes\.(\d+)\.(code|label)$/.exec(key);
+    if (!match) continue;
+    const idx = Number(match[1]);
+    const field = match[2] as "code" | "label";
+    const row = rows.get(idx) ?? { code: "", label: "" };
+    row[field] = String(value);
+    rows.set(idx, row);
+  }
+  // Drop rows with no code — they were added then left blank.
+  return Array.from(rows.values()).filter((r) => r.code.trim().length > 0);
 }
 
 export async function createProductAction(

@@ -44,14 +44,17 @@ export function peekCatalog(): CatalogEntry[] | null {
 }
 
 /**
- * Look up by barcode or SKU against the in-memory cache. Returns null on
- * miss so the caller can decide whether to fall back to a server lookup.
+ * Look up by primary barcode, SKU, or any alternate barcode (multi-flavour
+ * SKUs). Returns null on miss so the caller can decide whether to fall
+ * back to a server lookup.
  */
 export function findByCode(code: string): CatalogEntry | null {
   const trimmed = code.trim();
   if (!trimmed || !cache) return null;
   for (const item of cache.items) {
-    if (item.barcode === trimmed || item.sku === trimmed) return item;
+    if (item.barcode === trimmed) return item;
+    if (item.sku === trimmed) return item;
+    if (item.extraBarcodes.includes(trimmed)) return item;
   }
   return null;
 }

@@ -36,15 +36,32 @@ export const listProducts = unstable_cache(
 );
 
 export async function getProduct(id: string) {
-  return prisma.product.findUnique({ where: { id } });
+  return prisma.product.findUnique({
+    where: { id },
+    include: { extraBarcodes: { orderBy: { createdAt: "asc" } } },
+  });
 }
 
 export async function createProduct(
   actorUserId: string,
   data: ProductData,
 ) {
+  const { extraBarcodes, ...rest } = data;
   const product = await prisma.$transaction(async (tx) => {
-    const created = await tx.product.create({ data });
+    const created = await tx.product.create({
+      data: {
+        ...rest,
+        extraBarcodes: extraBarcodes.length
+          ? {
+              create: extraBarcodes.map((b) => ({
+                code: b.code,
+                label: b.label,
+              })),
+            }
+          : undefined,
+      },
+      include: { extraBarcodes: true },
+    });
     await writeAuditLog(tx, {
       actorUserId,
       entityType: "product",
@@ -54,8 +71,6 @@ export async function createProduct(
     });
     return created;
   });
-  // New product may have a reorderLevel and currentStock, so it can appear in
-  // the low-stock list immediately.
   revalidateTag(REPORT_TAGS.stock);
   revalidateTag(CATALOG_TAGS.PRODUCTS);
   revalidateTag(CATALOG_TAGS.STOCK);
@@ -67,10 +82,33 @@ export async function updateProduct(
   id: string,
   data: ProductData,
 ) {
+  const { extraBarcodes, ...rest } = data;
   const after = await prisma.$transaction(async (tx) => {
-    const before = await tx.product.findUnique({ where: { id } });
+    const before = await tx.product.findUnique({
+      where: { id },
+      include: { extraBarcodes: true },
+    });
     if (!before) throw new Error("Product not found");
-    const updated = await tx.product.update({ where: { id }, data });
+    // Simple reconcile: wipe + reinsert. The list is small (a handful at
+    // most) so an in-place diff isn't worth the complexity, and the unique
+    // constraint on `code` means the row identities don't matter to other
+    // tables.
+    await tx.productBarcode.deleteMany({ where: { productId: id } });
+    const updated = await tx.product.update({
+      where: { id },
+      data: {
+        ...rest,
+        extraBarcodes: extraBarcodes.length
+          ? {
+              create: extraBarcodes.map((b) => ({
+                code: b.code,
+                label: b.label,
+              })),
+            }
+          : undefined,
+      },
+      include: { extraBarcodes: true },
+    });
     await writeAuditLog(tx, {
       actorUserId,
       entityType: "product",
@@ -81,8 +119,6 @@ export async function updateProduct(
     });
     return updated;
   });
-  // reorderLevel / isActive / currentStock edits all change what the
-  // low-stock report shows.
   revalidateTag(REPORT_TAGS.stock);
   revalidateTag(CATALOG_TAGS.PRODUCTS);
   revalidateTag(CATALOG_TAGS.STOCK);
