@@ -42,6 +42,70 @@ export async function getProduct(id: string) {
   });
 }
 
+export type ProductTableEntry = {
+  id: string;
+  name: string;
+  brand: string | null;
+  barcode: string | null;
+  sellPrice: string;
+  currentStock: number;
+  reorderLevel: number;
+  isActive: boolean;
+  category: string | null;
+  /** Lowercased haystack pre-baked on the server: name + brand + sku +
+   *  primary barcode + every extra barcode. The client filter calls
+   *  `.includes(query)` on this — sub-millisecond per row. */
+  search: string;
+};
+
+/**
+ * Slim product list for the /products table. Returns ALL products (active
+ * + inactive — operators need to see what they've deactivated). Pre-bakes
+ * a lowercased search haystack including alternate barcodes so the
+ * client filter doesn't redo the work on every keystroke.
+ */
+export async function listProductsForTable(): Promise<ProductTableEntry[]> {
+  const products = await prisma.product.findMany({
+    select: {
+      id: true,
+      name: true,
+      brand: true,
+      barcode: true,
+      sku: true,
+      sellPrice: true,
+      currentStock: true,
+      reorderLevel: true,
+      isActive: true,
+      category: { select: { name: true } },
+      extraBarcodes: { select: { code: true } },
+    },
+    orderBy: [{ isActive: "desc" }, { name: "asc" }],
+    take: 1000,
+  });
+  return products.map((p) => {
+    const haystackBits = [
+      p.name,
+      p.brand ?? "",
+      p.sku ?? "",
+      p.barcode ?? "",
+      ...p.extraBarcodes.map((b) => b.code),
+      p.category?.name ?? "",
+    ];
+    return {
+      id: p.id,
+      name: p.name,
+      brand: p.brand,
+      barcode: p.barcode,
+      sellPrice: p.sellPrice.toFixed(2),
+      currentStock: p.currentStock,
+      reorderLevel: p.reorderLevel,
+      isActive: p.isActive,
+      category: p.category?.name ?? null,
+      search: haystackBits.join("  ").toLowerCase(),
+    };
+  });
+}
+
 export async function createProduct(
   actorUserId: string,
   data: ProductData,

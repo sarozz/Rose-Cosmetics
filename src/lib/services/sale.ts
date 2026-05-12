@@ -13,6 +13,51 @@ import {
   type SaleCompletedItem,
 } from "./telegram";
 
+export type SaleTableEntry = {
+  id: string;
+  saleRef: string;
+  soldAt: string;
+  cashierName: string;
+  itemCount: number;
+  total: string;
+  paymentLabels: string[];
+  /** Pre-baked lowercased haystack: SR + cashier name. */
+  search: string;
+};
+
+/**
+ * Slim sales list for the /sales table. Up to the last 200 completed
+ * sales (newest first), each row pre-baked with a lowercased haystack
+ * for instant client-side filtering.
+ */
+export async function listSalesForTable(): Promise<SaleTableEntry[]> {
+  const sales = await prisma.sale.findMany({
+    orderBy: { soldAt: "desc" },
+    take: 200,
+    include: {
+      cashier: { select: { id: true, displayName: true } },
+      payments: { select: { method: true } },
+      _count: { select: { items: true } },
+    },
+  });
+  return sales.map((s) => {
+    const cashierName = s.cashier.displayName;
+    const labels = Array.from(
+      new Set(s.payments.map((p) => paymentMethodLabel(p.method))),
+    );
+    return {
+      id: s.id,
+      saleRef: s.saleRef,
+      soldAt: s.soldAt.toISOString(),
+      cashierName,
+      itemCount: s._count.items,
+      total: s.total.toFixed(2),
+      paymentLabels: labels,
+      search: `${s.saleRef}  ${cashierName}`.toLowerCase(),
+    };
+  });
+}
+
 export async function listSales(params?: { limit?: number; query?: string }) {
   const query = params?.query?.trim();
   return prisma.sale.findMany({
