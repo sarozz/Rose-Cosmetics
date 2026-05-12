@@ -1,5 +1,9 @@
 import { z } from "zod";
-import { OnlineOrderStatus, OnlineSalesChannel } from "@prisma/client";
+import {
+  OnlineOrderStatus,
+  OnlinePaymentMode,
+  OnlineSalesChannel,
+} from "@prisma/client";
 
 const empty = z
   .string()
@@ -40,6 +44,7 @@ export const onlineOrderCreateSchema = z.object({
     .max(500, "Address is too long"),
   note: empty.pipe(z.string().max(2000).nullable()),
   channel: z.nativeEnum(OnlineSalesChannel).default("INSTAGRAM"),
+  paymentMode: z.nativeEnum(OnlinePaymentMode).default("COD"),
   discount: price.optional().default(0),
   items: z
     .array(itemSchema)

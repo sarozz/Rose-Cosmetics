@@ -111,6 +111,15 @@ enum OnlineSalesChannel {
   OTHER
 }
 
+enum OnlinePaymentMode {
+  // Customer already paid before dispatch (eSewa, bank transfer, cash in
+  // advance, etc.). Label shows "Paid" with no amount.
+  PREPAID
+  // Cash on Delivery — courier collects on arrival. Label shows the
+  // total amount + "Cash on Delivery" prominently.
+  COD
+}
+
 // ---------- Users ----------
 
 model User {
@@ -536,6 +545,7 @@ model OnlineOrder {
   note            String?
   channel         OnlineSalesChannel  @default(INSTAGRAM)
   status          OnlineOrderStatus   @default(CONFIRMED)
+  paymentMode     OnlinePaymentMode   @default(COD) @map("payment_mode")
   subtotal        Decimal             @default(0) @db.Decimal(12, 2)
   discount        Decimal             @default(0) @db.Decimal(12, 2)
   total           Decimal             @default(0) @db.Decimal(12, 2)

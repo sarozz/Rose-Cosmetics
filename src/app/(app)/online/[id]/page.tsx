@@ -170,6 +170,18 @@ export default async function OnlineOrderDetailPage({
         </section>
 
         <aside className="space-y-4">
+          <div
+            className={`rounded-lg border p-3 text-center text-xs font-semibold uppercase tracking-wider ${
+              order.paymentMode === "COD"
+                ? "border-amber-400/30 bg-amber-500/10 text-amber-200"
+                : "border-emerald-400/30 bg-emerald-500/10 text-emerald-200"
+            }`}
+          >
+            {order.paymentMode === "COD"
+              ? `Cash on delivery · Rs ${order.total.toString()}`
+              : "Paid in advance"}
+          </div>
+
           <div className="rounded-lg border border-white/10 bg-card p-4">
             <h2 className="text-sm font-semibold text-ink">Customer</h2>
             <p className="mt-2 text-sm font-medium text-ink">{order.customerName}</p>

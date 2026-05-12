@@ -141,6 +141,17 @@ export default async function PublicTrackingPage({
                 Rs {order.total.toString()}
               </span>
             </div>
+            <p
+              className={`mt-2 text-xs ${
+                order.paymentMode === "COD"
+                  ? "text-amber-300"
+                  : "text-emerald-300"
+              }`}
+            >
+              {order.paymentMode === "COD"
+                ? `Please keep Rs ${order.total.toString()} ready — the courier will collect it on delivery.`
+                : "Paid in advance — no need to hand the courier any money."}
+            </p>
           </section>
 
           <section className="mt-6 rounded-md border border-white/5 bg-page/40 p-3">

@@ -201,22 +201,37 @@ export function OnlineOrderForm() {
             </select>
           </Field>
           <Field
-            label="Discount"
-            htmlFor="discount"
-            error={state.fieldErrors.discount}
-            adornment="Rs"
+            label="Payment"
+            htmlFor="paymentMode"
+            hint="COD prints the total on the label; Paid prints just a Paid badge."
           >
-            <input
-              id="discount"
-              name="discount"
-              type="number"
-              step="0.01"
-              min="0"
-              defaultValue="0"
+            <select
+              id="paymentMode"
+              name="paymentMode"
+              defaultValue="COD"
               className={inputClass()}
-            />
+            >
+              <option value="COD">Cash on Delivery</option>
+              <option value="PREPAID">Paid (eSewa / bank / advance)</option>
+            </select>
           </Field>
         </div>
+        <Field
+          label="Discount"
+          htmlFor="discount"
+          error={state.fieldErrors.discount}
+          adornment="Rs"
+        >
+          <input
+            id="discount"
+            name="discount"
+            type="number"
+            step="0.01"
+            min="0"
+            defaultValue="0"
+            className={inputClass()}
+          />
+        </Field>
         <Field label="Note" htmlFor="note" error={state.fieldErrors.note}>
           <textarea
             id="note"
