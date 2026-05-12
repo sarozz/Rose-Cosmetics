@@ -114,8 +114,9 @@ export default async function OnlineOrderLabelPage({
             Thank you!
           </p>
           <p className="mt-2 text-xs italic text-black/70">
-            We hope you love your Rose Cosmetics order. Tag us at
-            @rose.cosmetics if you do —{" "}
+            We hope you love your Rose Cosmetics order. Tag us
+            on Instagram <span className="font-medium">@rose.cosmetics67</span>{" "}
+            or TikTok <span className="font-medium">@rosecosmetic83</span> —{" "}
             <span className="font-medium">your smile is our favorite shade.</span>
           </p>
         </section>
