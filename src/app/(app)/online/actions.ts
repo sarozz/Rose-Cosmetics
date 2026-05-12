@@ -3,7 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import type { Route } from "next";
-import { OnlineOrderStatus, OnlineSalesChannel } from "@prisma/client";
+import {
+  OnlineOrderStatus,
+  OnlinePaymentMode,
+  OnlineSalesChannel,
+} from "@prisma/client";
 import { requireRole, SALES_ROLES, INVENTORY_WRITE_ROLES } from "@/lib/auth";
 import {
   onlineOrderCreateSchema,
@@ -51,6 +55,7 @@ export async function createOnlineOrderAction(
   const actor = await requireRole(SALES_ROLES);
 
   const channelRaw = String(formData.get("channel") ?? "INSTAGRAM");
+  const paymentRaw = String(formData.get("paymentMode") ?? "COD");
   const parsed = onlineOrderCreateSchema.safeParse({
     customerName: formData.get("customerName") ?? "",
     customerPhone: formData.get("customerPhone") ?? "",
@@ -59,6 +64,9 @@ export async function createOnlineOrderAction(
     channel: (Object.values(OnlineSalesChannel) as string[]).includes(channelRaw)
       ? (channelRaw as OnlineSalesChannel)
       : "INSTAGRAM",
+    paymentMode: (Object.values(OnlinePaymentMode) as string[]).includes(paymentRaw)
+      ? (paymentRaw as OnlinePaymentMode)
+      : "COD",
     discount: formData.get("discount") ?? "0",
     items: parseItems(formData),
   });

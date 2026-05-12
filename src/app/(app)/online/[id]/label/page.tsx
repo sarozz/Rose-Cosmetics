@@ -5,6 +5,7 @@ import { requireRole, SALES_ROLES } from "@/lib/auth";
 import { RoseLogo } from "@/components/rose-logo";
 import { getOnlineOrder } from "@/lib/services/online-order";
 import { AutoPrint } from "./auto-print";
+import { LabelPrintButton } from "./print-button";
 
 export const metadata = { title: "Shipping label — Rose Cosmetics" };
 
@@ -18,6 +19,8 @@ export default async function OnlineOrderLabelPage({
   const order = await getOnlineOrder(id);
   if (!order) notFound();
 
+  const isCOD = order.paymentMode === "COD";
+
   return (
     <div className="mx-auto max-w-xl p-6 print:p-0">
       {/* On-screen toolbar — hidden when printing. */}
@@ -28,24 +31,41 @@ export default async function OnlineOrderLabelPage({
         >
           ← Back to order
         </Link>
-        <button
-          type="button"
-          onClick={() => window.print()}
-          className="btn-primary text-sm"
-        >
-          Print label
-        </button>
+        <LabelPrintButton />
       </div>
 
-      {/* The label itself. Designed to fit a 4×6 inch shipping label or
-          A5 sticker paper. The `print-clean` class (defined in globals)
-          strips dark-theme backgrounds in print so it comes out black on
-          white. */}
       <div className="print-clean rounded-2xl border-2 border-black/80 bg-white p-6 text-black shadow-sm print:rounded-none print:border-0 print:shadow-none">
         <header className="flex items-center justify-between border-b border-black/40 pb-3">
           <RoseLogo size="md" />
           <p className="font-mono text-xs text-black/70">{order.orderRef}</p>
         </header>
+
+        {/* Payment block — top-of-mind for the courier. COD shows the
+            amount big so they can ask the customer for the right
+            money. PREPAID shows a Paid badge so the courier knows not
+            to collect. */}
+        {isCOD ? (
+          <section className="mt-4 rounded-md border-2 border-rose-600 bg-rose-50 p-3 text-center">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-rose-700">
+              Cash on Delivery
+            </p>
+            <p className="mt-1 text-3xl font-extrabold tabular-nums leading-tight text-rose-700">
+              Rs {order.total.toString()}
+            </p>
+            <p className="text-[10px] uppercase tracking-wider text-rose-700/80">
+              Collect from customer on arrival
+            </p>
+          </section>
+        ) : (
+          <section className="mt-4 rounded-md border-2 border-emerald-600 bg-emerald-50 p-3 text-center">
+            <p className="text-2xl font-extrabold uppercase tracking-widest text-emerald-700">
+              ✓ Paid
+            </p>
+            <p className="mt-1 text-[10px] uppercase tracking-wider text-emerald-700/80">
+              Do not collect any money from customer
+            </p>
+          </section>
+        )}
 
         <section className="mt-5 space-y-1">
           <p className="text-[10px] font-semibold uppercase tracking-widest text-black/60">

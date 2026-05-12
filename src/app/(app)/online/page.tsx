@@ -47,6 +47,7 @@ export default async function OnlineOrdersPage() {
               <th className="px-4 py-3">Order</th>
               <th className="px-4 py-3">Customer</th>
               <th className="px-4 py-3">Channel</th>
+              <th className="px-4 py-3">Payment</th>
               <th className="px-4 py-3 text-right">Lines</th>
               <th className="px-4 py-3 text-right">Total</th>
               <th className="px-4 py-3">Status</th>
@@ -57,7 +58,7 @@ export default async function OnlineOrdersPage() {
           <tbody className="divide-y divide-white/5">
             {orders.length === 0 ? (
               <tr>
-                <td colSpan={8} className="px-4 py-10 text-center text-ink-muted">
+                <td colSpan={9} className="px-4 py-10 text-center text-ink-muted">
                   No online orders yet.
                 </td>
               </tr>
@@ -75,6 +76,17 @@ export default async function OnlineOrdersPage() {
                   <td className="px-4 py-3 text-ink">{o.customerName}</td>
                   <td className="px-4 py-3 text-xs uppercase tracking-wide text-ink-soft">
                     {o.channel}
+                  </td>
+                  <td className="px-4 py-3">
+                    {o.paymentMode === "COD" ? (
+                      <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-amber-200">
+                        COD
+                      </span>
+                    ) : (
+                      <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-200">
+                        Paid
+                      </span>
+                    )}
                   </td>
                   <td className="px-4 py-3 text-right tabular-nums text-ink-soft">
                     {o._count.items}

@@ -76,6 +76,7 @@ export async function getByPublicToken(token: string) {
       status: true,
       total: true,
       channel: true,
+      paymentMode: true,
       createdAt: true,
       updatedAt: true,
       items: {
@@ -158,6 +159,7 @@ export async function createOnlineOrder(
         customerAddress: data.customerAddress,
         note: data.note,
         channel: data.channel,
+        paymentMode: data.paymentMode,
         status: "CONFIRMED",
         subtotal,
         discount,
