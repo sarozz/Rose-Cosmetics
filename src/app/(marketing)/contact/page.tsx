@@ -13,11 +13,12 @@ export const metadata: Metadata = {
 };
 
 const MAP_URL = "https://maps.app.goo.gl/dJPHLJYKXZct8nxg7";
-// Google Maps embed for the same pin. Using the public q= search format
-// so we don't depend on an API key. Querying the location string the
-// owner registered the store under.
+// Embed by exact coordinates rather than a text search — searching for
+// "Rose Cosmetics Chardobato" was picking up a different nearby business
+// ("Rose Beauty Parlour and Cosmetic"). 27.6723282, 85.3788673 is the
+// pin from the maps.app short link the owner shared.
 const MAP_EMBED_SRC =
-  "https://www.google.com/maps?q=Rose+Cosmetics+Chardobato+Bhaktapur&output=embed";
+  "https://www.google.com/maps?q=27.6723282,85.3788673&z=18&hl=en&output=embed";
 
 const STRUCTURED_DATA = {
   "@context": "https://schema.org",
@@ -30,6 +31,11 @@ const STRUCTURED_DATA = {
     streetAddress: "Chardobato",
     addressLocality: "Bhaktapur",
     addressCountry: "NP",
+  },
+  geo: {
+    "@type": "GeoCoordinates",
+    latitude: 27.6723282,
+    longitude: 85.3788673,
   },
   openingHoursSpecification: {
     "@type": "OpeningHoursSpecification",
