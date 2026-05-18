@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Contact · Rose Cosmetics",
   description:
-    "Visit Rose Cosmetics in Chardobato, Bhaktapur, Nepal. Open daily 9 AM – 8 PM. Find us on Google Maps, Instagram @rose.cosmetics67, or TikTok @rosecosmetic83.",
+    "Visit Rose Cosmetics in Chardobato, Bhaktapur, Nepal. Open daily 9 AM – 8 PM. Find us on Google Maps, Instagram @rose.cosmetics67, or TikTok @rose.cosmetic83.",
   alternates: { canonical: "/contact" },
   openGraph: {
     title: "Contact Rose Cosmetics",
@@ -39,7 +39,7 @@ const STRUCTURED_DATA = {
   },
   sameAs: [
     "https://instagram.com/rose.cosmetics67",
-    "https://tiktok.com/@rosecosmetic83",
+    "https://tiktok.com/@rose.cosmetic83",
   ],
 };
 
@@ -129,12 +129,12 @@ export default function ContactPage() {
                 <li>
                   TikTok —{" "}
                   <a
-                    href="https://tiktok.com/@rosecosmetic83"
+                    href="https://tiktok.com/@rose.cosmetic83"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="font-semibold text-rose-600 hover:underline"
                   >
-                    @rosecosmetic83
+                    @rose.cosmetic83
                   </a>
                 </li>
               </ul>
