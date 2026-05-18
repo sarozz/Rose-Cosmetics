@@ -32,7 +32,7 @@ export default function ShopPage() {
           <Card
             number={1}
             title="Walk into the shop"
-            body="Come swatch in person, smell the perfumes, ask us anything. We&apos;re in Chardobato, open every day from 9 in the morning to 8 in the evening."
+            body="Come browse in person, smell the perfumes, test the textures, ask us anything. We&apos;re in Chardobato, open every day from 9 in the morning to 8 in the evening."
             ctaLabel="See the map"
             href={"/contact" as Route}
           />

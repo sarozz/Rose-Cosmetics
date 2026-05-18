@@ -139,9 +139,9 @@ function MarketingFooter() {
         <div className="text-stone-900">
           <RoseLogo size="md" />
           <p className="mt-3 max-w-xs text-sm text-stone-600">
-            Lipsticks, skincare and small luxuries from our little
-            Chardobato shop. Drop by, or DM us on Instagram and TikTok
-            — we courier across Nepal.
+            Skincare, haircare, makeup and everyday essentials from
+            our Chardobato shop. Drop by, or DM us on Instagram and
+            TikTok — we courier across Nepal.
           </p>
         </div>
         <div>

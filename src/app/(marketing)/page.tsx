@@ -3,13 +3,13 @@ import Link from "next/link";
 import type { Route } from "next";
 
 export const metadata: Metadata = {
-  title: "Rose Cosmetics · Beauty store in Chardobato, Bhaktapur",
+  title: "Rose Cosmetics · Cosmetics shop in Chardobato, Bhaktapur",
   description:
-    "Lipsticks, skincare, perfumes and small luxuries from Rose Cosmetics — a family beauty store in Chardobato, Bhaktapur. Walk in, or message us on Instagram or TikTok and we courier across Nepal.",
+    "Skincare, haircare, makeup, fragrances and everyday essentials from Rose Cosmetics — a family cosmetics shop in Chardobato, Bhaktapur. Walk in, or message us on Instagram or TikTok and we courier across Nepal.",
   openGraph: {
     title: "Rose Cosmetics — Chardobato, Bhaktapur",
     description:
-      "Lipsticks, skincare and perfumes from our Chardobato shop. Walk in or DM us; we courier across Nepal.",
+      "Skincare, haircare, makeup and fragrances from our Chardobato shop. Walk in or DM us; we courier across Nepal.",
     type: "website",
     siteName: "Rose Cosmetics",
   },
@@ -21,7 +21,7 @@ const STRUCTURED_DATA = {
   "@type": "Store",
   name: "Rose Cosmetics",
   description:
-    "Family beauty store in Chardobato, Bhaktapur. Lipsticks, skincare, perfumes and small luxuries.",
+    "Family cosmetics shop in Chardobato, Bhaktapur. Skincare, haircare, makeup, fragrances and everyday essentials.",
   url: "https://rosecosmetics.live",
   image: "https://rosecosmetics.live/og.png",
   address: {
@@ -66,10 +66,11 @@ export default function HomePage() {
               The shelf you wish your friend was working at.
             </p>
             <p className="mt-4 max-w-prose text-[15px] leading-relaxed text-stone-700 sm:mt-5 sm:text-base">
-              We&apos;re a small family shop in Chardobato selling
-              lipsticks, perfumes, skincare and the odd thing we couldn&apos;t
-              resist. Come swatch in person, or message us on Instagram
-              and TikTok — we courier across Nepal.
+              We&apos;re a small family shop in Chardobato stocking
+              skincare, haircare, makeup, fragrances and the everyday
+              essentials you actually reach for. Come browse in person,
+              or message us on Instagram and TikTok — we courier across
+              Nepal.
             </p>
             <div className="mt-6 grid gap-2 sm:mt-8 sm:flex sm:flex-wrap sm:gap-3">
               <Link
@@ -122,7 +123,7 @@ export default function HomePage() {
           <div className="mt-8 grid gap-5 sm:mt-12 sm:gap-8 md:grid-cols-3">
             <Feature
               title="A small, careful range"
-              body="We stock what we actually use. Drugstore lipsticks that don't bleed, perfumes that hold past lunch, skincare that earns its place. If it disappoints us once, it&apos;s off the shelf."
+              body="We stock what we actually use. Cleansers that don't strip your skin, shampoos that don't dry your scalp, perfumes that hold past lunch. If a product disappoints us once, it&apos;s off the shelf."
             />
             <Feature
               title="Honest matching"
@@ -147,10 +148,11 @@ export default function HomePage() {
               A little corner shop in Chardobato.
             </h2>
             <p className="mt-3 text-[15px] leading-relaxed text-stone-700 sm:mt-4 sm:text-base">
-              We opened Rose Cosmetics because we got tired of buying
-              lipsticks that looked nothing like the photo. Everything on
-              our shelves had to pass a family test first. Come in for a
-              swatch, or DM us a photo — we&apos;ll tell you what works.
+              We opened Rose Cosmetics because we wanted a beauty shop
+              that felt like a friend&apos;s bathroom shelf — skincare,
+              haircare, makeup and fragrances we&apos;d actually use
+              ourselves. Come browse in person, or DM us a photo and
+              we&apos;ll tell you what works.
             </p>
             <Link
               href={"/about" as Route}
