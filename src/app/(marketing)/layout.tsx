@@ -28,11 +28,11 @@ const NAV: { href: Route; label: string }[] = [
 
 function MarketingHeader() {
   return (
-    <header className="sticky top-0 z-30 border-b border-rose-200/60 bg-cream/90 backdrop-blur">
+    <header className="sticky top-0 z-30 border-b border-stone-200/80 bg-stone-100/85 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6 sm:py-4">
         <Link
           href={"/" as Route}
-          className="inline-flex items-center gap-2"
+          className="inline-flex items-center gap-2 text-stone-900"
           aria-label="Rose Cosmetics — home"
         >
           <RoseLogo size="md" />
@@ -54,7 +54,7 @@ function MarketingHeader() {
       {/* Mobile nav — flat row under the logo. */}
       <nav
         aria-label="Primary mobile"
-        className="flex items-center justify-center gap-6 border-t border-rose-200/60 px-4 py-2 text-xs sm:hidden"
+        className="flex items-center justify-center gap-6 border-t border-stone-200/80 px-4 py-2 text-xs sm:hidden"
       >
         {NAV.map((item) => (
           <Link
@@ -74,11 +74,12 @@ function MarketingFooter() {
   return (
     <footer className="border-t border-rose-200/60 bg-white/60">
       <div className="mx-auto grid max-w-6xl gap-8 px-4 py-12 sm:px-6 md:grid-cols-3">
-        <div>
+        <div className="text-stone-900">
           <RoseLogo size="md" />
           <p className="mt-3 max-w-xs text-sm text-stone-600">
-            Cosmetics for everyday glow. Visit our shop, message us on
-            Instagram or TikTok — we ship across Nepal.
+            Lipsticks, skincare and small luxuries from our little
+            Chardobato shop. Drop by, or DM us on Instagram and TikTok
+            — we courier across Nepal.
           </p>
         </div>
         <div>

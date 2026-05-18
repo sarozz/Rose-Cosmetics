@@ -3,13 +3,13 @@ import Link from "next/link";
 import type { Route } from "next";
 
 export const metadata: Metadata = {
-  title: "Rose Cosmetics · Beauty for everyday glow",
+  title: "Rose Cosmetics · Beauty store in Chardobato, Bhaktapur",
   description:
-    "Rose Cosmetics is a Bhaktapur-based beauty store. Lipsticks, skincare, fragrances and more — shop in-store, on Instagram, or on TikTok. We ship across Nepal.",
+    "Lipsticks, skincare, perfumes and small luxuries from Rose Cosmetics — a family beauty store in Chardobato, Bhaktapur. Walk in, or message us on Instagram or TikTok and we courier across Nepal.",
   openGraph: {
-    title: "Rose Cosmetics — beauty for everyday glow",
+    title: "Rose Cosmetics — Chardobato, Bhaktapur",
     description:
-      "Bhaktapur's friendliest beauty store. Shop in person or order on Instagram / TikTok and we deliver across Nepal.",
+      "Lipsticks, skincare and perfumes from our Chardobato shop. Walk in or DM us; we courier across Nepal.",
     type: "website",
     siteName: "Rose Cosmetics",
   },
@@ -21,7 +21,7 @@ const STRUCTURED_DATA = {
   "@type": "Store",
   name: "Rose Cosmetics",
   description:
-    "Bhaktapur's friendliest beauty store. Lipsticks, skincare, fragrances and more.",
+    "Family beauty store in Chardobato, Bhaktapur. Lipsticks, skincare, perfumes and small luxuries.",
   url: "https://rosecosmetics.live",
   image: "https://rosecosmetics.live/og.png",
   address: {
@@ -48,27 +48,28 @@ export default function HomePage() {
       <section className="relative overflow-hidden">
         <div
           aria-hidden
-          className="absolute -left-32 -top-24 h-96 w-96 rounded-full bg-rose-200/60 blur-3xl"
+          className="absolute -left-32 -top-24 h-[28rem] w-[28rem] rounded-full bg-rose-200/55 blur-3xl"
         />
         <div
           aria-hidden
-          className="absolute -right-24 top-40 h-80 w-80 rounded-full bg-rose-300/50 blur-3xl"
+          className="absolute -right-32 top-32 h-[26rem] w-[26rem] rounded-full bg-rose-300/45 blur-3xl"
         />
-        <div className="relative mx-auto grid max-w-6xl gap-10 px-4 py-20 sm:px-6 sm:py-28 md:grid-cols-2 md:items-center">
+        <div className="relative mx-auto grid max-w-6xl gap-12 px-4 py-20 sm:px-6 sm:py-28 md:grid-cols-2 md:items-center">
           <div>
             <p className="text-sm font-semibold uppercase tracking-widest text-rose-600">
-              Bhaktapur · Nepal
+              Chardobato · Bhaktapur
             </p>
             <h1 className="mt-3 font-[Allura,cursive] text-6xl leading-none text-rose-600 drop-shadow-sm sm:text-7xl">
               Rose Cosmetics
             </h1>
             <p className="mt-3 text-2xl font-medium text-stone-800 sm:text-3xl">
-              Beauty made for your everyday glow.
+              The shelf you wish your friend was working at.
             </p>
-            <p className="mt-5 max-w-prose text-base leading-relaxed text-stone-600">
-              Lipsticks, skincare, fragrances and small luxuries — hand-picked
-              for the way you actually get ready. Walk into the store, or DM
-              us on Instagram / TikTok and we&apos;ll deliver across Nepal.
+            <p className="mt-5 max-w-prose text-base leading-relaxed text-stone-700">
+              We&apos;re a small family shop in Chardobato selling
+              lipsticks, perfumes, skincare and the odd thing we couldn&apos;t
+              resist. Come swatch in person, or message us on Instagram
+              and TikTok — we courier across Nepal.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
@@ -81,76 +82,81 @@ export default function HomePage() {
                 href={"/contact" as Route}
                 className="rounded-full border border-rose-600 px-6 py-3 text-sm font-semibold text-rose-600 transition-colors hover:bg-rose-50"
               >
-                Visit the store
+                Find the shop
               </Link>
             </div>
           </div>
 
-          <div className="relative">
-            <div className="relative mx-auto aspect-[4/5] w-full max-w-sm overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-rose-200 via-rose-100 to-rose-300 shadow-2xl">
-              <div className="absolute inset-0 flex items-center justify-center">
-                <p
-                  className="font-[Allura,cursive] text-[6rem] leading-none text-stone-900/90 drop-shadow-sm"
-                  aria-hidden
-                >
-                  R
-                </p>
-              </div>
-              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-rose-700/30 to-transparent p-6 text-center">
-                <p className="font-[Allura,cursive] text-3xl text-stone-900 drop-shadow-sm">
-                  Your favorite shade
-                </p>
-              </div>
+          {/* Hero visual — no card edges. Just a soft round glow with the
+              monogram floating on it, so it reads as part of the page rather
+              than a UI element pasted on. */}
+          <div className="relative flex items-center justify-center">
+            <div
+              aria-hidden
+              className="absolute inset-0 mx-auto h-80 w-80 rounded-full bg-gradient-to-br from-rose-100 via-rose-50 to-rose-200 blur-2xl"
+            />
+            <div className="relative flex flex-col items-center">
+              <p
+                className="font-[Allura,cursive] text-[12rem] leading-none text-rose-500/90 sm:text-[14rem]"
+                aria-hidden
+              >
+                R
+              </p>
+              <p className="-mt-6 font-[Allura,cursive] text-4xl text-stone-800 sm:text-5xl">
+                your favourite shade
+              </p>
             </div>
           </div>
         </div>
       </section>
 
       {/* FEATURES ------------------------------------------------------- */}
-      <section className="border-t border-rose-100 bg-white py-20">
+      <section className="border-t border-stone-200/70 bg-white py-20">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <h2 className="text-center text-3xl font-semibold text-stone-800 sm:text-4xl">
-            Why people love Rose Cosmetics
+            What you&apos;ll find with us
           </h2>
+          <p className="mx-auto mt-2 max-w-xl text-center text-base text-stone-600">
+            Small shelves, careful picks, honest opinions.
+          </p>
           <div className="mt-12 grid gap-8 md:grid-cols-3">
             <Feature
-              title="Hand-picked range"
-              body="We carry brands we actually love — from drugstore favourites to harder-to-find scents. If it isn't good, we don't stock it."
+              title="A small, careful range"
+              body="We stock what we actually use. Drugstore lipsticks that don't bleed, perfumes that hold past lunch, skincare that earns its place. If it disappoints us once, it&apos;s off the shelf."
             />
             <Feature
-              title="Real advice"
-              body="Tell us your skin type and the look you're after. We'll match you to something that works — no upsell, no pressure."
+              title="Honest matching"
+              body="Tell us your skin, your budget, the look you're going for. We'll point you at the right tube — even the cheap one. We&apos;d rather see you next month than oversell you once."
             />
             <Feature
-              title="Nationwide delivery"
-              body="DM us on Instagram or TikTok with your order and address. We pack it up and ship across Nepal — usually within 1–3 days."
+              title="Couriers across Nepal"
+              body="Most of our customers find us on Instagram or TikTok. Send your address and the products you want; we pack the same day and you get a private tracking link before it leaves the shop."
             />
           </div>
         </div>
       </section>
 
       {/* STORY ---------------------------------------------------------- */}
-      <section className="bg-rose-50/40 py-20">
+      <section className="bg-rose-50/50 py-20">
         <div className="mx-auto grid max-w-6xl gap-10 px-4 sm:px-6 md:grid-cols-[1fr_2fr] md:items-center">
           <p className="font-[Allura,cursive] text-7xl leading-none text-rose-500">
             Hi 👋
           </p>
           <div>
             <h2 className="text-2xl font-semibold text-stone-800 sm:text-3xl">
-              Started in Chardobato, Bhaktapur, made for you.
+              A little corner shop in Chardobato.
             </h2>
-            <p className="mt-4 text-base leading-relaxed text-stone-600">
-              Rose Cosmetics is a small family-run beauty store. Our shelves
-              are stocked the way we&apos;d stock our own bathroom shelves —
-              with things that genuinely make people feel good. Drop by and
-              swatch in person, or message us and we&apos;ll send a few
-              options to your phone.
+            <p className="mt-4 text-base leading-relaxed text-stone-700">
+              We opened Rose Cosmetics because we got tired of buying
+              lipsticks that looked nothing like the photo. Everything on
+              our shelves had to pass a family test first. Come in for a
+              swatch, or DM us a photo — we&apos;ll tell you what works.
             </p>
             <Link
               href={"/about" as Route}
               className="mt-5 inline-block text-sm font-semibold text-rose-600 hover:underline"
             >
-              Read our story →
+              Read more →
             </Link>
           </div>
         </div>
@@ -160,10 +166,10 @@ export default function HomePage() {
       <section className="bg-rose-600 py-16 text-center text-white">
         <div className="mx-auto max-w-3xl px-4 sm:px-6">
           <h2 className="font-[Allura,cursive] text-5xl leading-none sm:text-6xl">
-            Ready to glow?
+            Say hi?
           </h2>
           <p className="mt-4 text-base leading-relaxed text-rose-50">
-            Slide into our DMs or stop by — we&apos;d love to meet you.
+            Slide into our DMs or stop by the shop. Either works.
           </p>
           <div className="mt-7 flex flex-wrap justify-center gap-3">
             <a
@@ -191,7 +197,7 @@ export default function HomePage() {
 
 function Feature({ title, body }: { title: string; body: string }) {
   return (
-    <div className="rounded-2xl border border-rose-100 bg-cream/50 p-6 shadow-sm transition-transform hover:-translate-y-1">
+    <div className="rounded-2xl border border-stone-200/70 bg-stone-50/60 p-6 shadow-sm transition-transform hover:-translate-y-1">
       <h3 className="text-lg font-semibold text-stone-800">{title}</h3>
       <p className="mt-2 text-sm leading-relaxed text-stone-600">{body}</p>
     </div>

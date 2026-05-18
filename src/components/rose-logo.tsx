@@ -26,7 +26,9 @@ const subClass: Record<Size, string> = {
 /**
  * Script "Rose" wordmark with a "COSMETICS" sub-line. The wordmark uses a
  * web-loaded script font so it renders identically on every device. The
- * sub-line keeps the system sans for scale neutrality.
+ * sub-line inherits its color from the parent (`text-current`) so each
+ * context — dark app shell, light marketing chrome — can drive its own
+ * tone without us threading a `variant` prop everywhere.
  */
 export function RoseLogo({
   size = "md",
@@ -42,7 +44,9 @@ export function RoseLogo({
       >
         Rose
       </span>
-      <span className={`font-semibold uppercase text-ink ${subClass[size]}`}>
+      <span
+        className={`font-semibold uppercase text-current ${subClass[size]}`}
+      >
         Cosmetics
       </span>
     </span>

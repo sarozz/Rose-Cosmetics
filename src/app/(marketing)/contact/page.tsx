@@ -54,15 +54,15 @@ export default function ContactPage() {
       <section className="relative overflow-hidden">
         <div className="relative mx-auto max-w-5xl px-4 py-20 sm:px-6 sm:py-24">
           <p className="text-sm font-semibold uppercase tracking-widest text-rose-600">
-            Visit us
+            Visit
           </p>
           <h1 className="mt-3 font-[Allura,cursive] text-6xl leading-none text-rose-600 sm:text-7xl">
             Come say hi.
           </h1>
           <p className="mt-5 max-w-prose text-lg leading-relaxed text-stone-700">
-            We&apos;re a small store in Chardobato, Bhaktapur, Nepal. Swatch the lipsticks,
-            smell the perfumes, ask us anything. Or just message us — we&apos;ll
-            help you from your phone.
+            We&apos;re in Chardobato, Bhaktapur. Swatch a lipstick, sniff
+            a perfume, ask us anything — or message us and we&apos;ll help
+            from your phone.
           </p>
         </div>
       </section>
@@ -142,9 +142,10 @@ export default function ContactPage() {
 
             <ContactBlock heading="Delivery">
               <p className="text-base leading-relaxed text-stone-700">
-                We ship across Nepal, usually within 1 to 3 days. DM us your
-                order and address and we&apos;ll send you a private tracking
-                link as soon as it leaves the shop.
+                We courier anywhere in Nepal, usually within 1 to 3 days.
+                Send us your order plus your address and we&apos;ll
+                share a private tracking link the moment it leaves the
+                shop.
               </p>
             </ContactBlock>
           </div>
