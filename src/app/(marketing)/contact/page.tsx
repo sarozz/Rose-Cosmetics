@@ -13,13 +13,13 @@ export const metadata: Metadata = {
 };
 
 const MAP_URL = "https://maps.app.goo.gl/dJPHLJYKXZct8nxg7";
-// Search for "Rose Cosmetics" with the iframe centered tight on the
-// shop's coordinates so Google prefers our pin over the registered
-// "Rose Beauty Parlour and Cosmetic" sitting at the same intersection.
-// The ll= + tight z=19 biases place resolution toward the closest match
-// to the centre, which IS Rose Cosmetics.
+// Official Google Maps embed URL the owner copied from Share → Embed a
+// map. The `pb=...` segment encodes Google's internal place_id for
+// Rose Cosmetics specifically — this is the only way (without a paid
+// API key) to guarantee Google doesn't substitute a different business
+// at the same coordinates.
 const MAP_EMBED_SRC =
-  "https://www.google.com/maps?q=Rose+Cosmetics&ll=27.6723282,85.3788673&z=19&hl=en&output=embed";
+  "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d7066.908703146394!2d85.37885451577642!3d27.67234883328264!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x39eb1b14f1adfce3%3A0x6ae04ef3727579e0!2sRose%20Cosmetics!5e0!3m2!1sen!2sau!4v1779099848873!5m2!1sen!2sau";
 
 const STRUCTURED_DATA = {
   "@context": "https://schema.org",
