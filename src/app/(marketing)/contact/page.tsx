@@ -13,12 +13,13 @@ export const metadata: Metadata = {
 };
 
 const MAP_URL = "https://maps.app.goo.gl/dJPHLJYKXZct8nxg7";
-// Embed by exact coordinates rather than a text search — searching for
-// "Rose Cosmetics Chardobato" was picking up a different nearby business
-// ("Rose Beauty Parlour and Cosmetic"). 27.6723282, 85.3788673 is the
-// pin from the maps.app short link the owner shared.
+// Search for "Rose Cosmetics" with the iframe centered tight on the
+// shop's coordinates so Google prefers our pin over the registered
+// "Rose Beauty Parlour and Cosmetic" sitting at the same intersection.
+// The ll= + tight z=19 biases place resolution toward the closest match
+// to the centre, which IS Rose Cosmetics.
 const MAP_EMBED_SRC =
-  "https://www.google.com/maps?q=27.6723282,85.3788673&z=18&hl=en&output=embed";
+  "https://www.google.com/maps?q=Rose+Cosmetics&ll=27.6723282,85.3788673&z=19&hl=en&output=embed";
 
 const STRUCTURED_DATA = {
   "@context": "https://schema.org",
