@@ -27,6 +27,7 @@ const NAV: { href: Route; label: string }[] = [
   { href: "/" as Route, label: "Home" },
   { href: "/about" as Route, label: "About" },
   { href: "/shop" as Route, label: "Shop" },
+  { href: "/store" as Route, label: "Online store" },
   { href: "/contact" as Route, label: "Contact" },
 ];
 
