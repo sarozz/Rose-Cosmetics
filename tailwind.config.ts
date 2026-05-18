@@ -31,6 +31,10 @@ const config: Config = {
         card: "#241F2D",
         // Subtle divider that reads on dark without being harsh.
         line: "rgba(255, 255, 255, 0.08)",
+        // Marketing site palette — soft creamy background that lets the
+        // rose accent pop. Tailwind ships `stone-*` already so we just add
+        // the cream tone.
+        cream: "#FFF8F3",
       },
       fontFamily: {
         // System UI stack — ships zero font bytes, renders instantly, looks

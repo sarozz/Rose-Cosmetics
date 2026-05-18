@@ -3,7 +3,10 @@ import { getCurrentUser } from "@/lib/auth";
 import { RoseLogo } from "@/components/rose-logo";
 import { LoginForm } from "./login-form";
 
-export const metadata = { title: "Sign in — Rose Cosmetics POS" };
+export const metadata = {
+  title: "Staff sign in",
+  robots: { index: false, follow: false },
+};
 
 export default async function LoginPage() {
   const user = await getCurrentUser();
