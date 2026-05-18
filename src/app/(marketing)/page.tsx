@@ -32,7 +32,7 @@ const STRUCTURED_DATA = {
   },
   sameAs: [
     "https://instagram.com/rose.cosmetics67",
-    "https://tiktok.com/@rosecosmetic83",
+    "https://tiktok.com/@rose.cosmetic83",
   ],
 };
 
@@ -181,7 +181,7 @@ export default function HomePage() {
               Instagram
             </a>
             <a
-              href="https://tiktok.com/@rosecosmetic83"
+              href="https://tiktok.com/@rose.cosmetic83"
               target="_blank"
               rel="noopener noreferrer"
               className="rounded-full border border-white/80 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/10"

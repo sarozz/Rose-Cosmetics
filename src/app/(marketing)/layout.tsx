@@ -171,12 +171,12 @@ function MarketingFooter() {
             </li>
             <li>
               <a
-                href="https://tiktok.com/@rosecosmetic83"
+                href="https://tiktok.com/@rose.cosmetic83"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="hover:text-rose-600"
               >
-                TikTok · @rosecosmetic83
+                TikTok · @rose.cosmetic83
               </a>
             </li>
             <li>

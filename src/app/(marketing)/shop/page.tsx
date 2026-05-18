@@ -5,7 +5,7 @@ import type { Route } from "next";
 export const metadata: Metadata = {
   title: "How to order · Rose Cosmetics",
   description:
-    "Three ways to buy from Rose Cosmetics — walk into our Chardobato shop, message us on Instagram (@rose.cosmetics67) or TikTok (@rosecosmetic83). We courier across Nepal in 1 to 3 days.",
+    "Three ways to buy from Rose Cosmetics — walk into our Chardobato shop, message us on Instagram (@rose.cosmetics67) or TikTok (@rose.cosmetic83). We courier across Nepal in 1 to 3 days.",
   alternates: { canonical: "/shop" },
 };
 
@@ -47,8 +47,8 @@ export default function ShopPage() {
             number={3}
             title="Message us on TikTok"
             body="Saw it on our TikTok? Reply to the video or DM us — same flow, same delivery times."
-            ctaLabel="@rosecosmetic83"
-            external="https://tiktok.com/@rosecosmetic83"
+            ctaLabel="@rose.cosmetic83"
+            external="https://tiktok.com/@rose.cosmetic83"
           />
         </div>
       </section>
