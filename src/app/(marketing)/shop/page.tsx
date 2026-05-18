@@ -13,22 +13,22 @@ export default function ShopPage() {
   return (
     <>
       <section className="relative overflow-hidden">
-        <div className="relative mx-auto max-w-3xl px-4 py-20 text-center sm:px-6 sm:py-24">
-          <p className="text-sm font-semibold uppercase tracking-widest text-rose-600">
+        <div className="relative mx-auto max-w-3xl px-4 py-12 text-center sm:px-6 sm:py-24">
+          <p className="text-xs font-semibold uppercase tracking-widest text-rose-600 sm:text-sm">
             How to order
           </p>
-          <h1 className="mt-3 font-[Allura,cursive] text-6xl leading-none text-rose-600 sm:text-7xl">
+          <h1 className="mt-2 font-[Allura,cursive] text-5xl leading-none text-rose-600 sm:mt-3 sm:text-7xl">
             Three easy ways
           </h1>
-          <p className="mx-auto mt-5 max-w-2xl text-base leading-relaxed text-stone-700">
+          <p className="mx-auto mt-4 max-w-2xl text-[15px] leading-relaxed text-stone-700 sm:mt-5 sm:text-base">
             Walk in, or message us. Either way we&apos;ll get it to you —
             usually within 1 to 3 days anywhere in Nepal.
           </p>
         </div>
       </section>
 
-      <section className="bg-white pb-20">
-        <div className="mx-auto grid max-w-5xl gap-6 px-4 sm:px-6 md:grid-cols-3">
+      <section className="bg-white pb-14 sm:pb-20">
+        <div className="mx-auto grid max-w-5xl gap-4 px-4 sm:gap-6 sm:px-6 md:grid-cols-3">
           <Card
             number={1}
             title="Walk into the shop"
@@ -53,12 +53,12 @@ export default function ShopPage() {
         </div>
       </section>
 
-      <section className="bg-rose-50/50 py-16">
+      <section className="bg-rose-50/50 py-12 sm:py-16">
         <div className="mx-auto max-w-3xl px-4 sm:px-6">
-          <h2 className="text-center text-2xl font-semibold text-stone-800 sm:text-3xl">
+          <h2 className="text-center text-xl font-semibold text-stone-800 sm:text-3xl">
             How delivery works
           </h2>
-          <ol className="mt-8 space-y-5">
+          <ol className="mt-6 space-y-4 sm:mt-8 sm:space-y-5">
             <Step
               n={1}
               title="Send your order"

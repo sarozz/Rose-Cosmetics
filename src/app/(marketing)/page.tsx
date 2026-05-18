@@ -48,39 +48,39 @@ export default function HomePage() {
       <section className="relative overflow-hidden">
         <div
           aria-hidden
-          className="absolute -left-32 -top-24 h-[28rem] w-[28rem] rounded-full bg-rose-200/55 blur-3xl"
+          className="absolute -left-32 -top-16 h-72 w-72 rounded-full bg-rose-200/55 blur-3xl sm:h-[28rem] sm:w-[28rem]"
         />
         <div
           aria-hidden
-          className="absolute -right-32 top-32 h-[26rem] w-[26rem] rounded-full bg-rose-300/45 blur-3xl"
+          className="absolute -right-24 top-24 h-72 w-72 rounded-full bg-rose-300/45 blur-3xl sm:top-32 sm:h-[26rem] sm:w-[26rem]"
         />
-        <div className="relative mx-auto grid max-w-6xl gap-12 px-4 py-20 sm:px-6 sm:py-28 md:grid-cols-2 md:items-center">
+        <div className="relative mx-auto grid max-w-6xl gap-8 px-4 pb-10 pt-12 sm:gap-12 sm:px-6 sm:pb-20 sm:pt-28 md:grid-cols-2 md:items-center">
           <div>
-            <p className="text-sm font-semibold uppercase tracking-widest text-rose-600">
+            <p className="text-xs font-semibold uppercase tracking-widest text-rose-600 sm:text-sm">
               Chardobato · Bhaktapur
             </p>
-            <h1 className="mt-3 font-[Allura,cursive] text-6xl leading-none text-rose-600 drop-shadow-sm sm:text-7xl">
+            <h1 className="mt-2 font-[Allura,cursive] text-5xl leading-none text-rose-600 drop-shadow-sm xs:text-6xl sm:mt-3 sm:text-7xl">
               Rose Cosmetics
             </h1>
-            <p className="mt-3 text-2xl font-medium text-stone-800 sm:text-3xl">
+            <p className="mt-3 text-xl font-medium text-stone-800 sm:text-3xl">
               The shelf you wish your friend was working at.
             </p>
-            <p className="mt-5 max-w-prose text-base leading-relaxed text-stone-700">
+            <p className="mt-4 max-w-prose text-[15px] leading-relaxed text-stone-700 sm:mt-5 sm:text-base">
               We&apos;re a small family shop in Chardobato selling
               lipsticks, perfumes, skincare and the odd thing we couldn&apos;t
               resist. Come swatch in person, or message us on Instagram
               and TikTok — we courier across Nepal.
             </p>
-            <div className="mt-8 flex flex-wrap gap-3">
+            <div className="mt-6 grid gap-2 sm:mt-8 sm:flex sm:flex-wrap sm:gap-3">
               <Link
                 href={"/shop" as Route}
-                className="rounded-full bg-rose-600 px-6 py-3 text-sm font-semibold text-white shadow-md shadow-rose-300/50 transition-transform hover:-translate-y-0.5 hover:bg-rose-500"
+                className="rounded-full bg-rose-600 px-6 py-3 text-center text-sm font-semibold text-white shadow-md shadow-rose-300/50 transition-transform hover:-translate-y-0.5 hover:bg-rose-500"
               >
                 How to order
               </Link>
               <Link
                 href={"/contact" as Route}
-                className="rounded-full border border-rose-600 px-6 py-3 text-sm font-semibold text-rose-600 transition-colors hover:bg-rose-50"
+                className="rounded-full border border-rose-600 px-6 py-3 text-center text-sm font-semibold text-rose-600 transition-colors hover:bg-rose-50"
               >
                 Find the shop
               </Link>
@@ -88,21 +88,21 @@ export default function HomePage() {
           </div>
 
           {/* Hero visual — no card edges. Just a soft round glow with the
-              monogram floating on it, so it reads as part of the page rather
-              than a UI element pasted on. */}
+              monogram floating on it. Smaller on mobile so the headline
+              doesn't get pushed below the fold. */}
           <div className="relative flex items-center justify-center">
             <div
               aria-hidden
-              className="absolute inset-0 mx-auto h-80 w-80 rounded-full bg-gradient-to-br from-rose-100 via-rose-50 to-rose-200 blur-2xl"
+              className="absolute inset-0 mx-auto h-56 w-56 rounded-full bg-gradient-to-br from-rose-100 via-rose-50 to-rose-200 blur-2xl sm:h-80 sm:w-80"
             />
             <div className="relative flex flex-col items-center">
               <p
-                className="font-[Allura,cursive] text-[12rem] leading-none text-rose-500/90 sm:text-[14rem]"
+                className="font-[Allura,cursive] text-[8rem] leading-none text-rose-500/90 sm:text-[12rem] md:text-[14rem]"
                 aria-hidden
               >
                 R
               </p>
-              <p className="-mt-6 font-[Allura,cursive] text-4xl text-stone-800 sm:text-5xl">
+              <p className="-mt-4 font-[Allura,cursive] text-3xl text-stone-800 sm:-mt-6 sm:text-4xl md:text-5xl">
                 your favourite shade
               </p>
             </div>
@@ -111,15 +111,15 @@ export default function HomePage() {
       </section>
 
       {/* FEATURES ------------------------------------------------------- */}
-      <section className="border-t border-stone-200/70 bg-white py-20">
+      <section className="border-t border-stone-200/70 bg-white py-14 sm:py-20">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <h2 className="text-center text-3xl font-semibold text-stone-800 sm:text-4xl">
+          <h2 className="text-center text-2xl font-semibold text-stone-800 sm:text-4xl">
             What you&apos;ll find with us
           </h2>
-          <p className="mx-auto mt-2 max-w-xl text-center text-base text-stone-600">
+          <p className="mx-auto mt-2 max-w-xl text-center text-sm text-stone-600 sm:text-base">
             Small shelves, careful picks, honest opinions.
           </p>
-          <div className="mt-12 grid gap-8 md:grid-cols-3">
+          <div className="mt-8 grid gap-5 sm:mt-12 sm:gap-8 md:grid-cols-3">
             <Feature
               title="A small, careful range"
               body="We stock what we actually use. Drugstore lipsticks that don't bleed, perfumes that hold past lunch, skincare that earns its place. If it disappoints us once, it&apos;s off the shelf."
@@ -137,16 +137,16 @@ export default function HomePage() {
       </section>
 
       {/* STORY ---------------------------------------------------------- */}
-      <section className="bg-rose-50/50 py-20">
-        <div className="mx-auto grid max-w-6xl gap-10 px-4 sm:px-6 md:grid-cols-[1fr_2fr] md:items-center">
-          <p className="font-[Allura,cursive] text-7xl leading-none text-rose-500">
+      <section className="bg-rose-50/50 py-14 sm:py-20">
+        <div className="mx-auto grid max-w-6xl gap-6 px-4 sm:gap-10 sm:px-6 md:grid-cols-[1fr_2fr] md:items-center">
+          <p className="font-[Allura,cursive] text-6xl leading-none text-rose-500 sm:text-7xl">
             Hi 👋
           </p>
           <div>
-            <h2 className="text-2xl font-semibold text-stone-800 sm:text-3xl">
+            <h2 className="text-xl font-semibold text-stone-800 sm:text-3xl">
               A little corner shop in Chardobato.
             </h2>
-            <p className="mt-4 text-base leading-relaxed text-stone-700">
+            <p className="mt-3 text-[15px] leading-relaxed text-stone-700 sm:mt-4 sm:text-base">
               We opened Rose Cosmetics because we got tired of buying
               lipsticks that looked nothing like the photo. Everything on
               our shelves had to pass a family test first. Come in for a
@@ -154,7 +154,7 @@ export default function HomePage() {
             </p>
             <Link
               href={"/about" as Route}
-              className="mt-5 inline-block text-sm font-semibold text-rose-600 hover:underline"
+              className="mt-4 inline-block text-sm font-semibold text-rose-600 hover:underline sm:mt-5"
             >
               Read more →
             </Link>
@@ -163,15 +163,15 @@ export default function HomePage() {
       </section>
 
       {/* CTA ------------------------------------------------------------ */}
-      <section className="bg-rose-600 py-16 text-center text-white">
+      <section className="bg-rose-600 py-12 text-center text-white sm:py-16">
         <div className="mx-auto max-w-3xl px-4 sm:px-6">
-          <h2 className="font-[Allura,cursive] text-5xl leading-none sm:text-6xl">
+          <h2 className="font-[Allura,cursive] text-4xl leading-none sm:text-6xl">
             Say hi?
           </h2>
-          <p className="mt-4 text-base leading-relaxed text-rose-50">
+          <p className="mt-3 text-sm leading-relaxed text-rose-50 sm:mt-4 sm:text-base">
             Slide into our DMs or stop by the shop. Either works.
           </p>
-          <div className="mt-7 flex flex-wrap justify-center gap-3">
+          <div className="mt-6 grid gap-2 sm:mt-7 sm:flex sm:flex-wrap sm:justify-center sm:gap-3">
             <a
               href="https://instagram.com/rose.cosmetics67"
               target="_blank"

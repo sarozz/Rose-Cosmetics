@@ -21,16 +21,16 @@ export default function AboutPage() {
       <section className="relative overflow-hidden">
         <div
           aria-hidden
-          className="absolute -right-32 -top-24 h-96 w-96 rounded-full bg-rose-200/60 blur-3xl"
+          className="absolute -right-24 -top-16 h-72 w-72 rounded-full bg-rose-200/55 blur-3xl sm:-right-32 sm:-top-24 sm:h-96 sm:w-96"
         />
-        <div className="relative mx-auto max-w-3xl px-4 py-20 sm:px-6 sm:py-28">
-          <p className="text-sm font-semibold uppercase tracking-widest text-rose-600">
+        <div className="relative mx-auto max-w-3xl px-4 py-12 sm:px-6 sm:py-28">
+          <p className="text-xs font-semibold uppercase tracking-widest text-rose-600 sm:text-sm">
             Our story
           </p>
-          <h1 className="mt-3 font-[Allura,cursive] text-6xl leading-none text-rose-600 sm:text-7xl">
+          <h1 className="mt-2 font-[Allura,cursive] text-5xl leading-none text-rose-600 sm:mt-3 sm:text-7xl">
             Hi, we&apos;re Rose.
           </h1>
-          <p className="mt-6 text-lg leading-relaxed text-stone-700">
+          <p className="mt-4 text-[15px] leading-relaxed text-stone-700 sm:mt-6 sm:text-lg">
             Rose Cosmetics is a small family shop in Chardobato, Bhaktapur.
             We opened it for one reason: we kept buying lipsticks that
             looked nothing like the photo online, and we figured we
@@ -40,8 +40,8 @@ export default function AboutPage() {
         </div>
       </section>
 
-      <section className="bg-white py-16">
-        <div className="mx-auto max-w-3xl space-y-10 px-4 sm:px-6">
+      <section className="bg-white py-10 sm:py-16">
+        <div className="mx-auto max-w-3xl space-y-8 px-4 sm:space-y-10 sm:px-6">
           <Block
             heading="Small, careful range"
             body="We don&apos;t stock everything. Each product earns its place — usually after one of us has carried it through a wedding, a long monsoon shift, or a long-haul flight. If it disappoints, it&apos;s off the shelf."
@@ -57,16 +57,16 @@ export default function AboutPage() {
         </div>
       </section>
 
-      <section className="bg-rose-50/50 py-16">
+      <section className="bg-rose-50/50 py-12 sm:py-16">
         <div className="mx-auto max-w-3xl px-4 text-center sm:px-6">
-          <h2 className="text-2xl font-semibold text-stone-800 sm:text-3xl">
+          <h2 className="text-xl font-semibold text-stone-800 sm:text-3xl">
             Come say hi?
           </h2>
-          <p className="mt-3 text-base text-stone-600">
+          <p className="mt-2 text-sm text-stone-600 sm:mt-3 sm:text-base">
             Drop by in Chardobato or message us on Instagram — that&apos;s
             usually the fastest way.
           </p>
-          <div className="mt-7 flex flex-wrap justify-center gap-3">
+          <div className="mt-5 grid gap-2 sm:mt-7 sm:flex sm:flex-wrap sm:justify-center sm:gap-3">
             <Link
               href={"/contact" as Route}
               className="rounded-full bg-rose-600 px-6 py-3 text-sm font-semibold text-white transition-transform hover:-translate-y-0.5"
