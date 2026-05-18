@@ -5,11 +5,11 @@ import type { Route } from "next";
 export const metadata: Metadata = {
   title: "Rose Cosmetics · Beauty for everyday glow",
   description:
-    "Rose Cosmetics is a Pokhara-based beauty store. Lipsticks, skincare, fragrances and more — shop in-store, on Instagram, or on TikTok. We ship across Nepal.",
+    "Rose Cosmetics is a Bhaktapur-based beauty store. Lipsticks, skincare, fragrances and more — shop in-store, on Instagram, or on TikTok. We ship across Nepal.",
   openGraph: {
     title: "Rose Cosmetics — beauty for everyday glow",
     description:
-      "Pokhara's friendliest beauty store. Shop in person or order on Instagram / TikTok and we deliver across Nepal.",
+      "Bhaktapur's friendliest beauty store. Shop in person or order on Instagram / TikTok and we deliver across Nepal.",
     type: "website",
     siteName: "Rose Cosmetics",
   },
@@ -21,10 +21,15 @@ const STRUCTURED_DATA = {
   "@type": "Store",
   name: "Rose Cosmetics",
   description:
-    "Pokhara's friendliest beauty store. Lipsticks, skincare, fragrances and more.",
+    "Bhaktapur's friendliest beauty store. Lipsticks, skincare, fragrances and more.",
   url: "https://rosecosmetics.live",
   image: "https://rosecosmetics.live/og.png",
-  address: { "@type": "PostalAddress", addressLocality: "Pokhara", addressCountry: "NP" },
+  address: {
+    "@type": "PostalAddress",
+    streetAddress: "Chardobato",
+    addressLocality: "Bhaktapur",
+    addressCountry: "NP",
+  },
   sameAs: [
     "https://instagram.com/rose.cosmetics67",
     "https://tiktok.com/@rosecosmetic83",
@@ -52,7 +57,7 @@ export default function HomePage() {
         <div className="relative mx-auto grid max-w-6xl gap-10 px-4 py-20 sm:px-6 sm:py-28 md:grid-cols-2 md:items-center">
           <div>
             <p className="text-sm font-semibold uppercase tracking-widest text-rose-600">
-              Pokhara · Nepal
+              Bhaktapur · Nepal
             </p>
             <h1 className="mt-3 font-[Allura,cursive] text-6xl leading-none text-rose-600 drop-shadow-sm sm:text-7xl">
               Rose Cosmetics
@@ -85,14 +90,14 @@ export default function HomePage() {
             <div className="relative mx-auto aspect-[4/5] w-full max-w-sm overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-rose-200 via-rose-100 to-rose-300 shadow-2xl">
               <div className="absolute inset-0 flex items-center justify-center">
                 <p
-                  className="font-[Allura,cursive] text-[6rem] leading-none text-white/80 drop-shadow-md"
+                  className="font-[Allura,cursive] text-[6rem] leading-none text-stone-900/90 drop-shadow-sm"
                   aria-hidden
                 >
                   R
                 </p>
               </div>
-              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-rose-700/40 to-transparent p-6 text-center">
-                <p className="font-[Allura,cursive] text-3xl text-white drop-shadow">
+              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-rose-700/30 to-transparent p-6 text-center">
+                <p className="font-[Allura,cursive] text-3xl text-stone-900 drop-shadow-sm">
                   Your favorite shade
                 </p>
               </div>
@@ -132,7 +137,7 @@ export default function HomePage() {
           </p>
           <div>
             <h2 className="text-2xl font-semibold text-stone-800 sm:text-3xl">
-              Started in Pokhara, made for you.
+              Started in Chardobato, Bhaktapur, made for you.
             </h2>
             <p className="mt-4 text-base leading-relaxed text-stone-600">
               Rose Cosmetics is a small family-run beauty store. Our shelves

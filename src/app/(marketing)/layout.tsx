@@ -48,12 +48,8 @@ function MarketingHeader() {
             </Link>
           ))}
         </nav>
-        <Link
-          href={"/gulabshop" as Route}
-          className="rounded-full border border-rose-600 px-4 py-1.5 text-xs font-semibold uppercase tracking-wider text-rose-600 transition-colors hover:bg-rose-600 hover:text-white"
-        >
-          Staff
-        </Link>
+        {/* No staff link in the public chrome — the portal stays
+            discoverable to staff via the bookmarked URL only. */}
       </div>
       {/* Mobile nav — flat row under the logo. */}
       <nav
@@ -90,7 +86,7 @@ function MarketingFooter() {
             Visit
           </h2>
           <p className="mt-2 text-sm leading-relaxed text-stone-700">
-            Pokhara, Nepal
+            Chardobato, Bhaktapur, Nepal
             <br />
             Open daily · 9 AM – 8 PM
           </p>
@@ -133,7 +129,7 @@ function MarketingFooter() {
       </div>
       <div className="border-t border-rose-200/40 py-4">
         <p className="text-center text-xs text-stone-500">
-          © {new Date().getFullYear()} Rose Cosmetics · Pokhara, Nepal
+          © {new Date().getFullYear()} Rose Cosmetics · Chardobato, Bhaktapur, Nepal
         </p>
       </div>
     </footer>

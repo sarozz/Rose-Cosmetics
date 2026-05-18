@@ -5,7 +5,7 @@ import type { Route } from "next";
 export const metadata: Metadata = {
   title: "How to shop · Rose Cosmetics",
   description:
-    "Three ways to shop Rose Cosmetics: visit the Pokhara store, message us on Instagram @rose.cosmetics67, or DM us on TikTok @rosecosmetic83. We deliver nationwide.",
+    "Three ways to shop Rose Cosmetics: visit the Chardobato store, message us on Instagram @rose.cosmetics67, or DM us on TikTok @rosecosmetic83. We deliver nationwide.",
   alternates: { canonical: "/shop" },
 };
 
@@ -32,7 +32,7 @@ export default function ShopPage() {
           <Card
             number={1}
             title="Visit the store"
-            body="Pop into our Pokhara shop, try the shades, smell the perfumes, swatch the lipsticks. We're open daily 9 AM – 8 PM."
+            body="Pop into our Chardobato shop, try the shades, smell the perfumes, swatch the lipsticks. We're open daily 9 AM – 8 PM."
             ctaLabel="See the map"
             href={"/contact" as Route}
           />

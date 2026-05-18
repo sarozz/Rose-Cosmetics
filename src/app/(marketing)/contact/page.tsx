@@ -3,21 +3,21 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Contact · Rose Cosmetics",
   description:
-    "Visit Rose Cosmetics in Pokhara, Nepal. Open daily 9 AM – 8 PM. Find us on Google Maps, Instagram @rose.cosmetics67, or TikTok @rosecosmetic83.",
+    "Visit Rose Cosmetics in Chardobato, Bhaktapur, Nepal. Open daily 9 AM – 8 PM. Find us on Google Maps, Instagram @rose.cosmetics67, or TikTok @rosecosmetic83.",
   alternates: { canonical: "/contact" },
   openGraph: {
     title: "Contact Rose Cosmetics",
-    description: "Find the Pokhara store, opening hours, and our socials.",
+    description: "Find the Chardobato store, opening hours, and our socials.",
     type: "website",
   },
 };
 
 const MAP_URL = "https://maps.app.goo.gl/dJPHLJYKXZct8nxg7";
 // Google Maps embed for the same pin. Using the public q= search format
-// so we don't depend on an API key. The pin shows "Rose Cosmetics" since
-// that's the business name registered at that location.
+// so we don't depend on an API key. Querying the location string the
+// owner registered the store under.
 const MAP_EMBED_SRC =
-  "https://www.google.com/maps?q=Rose+Cosmetics+Pokhara&output=embed";
+  "https://www.google.com/maps?q=Rose+Cosmetics+Chardobato+Bhaktapur&output=embed";
 
 const STRUCTURED_DATA = {
   "@context": "https://schema.org",
@@ -27,7 +27,8 @@ const STRUCTURED_DATA = {
   hasMap: MAP_URL,
   address: {
     "@type": "PostalAddress",
-    addressLocality: "Pokhara",
+    streetAddress: "Chardobato",
+    addressLocality: "Bhaktapur",
     addressCountry: "NP",
   },
   openingHoursSpecification: {
@@ -59,7 +60,7 @@ export default function ContactPage() {
             Come say hi.
           </h1>
           <p className="mt-5 max-w-prose text-lg leading-relaxed text-stone-700">
-            We&apos;re a small store in Pokhara, Nepal. Swatch the lipsticks,
+            We&apos;re a small store in Chardobato, Bhaktapur, Nepal. Swatch the lipsticks,
             smell the perfumes, ask us anything. Or just message us — we&apos;ll
             help you from your phone.
           </p>
@@ -94,7 +95,7 @@ export default function ContactPage() {
           <div className="space-y-7">
             <ContactBlock heading="Address">
               <p className="text-base leading-relaxed text-stone-700">
-                Pokhara, Nepal
+                Chardobato, Bhaktapur, Nepal
               </p>
               <a
                 href={MAP_URL}

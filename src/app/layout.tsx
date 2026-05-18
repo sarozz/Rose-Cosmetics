@@ -4,23 +4,23 @@ import "./globals.css";
 export const metadata: Metadata = {
   metadataBase: new URL("https://rosecosmetics.live"),
   title: {
-    default: "Rose Cosmetics · Pokhara, Nepal",
+    default: "Rose Cosmetics · Chardobato, Bhaktapur, Nepal",
     template: "%s · Rose Cosmetics",
   },
   description:
-    "Rose Cosmetics — a Pokhara-based beauty store. Hand-picked lipsticks, skincare, fragrances and small luxuries. Shop in-store or DM us on Instagram / TikTok and we deliver across Nepal.",
+    "Rose Cosmetics — a Bhaktapur-based beauty store. Hand-picked lipsticks, skincare, fragrances and small luxuries. Shop in-store or DM us on Instagram / TikTok and we deliver across Nepal.",
   keywords: [
     "Rose Cosmetics",
-    "cosmetics Pokhara",
+    "cosmetics Bhaktapur",
     "lipstick Nepal",
-    "beauty store Pokhara",
+    "beauty store Bhaktapur",
     "skincare Nepal",
     "Instagram cosmetics Nepal",
   ],
   openGraph: {
     title: "Rose Cosmetics",
     description:
-      "Pokhara's friendliest beauty store — lipsticks, skincare, fragrances and small luxuries. Delivery across Nepal.",
+      "Bhaktapur's friendliest beauty store — lipsticks, skincare, fragrances and small luxuries. Delivery across Nepal.",
     type: "website",
     locale: "en_US",
     siteName: "Rose Cosmetics",
@@ -30,7 +30,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Rose Cosmetics",
     description:
-      "Pokhara's friendliest beauty store. Shop in-store or DM us on Instagram / TikTok.",
+      "Bhaktapur's friendliest beauty store. Shop in-store or DM us on Instagram / TikTok.",
   },
   robots: { index: true, follow: true },
 };

@@ -5,12 +5,12 @@ import type { Route } from "next";
 export const metadata: Metadata = {
   title: "About · Rose Cosmetics",
   description:
-    "Rose Cosmetics is a family-run beauty store in Pokhara, Nepal. Hand-picked lipsticks, skincare, fragrances and small luxuries — with delivery across the country.",
+    "Rose Cosmetics is a family-run beauty store in Chardobato, Bhaktapur, Nepal. Hand-picked lipsticks, skincare, fragrances and small luxuries — with delivery across the country.",
   alternates: { canonical: "/about" },
   openGraph: {
     title: "About Rose Cosmetics",
     description:
-      "A family-run beauty store in Pokhara, stocking what we'd stock in our own bathroom shelves.",
+      "A family-run beauty store in Chardobato, Bhaktapur, stocking what we'd stock in our own bathroom shelves.",
     type: "website",
   },
 };
@@ -32,7 +32,7 @@ export default function AboutPage() {
           </h1>
           <p className="mt-6 text-lg leading-relaxed text-stone-700">
             Rose Cosmetics started the way most good ideas do — with a small
-            family in Pokhara who got tired of buying lipsticks that looked
+            family in Chardobato, Bhaktapur who got tired of buying lipsticks that looked
             nothing like the photos online. So we opened a little corner
             shop, stocked with the things we&apos;d actually buy ourselves.
           </p>
