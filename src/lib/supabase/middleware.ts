@@ -2,9 +2,21 @@ import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { getPublicEnv } from "@/lib/env";
 
-const PUBLIC_PATHS = ["/login"];
+// Paths that don't require an authenticated session. Anything not in this
+// list — and not the public marketing site — gets bounced to /gulabshop.
+const PUBLIC_PATHS = [
+  "/gulabshop", // staff login (renamed from /login)
+  "/track", // public customer order-tracking page
+  "/api/telegram/webhook", // Telegram webhook is auth'd by secret, not cookie
+];
+
+// Customer-facing marketing pages — fully public, never gated even if the
+// user is logged in. The list is small because the marketing site has a
+// flat structure (no /shop/x deep routes).
+const MARKETING_PATHS = new Set(["/", "/about", "/contact", "/shop"]);
 
 function isPublicPath(pathname: string): boolean {
+  if (MARKETING_PATHS.has(pathname)) return true;
   return PUBLIC_PATHS.some(
     (p) => pathname === p || pathname.startsWith(`${p}/`),
   );
@@ -24,14 +36,13 @@ function hasAuthCookie(request: NextRequest): boolean {
 }
 
 /**
- * Refreshes the Supabase session cookie on every request and gates private
- * routes: unauthenticated visitors to non-public paths are redirected to
- * `/login`. Authenticated visitors on `/login` are bounced to `/dashboard`.
- *
- * Optimisation: when the browser has no Supabase cookie at all we can't
- * possibly be logged in, so we skip the `getUser()` network call entirely
- * and just redirect (or let `/login` render). That saves ~100-300ms of
- * Supabase round-trip on every cold start for anonymous traffic.
+ * Refreshes the Supabase session cookie on every request and gates
+ * private routes:
+ *   - Marketing pages (/, /about, /contact, /shop) and the tracking page
+ *     stay public regardless of login state.
+ *   - Unauthenticated visitors to anything else are bounced to
+ *     /gulabshop (the staff login).
+ *   - Authenticated staff on /gulabshop are bounced to /dashboard.
  */
 export async function updateSupabaseSession(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -40,7 +51,7 @@ export async function updateSupabaseSession(request: NextRequest) {
   if (!hasAuthCookie(request)) {
     if (!isPublic) {
       const url = request.nextUrl.clone();
-      url.pathname = "/login";
+      url.pathname = "/gulabshop";
       url.search = "";
       return NextResponse.redirect(url);
     }
@@ -79,12 +90,12 @@ export async function updateSupabaseSession(request: NextRequest) {
 
   if (!user && !isPublic) {
     const url = request.nextUrl.clone();
-    url.pathname = "/login";
+    url.pathname = "/gulabshop";
     url.search = "";
     return NextResponse.redirect(url);
   }
 
-  if (user && pathname === "/login") {
+  if (user && pathname === "/gulabshop") {
     const url = request.nextUrl.clone();
     url.pathname = "/dashboard";
     url.search = "";

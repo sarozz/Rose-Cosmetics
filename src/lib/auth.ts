@@ -85,11 +85,11 @@ export const getCurrentUser = cache(
 
 /**
  * Enforce an authenticated session inside a Server Component or Server Action.
- * Redirects to `/login` when unauthenticated or unprovisioned.
+ * Redirects to `/gulabshop` (the staff login URL) when unauthenticated or unprovisioned.
  */
 export async function requireUser(): Promise<AuthenticatedUser> {
   const user = await getCurrentUser();
-  if (!user) redirect("/login");
+  if (!user) redirect("/gulabshop");
   return user;
 }
 
