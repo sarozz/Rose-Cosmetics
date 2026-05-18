@@ -52,14 +52,14 @@ export default function ContactPage() {
       />
 
       <section className="relative overflow-hidden">
-        <div className="relative mx-auto max-w-5xl px-4 py-20 sm:px-6 sm:py-24">
-          <p className="text-sm font-semibold uppercase tracking-widest text-rose-600">
+        <div className="relative mx-auto max-w-5xl px-4 py-12 sm:px-6 sm:py-24">
+          <p className="text-xs font-semibold uppercase tracking-widest text-rose-600 sm:text-sm">
             Visit
           </p>
-          <h1 className="mt-3 font-[Allura,cursive] text-6xl leading-none text-rose-600 sm:text-7xl">
+          <h1 className="mt-2 font-[Allura,cursive] text-5xl leading-none text-rose-600 sm:mt-3 sm:text-7xl">
             Come say hi.
           </h1>
-          <p className="mt-5 max-w-prose text-lg leading-relaxed text-stone-700">
+          <p className="mt-4 max-w-prose text-[15px] leading-relaxed text-stone-700 sm:mt-5 sm:text-lg">
             We&apos;re in Chardobato, Bhaktapur. Swatch a lipstick, sniff
             a perfume, ask us anything — or message us and we&apos;ll help
             from your phone.
@@ -67,16 +67,16 @@ export default function ContactPage() {
         </div>
       </section>
 
-      <section className="bg-white pb-20">
-        <div className="mx-auto grid max-w-6xl gap-8 px-4 sm:px-6 md:grid-cols-2 md:items-start">
+      <section className="bg-white pb-14 sm:pb-20">
+        <div className="mx-auto grid max-w-6xl gap-6 px-4 sm:gap-8 sm:px-6 md:grid-cols-2 md:items-start">
           {/* MAP --------------------------------------------------------- */}
-          <div className="overflow-hidden rounded-3xl border border-rose-100 bg-cream shadow-md">
+          <div className="overflow-hidden rounded-3xl border border-stone-200/70 bg-cream shadow-md">
             <iframe
               title="Rose Cosmetics on Google Maps"
               src={MAP_EMBED_SRC}
               loading="lazy"
               referrerPolicy="no-referrer-when-downgrade"
-              className="block h-[28rem] w-full"
+              className="block h-72 w-full sm:h-[28rem]"
               allowFullScreen
             />
             <div className="border-t border-rose-100 p-4 text-center">

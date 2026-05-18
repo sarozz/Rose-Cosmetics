@@ -4,6 +4,12 @@ const config: Config = {
   content: ["./src/**/*.{ts,tsx}"],
   theme: {
     extend: {
+      // Tailwind's default sm breakpoint is 640px. Add a tighter `xs` for
+      // the in-between band (380–640px) where most modern phones live —
+      // the hero headline gets one more size up before sm kicks in.
+      screens: {
+        xs: "380px",
+      },
       colors: {
         rose: {
           DEFAULT: "#B03052",
