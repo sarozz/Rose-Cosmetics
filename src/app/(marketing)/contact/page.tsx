@@ -19,7 +19,7 @@ const MAP_URL = "https://maps.app.goo.gl/dJPHLJYKXZct8nxg7";
 // API key) to guarantee Google doesn't substitute a different business
 // at the same coordinates.
 const MAP_EMBED_SRC =
-  "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d7066.908703146394!2d85.37885451577642!3d27.67234883328264!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x39eb1b14f1adfce3%3A0x6ae04ef3727579e0!2sRose%20Cosmetics!5e0!3m2!1sen!2sau!4v1779099848873!5m2!1sen!2sau";
+  "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d883.3636974203804!2d85.37844546962677!3d27.672335286219344!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x39eb1b14f1adfce3%3A0x6ae04ef3727579e0!2sRose%20Cosmetics!5e0!3m2!1sen!2sau!4v1779101811572!5m2!1sen!2sau";
 
 const STRUCTURED_DATA = {
   "@context": "https://schema.org",
@@ -35,8 +35,8 @@ const STRUCTURED_DATA = {
   },
   geo: {
     "@type": "GeoCoordinates",
-    latitude: 27.6723282,
-    longitude: 85.3788673,
+    latitude: 27.672335286219344,
+    longitude: 85.37844546962677,
   },
   openingHoursSpecification: {
     "@type": "OpeningHoursSpecification",
