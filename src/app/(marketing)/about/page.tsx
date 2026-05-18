@@ -5,7 +5,7 @@ import type { Route } from "next";
 export const metadata: Metadata = {
   title: "About · Rose Cosmetics",
   description:
-    "Rose Cosmetics is a small family beauty store in Chardobato, Bhaktapur — lipsticks, perfumes and skincare we'd actually use ourselves. Walk in or DM us; we courier across Nepal.",
+    "Rose Cosmetics is a family cosmetics shop in Chardobato, Bhaktapur — skincare, haircare, makeup, fragrances and everyday essentials. Walk in or DM us; we courier across Nepal.",
   alternates: { canonical: "/about" },
   openGraph: {
     title: "About Rose Cosmetics",
@@ -31,11 +31,11 @@ export default function AboutPage() {
             Hi, we&apos;re Rose.
           </h1>
           <p className="mt-4 text-[15px] leading-relaxed text-stone-700 sm:mt-6 sm:text-lg">
-            Rose Cosmetics is a small family shop in Chardobato, Bhaktapur.
-            We opened it for one reason: we kept buying lipsticks that
-            looked nothing like the photo online, and we figured we
-            weren&apos;t the only ones. So we started stocking the
-            kind of shelf we&apos;d want to walk up to ourselves.
+            Rose Cosmetics is a family cosmetics shop in Chardobato,
+            Bhaktapur. Skincare, haircare, makeup, fragrances —
+            everything we&apos;d want on our own bathroom shelf, picked
+            so you don&apos;t have to guess between ten versions of the
+            same thing.
           </p>
         </div>
       </section>
@@ -48,7 +48,7 @@ export default function AboutPage() {
           />
           <Block
             heading="Honest answers"
-            body="Tell us your skin, your budget, the look you&apos;re going for. We&apos;ll suggest what works, even if it&apos;s the cheaper tube. We&apos;d rather see you back next month than oversell you once."
+            body="Tell us your skin or hair type, your budget, what you&apos;re trying to fix. We&apos;ll point you at what works — even if it&apos;s the cheaper option. We&apos;d rather see you back next month than oversell you once."
           />
           <Block
             heading="Made for Nepal"

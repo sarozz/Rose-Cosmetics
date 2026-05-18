@@ -15,19 +15,21 @@ export const metadata: Metadata = {
     template: "%s · Rose Cosmetics",
   },
   description:
-    "Rose Cosmetics — a Bhaktapur-based beauty store. Hand-picked lipsticks, skincare, fragrances and small luxuries. Shop in-store or DM us on Instagram / TikTok and we deliver across Nepal.",
+    "Rose Cosmetics — a Bhaktapur-based beauty store. Skincare, haircare, makeup, fragrances and everyday essentials. Shop in-store or DM us on Instagram / TikTok and we deliver across Nepal.",
   keywords: [
     "Rose Cosmetics",
     "cosmetics Bhaktapur",
-    "lipstick Nepal",
-    "beauty store Bhaktapur",
     "skincare Nepal",
+    "haircare Nepal",
+    "makeup Nepal",
+    "perfume Nepal",
+    "beauty store Bhaktapur",
     "Instagram cosmetics Nepal",
   ],
   openGraph: {
     title: "Rose Cosmetics",
     description:
-      "Bhaktapur's friendliest beauty store — lipsticks, skincare, fragrances and small luxuries. Delivery across Nepal.",
+      "Bhaktapur's friendliest cosmetics shop — skincare, haircare, makeup, fragrances and everyday essentials. Delivery across Nepal.",
     type: "website",
     locale: "en_US",
     siteName: "Rose Cosmetics",
@@ -37,7 +39,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Rose Cosmetics",
     description:
-      "Bhaktapur's friendliest beauty store. Shop in-store or DM us on Instagram / TikTok.",
+      "Bhaktapur's friendliest cosmetics shop. Shop in-store or DM us on Instagram / TikTok.",
   },
   robots: { index: true, follow: true },
 };

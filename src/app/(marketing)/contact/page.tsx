@@ -60,9 +60,9 @@ export default function ContactPage() {
             Come say hi.
           </h1>
           <p className="mt-4 max-w-prose text-[15px] leading-relaxed text-stone-700 sm:mt-5 sm:text-lg">
-            We&apos;re in Chardobato, Bhaktapur. Swatch a lipstick, sniff
-            a perfume, ask us anything — or message us and we&apos;ll help
-            from your phone.
+            We&apos;re in Chardobato, Bhaktapur. Browse the skincare,
+            sniff a perfume, ask us anything — or message us and
+            we&apos;ll help from your phone.
           </p>
         </div>
       </section>
