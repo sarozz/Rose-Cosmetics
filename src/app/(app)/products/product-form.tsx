@@ -59,6 +59,19 @@ export function ProductForm({
   const [name, setName] = useState(defaults?.name ?? "");
   const [brand, setBrand] = useState(defaults?.brand ?? "");
   const [barcode, setBarcode] = useState(defaults?.barcode ?? "");
+  // Cost-price helper: when the supplier quotes a pre-VAT figure, ticking
+  // "Add 13% VAT" multiplies the field in place (and untick divides back).
+  // The submitted value is always the final NPR-with-VAT figure.
+  const [costPrice, setCostPrice] = useState(
+    numberDefault(defaults?.costPrice),
+  );
+  const [costIncludesVat, setCostIncludesVat] = useState(false);
+  // Sell-price helper: shops often quote import prices in INR.
+  // 1 INR = 1.6 NRS. Ticking the box converts the typed figure once.
+  const [sellPrice, setSellPrice] = useState(
+    numberDefault(defaults?.sellPrice),
+  );
+  const [sellIsInr, setSellIsInr] = useState(false);
   const [extras, setExtras] = useState<ExtraRow[]>(() =>
     (defaults?.extraBarcodes ?? []).map((b, i) => ({
       key: i + 1,
@@ -76,6 +89,20 @@ export function ProductForm({
   const [scanError, setScanError] = useState<string | null>(null);
   const [scanNotice, setScanNotice] = useState<string | null>(null);
   const scanRef = useRef<HTMLInputElement | null>(null);
+
+  function applyMultiplier(value: string, multiplier: number): string {
+    const num = Number(value);
+    if (!Number.isFinite(num) || num === 0) return value;
+    return (num * multiplier).toFixed(2);
+  }
+  function toggleVat(checked: boolean) {
+    setCostIncludesVat(checked);
+    setCostPrice((cur) => applyMultiplier(cur, checked ? 1.13 : 1 / 1.13));
+  }
+  function toggleInr(checked: boolean) {
+    setSellIsInr(checked);
+    setSellPrice((cur) => applyMultiplier(cur, checked ? 1.6 : 1 / 1.6));
+  }
 
   function addExtra() {
     setExtras((prev) => [...prev, { key: extraKey, code: "", label: "" }]);
@@ -357,43 +384,80 @@ export function ProductForm({
         </div>
       </FieldGroup>
 
-      <FieldGroup title="Pricing" description="All amounts in shop currency">
+      <FieldGroup
+        title="Pricing"
+        description="All amounts stored in NPR. Use the helpers below if your supplier quotes pre-VAT or in IC."
+      >
         <div className="grid gap-5 sm:grid-cols-2">
-          <Field
-            label="Cost price"
-            htmlFor="costPrice"
-            hint="Optional — fills in on first receipt"
-            error={state.fieldErrors.costPrice}
-            adornment="Rs"
-          >
-            <input
-              id="costPrice"
-              name="costPrice"
-              type="number"
-              step="0.01"
-              min="0"
-              defaultValue={numberDefault(defaults?.costPrice)}
-              className={inputClass()}
-            />
-          </Field>
-          <Field
-            label="Sell price"
-            htmlFor="sellPrice"
-            required
-            error={state.fieldErrors.sellPrice}
-            adornment="Rs"
-          >
-            <input
-              id="sellPrice"
-              name="sellPrice"
-              type="number"
-              step="0.01"
-              min="0"
+          <div>
+            <Field
+              label="Cost price"
+              htmlFor="costPrice"
+              hint="Optional — fills in on first receipt"
+              error={state.fieldErrors.costPrice}
+              adornment="Rs"
+            >
+              <input
+                id="costPrice"
+                name="costPrice"
+                type="number"
+                step="0.01"
+                min="0"
+                value={costPrice}
+                onChange={(e) => setCostPrice(e.target.value)}
+                className={inputClass()}
+              />
+            </Field>
+            <label className="mt-2 flex cursor-pointer items-start gap-2 text-xs text-ink-soft">
+              <input
+                type="checkbox"
+                checked={costIncludesVat}
+                onChange={(e) => toggleVat(e.target.checked)}
+                className="mt-0.5 h-4 w-4 rounded border-white/15 bg-surface/60 text-rose-400 focus:ring-rose-400/30"
+              />
+              <span>
+                Add 13% VAT to this amount
+                {costIncludesVat ? (
+                  <span className="ml-1 text-emerald-300">· applied</span>
+                ) : null}
+              </span>
+            </label>
+          </div>
+          <div>
+            <Field
+              label="Sell price"
+              htmlFor="sellPrice"
               required
-              defaultValue={numberDefault(defaults?.sellPrice)}
-              className={inputClass()}
-            />
-          </Field>
+              error={state.fieldErrors.sellPrice}
+              adornment="Rs"
+            >
+              <input
+                id="sellPrice"
+                name="sellPrice"
+                type="number"
+                step="0.01"
+                min="0"
+                required
+                value={sellPrice}
+                onChange={(e) => setSellPrice(e.target.value)}
+                className={inputClass()}
+              />
+            </Field>
+            <label className="mt-2 flex cursor-pointer items-start gap-2 text-xs text-ink-soft">
+              <input
+                type="checkbox"
+                checked={sellIsInr}
+                onChange={(e) => toggleInr(e.target.checked)}
+                className="mt-0.5 h-4 w-4 rounded border-white/15 bg-surface/60 text-rose-400 focus:ring-rose-400/30"
+              />
+              <span>
+                Price entered in IC (₹1 = Rs 1.60)
+                {sellIsInr ? (
+                  <span className="ml-1 text-emerald-300">· converted</span>
+                ) : null}
+              </span>
+            </label>
+          </div>
         </div>
       </FieldGroup>
 
