@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Route } from "next";
 import type { ReactNode } from "react";
 import { RoseLogo } from "@/components/rose-logo";
+import { LanguageToggle } from "./language-toggle";
 
 /**
  * Public marketing site shell. Wraps the four customer-facing pages
@@ -60,6 +61,9 @@ function MarketingHeader() {
             </Link>
           ))}
         </nav>
+        <div className="hidden sm:block">
+          <LanguageToggle />
+        </div>
         {/* No staff link in the public chrome. */}
       </div>
       {/* Mobile nav — flat row under the logo, with generous tap targets. */}
@@ -77,6 +81,11 @@ function MarketingHeader() {
           </Link>
         ))}
       </nav>
+      {/* Mobile language toggle — a thin row below the nav. Keeps the
+          primary nav uncluttered while the picker stays one tap away. */}
+      <div className="flex justify-center border-t border-stone-200/60 px-4 py-2 sm:hidden">
+        <LanguageToggle />
+      </div>
     </header>
   );
 }

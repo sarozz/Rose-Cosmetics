@@ -84,6 +84,28 @@
   }
 }
 
+/* Google Translate widget: we drive it from our own pill toggle, so
+   hide every piece of the default UI it tries to inject — the top
+   banner, the floating tooltip on hover, and the body offset it
+   applies. Without these the page jumps down 40px when the widget
+   loads, looks broken. */
+.goog-te-banner-frame.skiptranslate,
+.goog-te-gadget-icon,
+.goog-tooltip,
+.goog-tooltip:hover,
+.goog-text-highlight {
+  display: none !important;
+  background: none !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+body {
+  top: 0 !important;
+}
+#google_translate_element {
+  display: none !important;
+}
+
 @media print {
   @page {
     margin: 12mm;
