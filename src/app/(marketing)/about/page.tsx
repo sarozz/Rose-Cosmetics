@@ -44,7 +44,7 @@ export default function AboutPage() {
             Hi, we&apos;re Rose.
           </h1>
           <p className="mt-4 text-[15px] leading-relaxed text-stone-700 sm:mt-6 sm:text-lg">
-            Rose Cosmetics is a family cosmetics shop in Chardobato,
+            <span className="notranslate" translate="no">Rose Cosmetics</span> is a family cosmetics shop in Chardobato,
             Bhaktapur. Skincare, haircare, makeup, fragrances —
             everything we&apos;d want on our own bathroom shelf, picked
             so you don&apos;t have to guess between ten versions of the
