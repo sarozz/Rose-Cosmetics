@@ -202,7 +202,7 @@ function MarketingFooter() {
       </div>
       <div className="border-t border-stone-200/60 py-4">
         <p className="text-center text-xs text-stone-500">
-          © {new Date().getFullYear()} Rose Cosmetics · Chardobato, Bhaktapur, Nepal
+          © {new Date().getFullYear()} <span className="notranslate" translate="no">Rose Cosmetics</span> · Chardobato, Bhaktapur, Nepal
         </p>
       </div>
     </footer>

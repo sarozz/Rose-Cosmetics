@@ -38,7 +38,10 @@ export function RoseLogo({
   className?: string;
 }) {
   return (
-    <span className={`inline-flex flex-col ${className}`}>
+    <span
+      className={`inline-flex flex-col notranslate ${className}`}
+      translate="no"
+    >
       <span
         className={`${allura.className} text-rose-400 drop-shadow-[0_0_8px_rgba(233,80,125,0.35)] ${wordClass[size]}`}
       >

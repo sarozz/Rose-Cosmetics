@@ -92,7 +92,9 @@ export default function HomePage() {
               Chardobato · Bhaktapur
             </p>
             <h1 className="mt-2 font-[Allura,cursive] text-5xl leading-none text-rose-600 drop-shadow-sm xs:text-6xl sm:mt-3 sm:text-7xl">
-              Rose Cosmetics
+              <span className="notranslate" translate="no">
+                Rose Cosmetics
+              </span>
             </h1>
             <p className="mt-3 text-xl font-medium text-stone-800 sm:text-3xl">
               The shelf you wish your friend was working at.
@@ -180,7 +182,7 @@ export default function HomePage() {
               A little corner shop in Chardobato.
             </h2>
             <p className="mt-3 text-[15px] leading-relaxed text-stone-700 sm:mt-4 sm:text-base">
-              We opened Rose Cosmetics because we wanted a beauty shop
+              We opened <span className="notranslate" translate="no">Rose Cosmetics</span> because we wanted a beauty shop
               that felt like a friend&apos;s bathroom shelf — skincare,
               haircare, makeup and fragrances we&apos;d actually use
               ourselves. Come browse in person, or DM us a photo and
