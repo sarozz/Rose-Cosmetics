@@ -21,16 +21,26 @@ const MAP_URL = "https://maps.app.goo.gl/dJPHLJYKXZct8nxg7";
 const MAP_EMBED_SRC =
   "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d883.3636974203804!2d85.37844546962677!3d27.672335286219344!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x39eb1b14f1adfce3%3A0x6ae04ef3727579e0!2sRose%20Cosmetics!5e0!3m2!1sen!2sau!4v1779101811572!5m2!1sen!2sau";
 
+// Same Store entity as the home page (shared `@id`) so Google treats
+// both pages as facts about one business instead of two competing
+// listings.
 const STRUCTURED_DATA = {
   "@context": "https://schema.org",
   "@type": "Store",
+  "@id": "https://rosecosmetics.live/#store",
   name: "Rose Cosmetics",
   url: "https://rosecosmetics.live/contact",
+  image: "https://rosecosmetics.live/opengraph-image",
+  priceRange: "Rs 100 – Rs 5000",
+  currenciesAccepted: "NPR",
+  paymentAccepted: "Cash, eSewa, Khalti, Bank transfer",
+  areaServed: { "@type": "Country", name: "Nepal" },
   hasMap: MAP_URL,
   address: {
     "@type": "PostalAddress",
     streetAddress: "Chardobato",
     addressLocality: "Bhaktapur",
+    addressRegion: "Bagmati",
     addressCountry: "NP",
   },
   geo: {
@@ -50,12 +60,25 @@ const STRUCTURED_DATA = {
   ],
 };
 
+const BREADCRUMB_DATA = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    { "@type": "ListItem", position: 1, name: "Home", item: "https://rosecosmetics.live" },
+    { "@type": "ListItem", position: 2, name: "Contact", item: "https://rosecosmetics.live/contact" },
+  ],
+};
+
 export default function ContactPage() {
   return (
     <>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(STRUCTURED_DATA) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(BREADCRUMB_DATA) }}
       />
 
       <section className="relative overflow-hidden">

@@ -15,9 +15,23 @@ export const metadata: Metadata = {
   },
 };
 
+const BREADCRUMB_DATA = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    { "@type": "ListItem", position: 1, name: "Home", item: "https://rosecosmetics.live" },
+    { "@type": "ListItem", position: 2, name: "Online store", item: "https://rosecosmetics.live/store" },
+  ],
+};
+
 export default function StorePage() {
   return (
-    <section className="relative overflow-hidden">
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(BREADCRUMB_DATA) }}
+      />
+      <section className="relative overflow-hidden">
       {/* Soft decorative glows so the page doesn't feel empty. */}
       <div
         aria-hidden
@@ -82,6 +96,7 @@ export default function StorePage() {
           </Link>
         </div>
       </div>
-    </section>
+      </section>
+    </>
   );
 }

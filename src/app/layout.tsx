@@ -31,7 +31,7 @@ export const metadata: Metadata = {
     description:
       "Bhaktapur's friendliest cosmetics shop — skincare, haircare, makeup, fragrances and everyday essentials. Delivery across Nepal.",
     type: "website",
-    locale: "en_US",
+    locale: "en_NP",
     siteName: "Rose Cosmetics",
     url: "https://rosecosmetics.live",
   },
@@ -40,6 +40,14 @@ export const metadata: Metadata = {
     title: "Rose Cosmetics",
     description:
       "Bhaktapur's friendliest cosmetics shop. Shop in-store or DM us on Instagram / TikTok.",
+  },
+  // Geo signals for Bing / Yandex / regional crawlers that still read
+  // these meta tags. Google ignores them but they're free to include.
+  other: {
+    "geo.region": "NP-BA",
+    "geo.placename": "Bhaktapur",
+    "geo.position": "27.672335;85.378445",
+    ICBM: "27.672335, 85.378445",
   },
   robots: { index: true, follow: true },
 };
@@ -50,7 +58,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en-NP">
       <body className="min-h-screen font-sans">{children}</body>
     </html>
   );

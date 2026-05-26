@@ -7,11 +7,85 @@ export const metadata: Metadata = {
   description:
     "Three ways to buy from Rose Cosmetics — walk into our Chardobato shop, message us on Instagram (@rose.cosmetics67) or TikTok (@rose.cosmetic83). We courier across Nepal in 1 to 3 days.",
   alternates: { canonical: "/shop" },
+  openGraph: {
+    title: "How to order from Rose Cosmetics",
+    description:
+      "Walk in to Chardobato, or DM us on Instagram or TikTok. We courier anywhere in Nepal in 1–3 days.",
+    type: "website",
+  },
+};
+
+// FAQPage schema unlocks rich snippets in Google search results — when
+// someone searches "how to order cosmetics in Nepal" or "Rose Cosmetics
+// delivery", these Q&A pairs can appear as an expandable accordion in
+// the SERP, taking up more screen real estate.
+const FAQ_DATA = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: [
+    {
+      "@type": "Question",
+      name: "How do I order from Rose Cosmetics?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "Three ways: walk into our Chardobato shop in Bhaktapur, message us on Instagram (@rose.cosmetics67), or DM us on TikTok (@rose.cosmetic83). Send the product name (or a screenshot) plus your full delivery address and we'll confirm the total.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "Do you deliver across Nepal?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "Yes — we courier anywhere in Nepal, typically arriving within 1 to 3 days. You receive a private tracking link the moment the package leaves the shop.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "What payment methods do you accept?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "Cash on delivery, eSewa, Khalti, and direct bank transfer. We confirm the total before packing so you know exactly what to pay.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "What are your opening hours?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "The Chardobato shop is open every day from 9 AM to 8 PM. Instagram and TikTok DMs are answered during the same hours.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "Where is Rose Cosmetics located?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "We're in Chardobato, Bhaktapur, Nepal. The shop is on Google Maps — search 'Rose Cosmetics Chardobato' or visit rosecosmetics.live/contact for the map and directions.",
+      },
+    },
+  ],
+};
+
+const BREADCRUMB_DATA = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    { "@type": "ListItem", position: 1, name: "Home", item: "https://rosecosmetics.live" },
+    { "@type": "ListItem", position: 2, name: "How to order", item: "https://rosecosmetics.live/shop" },
+  ],
 };
 
 export default function ShopPage() {
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(FAQ_DATA) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(BREADCRUMB_DATA) }}
+      />
       <section className="relative overflow-hidden">
         <div className="relative mx-auto max-w-3xl px-4 py-12 text-center sm:px-6 sm:py-24">
           <p className="text-xs font-semibold uppercase tracking-widest text-rose-600 sm:text-sm">
