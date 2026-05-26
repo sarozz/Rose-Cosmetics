@@ -16,19 +16,51 @@ export const metadata: Metadata = {
   alternates: { canonical: "/" },
 };
 
+// Rich LocalBusiness / Store schema. Google's local pack pulls
+// `name`, `address`, `geo`, `openingHoursSpecification`, `priceRange`
+// and `sameAs` straight from this — same shape as /contact so both
+// pages reinforce a single business entity instead of competing.
+// `image` resolves to /opengraph-image which Next generates from
+// src/app/opengraph-image.tsx.
 const STRUCTURED_DATA = {
   "@context": "https://schema.org",
   "@type": "Store",
+  "@id": "https://rosecosmetics.live/#store",
   name: "Rose Cosmetics",
   description:
-    "Family cosmetics shop in Chardobato, Bhaktapur. Skincare, haircare, makeup, fragrances and everyday essentials.",
+    "Family cosmetics shop in Chardobato, Bhaktapur. Skincare, haircare, makeup, fragrances and everyday essentials. We courier anywhere in Nepal.",
   url: "https://rosecosmetics.live",
-  image: "https://rosecosmetics.live/og.png",
+  image: "https://rosecosmetics.live/opengraph-image",
+  priceRange: "Rs 100 – Rs 5000",
+  currenciesAccepted: "NPR",
+  paymentAccepted: "Cash, eSewa, Khalti, Bank transfer",
+  areaServed: { "@type": "Country", name: "Nepal" },
+  hasMap: "https://maps.app.goo.gl/dJPHLJYKXZct8nxg7",
   address: {
     "@type": "PostalAddress",
     streetAddress: "Chardobato",
     addressLocality: "Bhaktapur",
+    addressRegion: "Bagmati",
     addressCountry: "NP",
+  },
+  geo: {
+    "@type": "GeoCoordinates",
+    latitude: 27.672335286219344,
+    longitude: 85.37844546962677,
+  },
+  openingHoursSpecification: {
+    "@type": "OpeningHoursSpecification",
+    dayOfWeek: [
+      "Sunday",
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday",
+    ],
+    opens: "09:00",
+    closes: "20:00",
   },
   sameAs: [
     "https://instagram.com/rose.cosmetics67",

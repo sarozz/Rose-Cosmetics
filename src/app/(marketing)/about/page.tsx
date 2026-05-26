@@ -15,9 +15,22 @@ export const metadata: Metadata = {
   },
 };
 
+const BREADCRUMB_DATA = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    { "@type": "ListItem", position: 1, name: "Home", item: "https://rosecosmetics.live" },
+    { "@type": "ListItem", position: 2, name: "About", item: "https://rosecosmetics.live/about" },
+  ],
+};
+
 export default function AboutPage() {
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(BREADCRUMB_DATA) }}
+      />
       <section className="relative overflow-hidden">
         <div
           aria-hidden

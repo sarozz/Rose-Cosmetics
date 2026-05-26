@@ -7,7 +7,7 @@ export default function robots(): MetadataRoute.Robots {
     rules: [
       {
         userAgent: "*",
-        allow: ["/", "/about", "/shop", "/contact"],
+        allow: ["/", "/about", "/shop", "/store", "/contact"],
         // Staff portal and APIs should never be indexed.
         disallow: [
           "/gulabshop",
