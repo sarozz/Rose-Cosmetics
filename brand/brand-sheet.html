@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Rose Cosmetics — Brand Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Allura&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --rose-50: #FDF2F5;
+    --rose-100: #FBE4EA;
+    --rose-200: #F6C2CE;
+    --rose-300: #EE94AA;
+    --rose-400: #E25F80;
+    --rose-500: #C93A63;
+    --rose-600: #B03052;
+    --rose-700: #8E2442;
+    --rose-800: #6A1B32;
+    --rose-900: #491322;
+    --cream: #FFF8F3;
+    --page: #14121A;
+    --surface: #1E1B26;
+    --card: #241F2D;
+    --ink: #ECE9F0;
+    --ink-soft: #C6C2CF;
+    --ink-muted: #8E8A9A;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    color: #44403c;
+    background: var(--cream);
+    -webkit-font-smoothing: antialiased;
+  }
+  .sheet {
+    width: 1200px;
+    margin: 0 auto;
+    padding: 64px;
+  }
+  /* Hero / logo */
+  .hero {
+    text-align: center;
+    padding: 32px 0 48px;
+    border-bottom: 1px solid rgba(0,0,0,0.06);
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before, .hero::after {
+    content: '';
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    z-index: 0;
+  }
+  .hero::before {
+    width: 360px; height: 360px;
+    background: rgba(238, 148, 170, 0.45);
+    top: -120px; left: -80px;
+  }
+  .hero::after {
+    width: 360px; height: 360px;
+    background: rgba(201, 58, 99, 0.30);
+    bottom: -160px; right: -80px;
+  }
+  .hero > * { position: relative; z-index: 1; }
+  .eyebrow {
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    color: var(--rose-600);
+  }
+  .word {
+    font-family: 'Allura', cursive;
+    font-size: 200px;
+    color: var(--rose-600);
+    line-height: 1;
+    margin: 12px 0 8px;
+    text-shadow: 0 4px 18px rgba(176, 48, 82, 0.18);
+  }
+  .sub {
+    font-weight: 700;
+    font-size: 22px;
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+    color: var(--rose-600);
+  }
+  .tagline {
+    margin-top: 20px;
+    font-size: 18px;
+    color: #57534e;
+  }
+
+  /* Section */
+  h2 {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+    color: var(--rose-600);
+    margin: 48px 0 18px;
+  }
+  .meta { font-size: 14px; color: #78716c; margin-top: -10px; margin-bottom: 18px; }
+
+  /* Color palette */
+  .palette {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
+  }
+  .swatch {
+    border-radius: 14px;
+    padding: 18px 16px 14px;
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 130px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  .swatch .name { font-size: 13px; font-weight: 700; letter-spacing: 0.05em; }
+  .swatch .hex {
+    font-family: 'SF Mono', Menlo, Consolas, monospace;
+    font-size: 13px;
+    opacity: 0.92;
+  }
+  .swatch.light { color: #44403c; }
+
+  /* Two-shell row */
+  .shells {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+  }
+  .shell-card {
+    border-radius: 16px;
+    padding: 24px;
+    min-height: 200px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  .shell-light {
+    background: var(--cream);
+    color: #44403c;
+    border: 1px solid #e7e5e4;
+  }
+  .shell-dark {
+    background: var(--page);
+    color: var(--ink);
+  }
+  .shell-card h3 {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    margin: 0 0 12px;
+  }
+  .shell-light h3 { color: var(--rose-600); }
+  .shell-dark h3 { color: var(--rose-400); }
+  .shell-card p { font-size: 14px; line-height: 1.6; margin: 6px 0; opacity: 0.9; }
+  .pill {
+    display: inline-block;
+    padding: 10px 22px;
+    border-radius: 999px;
+    background: var(--rose-600);
+    color: #fff;
+    font-weight: 600;
+    font-size: 14px;
+    margin-top: 10px;
+  }
+
+  /* Typography sample */
+  .type-row { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .type-card {
+    border-radius: 14px;
+    background: #fff;
+    border: 1px solid #e7e5e4;
+    padding: 22px;
+  }
+  .type-card .label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: var(--rose-600);
+    margin-bottom: 8px;
+  }
+  .sample-script { font-family: 'Allura', cursive; font-size: 84px; color: var(--rose-600); line-height: 1; }
+  .sample-sans { font-size: 24px; font-weight: 700; color: #44403c; }
+  .sample-sans-stack { font-size: 12px; color: #78716c; font-family: 'SF Mono', Menlo, monospace; margin-top: 8px; }
+
+  /* Footer */
+  .foot {
+    margin-top: 48px;
+    padding-top: 18px;
+    border-top: 1px solid rgba(0,0,0,0.06);
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    color: #78716c;
+  }
+  .foot a { color: var(--rose-600); text-decoration: none; }
+</style>
+</head>
+<body>
+  <div class="sheet">
+    <!-- HERO -->
+    <div class="hero">
+      <div class="eyebrow">Chardobato · Bhaktapur · Nepal</div>
+      <div class="word">Rose</div>
+      <div class="sub">COSMETICS</div>
+      <p class="tagline">The shelf you wish your friend was working at.</p>
+    </div>
+
+    <!-- PALETTE -->
+    <h2>Color palette — Rose accent</h2>
+    <p class="meta">Use <strong>rose-600</strong> for filled CTAs and the wordmark, <strong>rose-400</strong> for accents on dark backgrounds, <strong>rose-50/100/200</strong> for ambient glow.</p>
+    <div class="palette">
+      <div class="swatch light" style="background:#FDF2F5"><span class="name">Rose 50</span><span class="hex">#FDF2F5</span></div>
+      <div class="swatch light" style="background:#FBE4EA"><span class="name">Rose 100</span><span class="hex">#FBE4EA</span></div>
+      <div class="swatch light" style="background:#F6C2CE"><span class="name">Rose 200</span><span class="hex">#F6C2CE</span></div>
+      <div class="swatch" style="background:#EE94AA"><span class="name">Rose 300</span><span class="hex">#EE94AA</span></div>
+      <div class="swatch" style="background:#E25F80"><span class="name">Rose 400</span><span class="hex">#E25F80</span></div>
+      <div class="swatch" style="background:#C93A63"><span class="name">Rose 500</span><span class="hex">#C93A63</span></div>
+      <div class="swatch" style="background:#B03052"><span class="name">Rose 600 ★</span><span class="hex">#B03052</span></div>
+      <div class="swatch" style="background:#8E2442"><span class="name">Rose 700</span><span class="hex">#8E2442</span></div>
+      <div class="swatch" style="background:#6A1B32"><span class="name">Rose 800</span><span class="hex">#6A1B32</span></div>
+      <div class="swatch" style="background:#491322"><span class="name">Rose 900</span><span class="hex">#491322</span></div>
+    </div>
+
+    <!-- TWO SHELLS -->
+    <h2>Two shells, one brand</h2>
+    <p class="meta">Customer pages live on cream. The staff app lives on dark. The rose accent is the through-line that ties them.</p>
+    <div class="shells">
+      <div class="shell-card shell-light">
+        <h3>Marketing shell — Cream</h3>
+        <p><strong style="color:#1c1917">Background</strong> #FFF8F3 (cream)</p>
+        <p><strong style="color:#1c1917">Body text</strong> stone-700</p>
+        <p><strong style="color:#1c1917">Accent</strong> rose-600</p>
+        <span class="pill">Primary CTA</span>
+      </div>
+      <div class="shell-card shell-dark">
+        <h3>App shell — Ink</h3>
+        <p><strong style="color:#fff">Background</strong> #14121A (page)</p>
+        <p><strong style="color:#fff">Surface</strong> #1E1B26 — inputs, panels</p>
+        <p><strong style="color:#fff">Body text</strong> #ECE9F0 (ink)</p>
+        <span class="pill">Primary CTA</span>
+      </div>
+    </div>
+
+    <!-- TYPOGRAPHY -->
+    <h2>Typography</h2>
+    <p class="meta">Allura for brand moments only. Everything else uses the platform's system sans — zero font bytes downloaded, native on every device.</p>
+    <div class="type-row">
+      <div class="type-card">
+        <div class="label">Brand wordmark</div>
+        <div class="sample-script">Rose</div>
+        <div class="sample-sans-stack">Allura (Google Fonts) · weight 400</div>
+      </div>
+      <div class="type-card">
+        <div class="label">Body + UI</div>
+        <div class="sample-sans">The shelf you wish your friend was working at.</div>
+        <div class="sample-sans-stack">ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto</div>
+      </div>
+    </div>
+
+    <!-- FOOTER -->
+    <div class="foot">
+      <span>Rose Cosmetics · Chardobato, Bhaktapur, Nepal · Open 9 AM – 8 PM</span>
+      <span>Instagram <a href="https://instagram.com/rose.cosmetics67">@rose.cosmetics67</a> · TikTok <a href="https://tiktok.com/@rose.cosmetic83">@rose.cosmetic83</a></span>
+    </div>
+  </div>
+</body>
+</html>
